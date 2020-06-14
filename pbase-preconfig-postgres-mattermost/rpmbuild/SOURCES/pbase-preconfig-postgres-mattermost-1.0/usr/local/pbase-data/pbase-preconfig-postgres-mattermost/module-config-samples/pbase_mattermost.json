@@ -1,0 +1,9 @@
+{
+  "pbase_mattermost" : {
+    "port": 8065,
+    "addApacheProxy": true,
+    "useSubDomain": true,
+    "subDomainName": "mattermost",
+    "subDomainServerAdmin": "yoursysadmin@yourrealmail.com"
+  }
+}

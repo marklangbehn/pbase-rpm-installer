@@ -1,0 +1,22 @@
+{
+  "pbase_mysql80community": [
+    {
+      "default": {
+        "hostName": "localhost",
+        "rootPassword": "SHOmeddata",
+        "port": "3306",
+        "characterSet": "utf8mb4",
+        "startService": true,
+        "install": true,
+        "enableRemoteAccess": true,
+        "database": [
+          {
+            "name": "nextcloud",
+            "user": "admin",
+            "password": "shomeddata"
+          }
+        ]
+      }
+    }
+  ]
+}

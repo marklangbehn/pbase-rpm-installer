@@ -1,0 +1,5 @@
+[pbase-amzn1-dep]
+name=PBase Amazon Linux AMI Dependency YUM Repository
+baseurl=http://pbase-foundation.com/yum-repo/pbase-components-amzn1/1.0/
+enabled=1
+gpgcheck=0

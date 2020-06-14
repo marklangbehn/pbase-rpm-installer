@@ -1,0 +1,6 @@
+{
+  "pbase_preconfig": {
+    "setSetSelinuxDisabled": true,
+    "setSetGrubTimeout1": true
+  }
+}

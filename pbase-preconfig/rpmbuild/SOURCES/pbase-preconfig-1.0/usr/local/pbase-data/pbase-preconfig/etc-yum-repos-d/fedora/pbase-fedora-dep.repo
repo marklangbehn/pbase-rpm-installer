@@ -1,0 +1,5 @@
+[pbase-fedora-dep]
+name=PBase Fedora Dependency YUM Repository
+baseurl=http://pbase-foundation.com/yum-repo/pbase-components-fedora/1.0/
+enabled=1
+gpgcheck=0

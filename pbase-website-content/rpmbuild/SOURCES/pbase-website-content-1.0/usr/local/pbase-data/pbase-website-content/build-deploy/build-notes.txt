@@ -1,0 +1,7 @@
+## How to use
+## assumes gatsby js website source code is up to date on Gitlab
+##    https://gitlab.com/mlangbehn/virtualrecordlabel-site
+
+Scripts are placed on virtualrecordlabel.com server.
+The virtualrecordlabel-build.sh script is run by the mark user from /home/mark.
+The virtualrecordlabel-deploy.sh script is run as "root" from the /root directory.

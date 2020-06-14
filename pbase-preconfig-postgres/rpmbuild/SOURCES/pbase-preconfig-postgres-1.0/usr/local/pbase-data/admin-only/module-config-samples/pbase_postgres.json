@@ -1,0 +1,20 @@
+{
+  "pbase_postgres": [
+    {
+      "default": {
+        "hostName": "localhost",
+        "port": "5432",
+        "startService": true,
+        "enableRemoteAccess": true,
+        "install": true,
+        "database": [
+          {
+            "name": "app_db",
+            "user": "appuser",
+            "password": "shomeddata"
+          }
+        ]
+      }
+    }
+  ]
+}

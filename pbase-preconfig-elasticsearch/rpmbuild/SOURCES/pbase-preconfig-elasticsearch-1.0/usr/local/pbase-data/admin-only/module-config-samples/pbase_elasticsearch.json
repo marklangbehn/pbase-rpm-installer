@@ -1,0 +1,10 @@
+{
+  "pbase_elasticsearch" :  {
+    "startservice": true,
+    "firewalladdport": true,
+    "port": 9200,
+    "node_master": false,
+    "node_name": "node-1",
+    "cluster_name" : "my-application"
+  }
+}

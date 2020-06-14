@@ -1,0 +1,5 @@
+WEBSTORM_HOME="/opt/WebStorm"
+export WEBSTORM_HOME
+
+PATH=$WEBSTORM_HOME/bin:$PATH
+export PATH

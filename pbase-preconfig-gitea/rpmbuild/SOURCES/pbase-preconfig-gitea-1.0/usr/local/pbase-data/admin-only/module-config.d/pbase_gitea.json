@@ -1,0 +1,12 @@
+{
+  "pbase_gitea" : {
+    "httpPort": 3000,
+    "addApacheProxy": true,
+    "database": "mysql",
+    "protocol": "http",
+    "domain": "pbase-foundation.com",
+    "rootUrl": "http://pbase-foundation.com/git/",
+    "disableRegistration": false,
+    "requireSigninView": false
+  }
+}

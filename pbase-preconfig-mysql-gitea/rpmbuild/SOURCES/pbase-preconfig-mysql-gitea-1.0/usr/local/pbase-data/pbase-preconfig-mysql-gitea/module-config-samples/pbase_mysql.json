@@ -1,0 +1,22 @@
+{
+  "pbase_mysql": [
+    {
+      "default": {
+        "hostName": "localhost",
+        "rootPassword": "SHOmeddata",
+        "port": "3306",
+        "characterSet": "utf8mb4",
+        "startService": true,
+        "install": true,
+        "enableRemoteAccess": true,
+        "database": [
+          {
+            "name": "gitea",
+            "user": "gitea",
+            "password": "shomeddata"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+[Unit]
+Description="HashiCorp Vault"
+Documentation=https://www.vaultproject.io/docs/
+Requires=network-online.target
+After=network-online.target
+ConditionFileNotEmpty=/etc/vault/config.json
+
+[Service]
+User=vault
+Group=vault
+EnvironmentFile=-/etc/sysconfig/vault
+Environment=GOMAXPROCS=2
+Restart=on-failure
+ExecStart=/usr/local/bin/vault server -config=/etc/vault/config.json
+StandardOutput=/logs/vault/output.log
+StandardError=/logs/vault/error.log
+LimitMEMLOCK=infinity
+ExecReload=/bin/kill -HUP $MAINPID
+KillSignal=SIGTERM
+
+[Install]
+WantedBy=multi-user.target

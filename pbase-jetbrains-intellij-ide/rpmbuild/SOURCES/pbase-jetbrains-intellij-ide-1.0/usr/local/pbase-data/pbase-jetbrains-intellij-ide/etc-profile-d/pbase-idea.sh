@@ -1,0 +1,5 @@
+IDEAIC_HOME="/opt/idea-IC"
+export IDEAIC_HOME
+
+PATH=$IDEAIC_HOME/bin:$PATH
+export PATH

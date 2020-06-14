@@ -1,0 +1,5 @@
+[vrlsite-content]
+name=VRL website YUM Repository
+baseurl=http://pbase-foundation.com/yum-repo/vrlsite-components/1.0/
+enabled=1
+gpgcheck=0

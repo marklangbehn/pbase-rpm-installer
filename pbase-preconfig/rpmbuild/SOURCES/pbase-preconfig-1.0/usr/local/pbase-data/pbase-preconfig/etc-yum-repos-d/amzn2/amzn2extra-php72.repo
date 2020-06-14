@@ -1,0 +1,8 @@
+[amzn2extra-php7.2]
+enabled = 1
+name = Amazon Extras repo for php7.2
+mirrorlist = http://amazonlinux.$awsregion.$awsdomain/$releasever/extras/php7.2/latest/$basearch/mirror.list
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-amazon-linux-2
+priority = 10
+skip_if_unavailable = 1

@@ -1,0 +1,6 @@
+{
+  "pbase_ssh_port" :  {
+    "enableRootLogin": false,
+    "port": "28800"
+  }
+}

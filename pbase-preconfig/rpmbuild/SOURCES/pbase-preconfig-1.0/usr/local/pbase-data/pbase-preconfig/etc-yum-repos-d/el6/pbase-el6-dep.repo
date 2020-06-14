@@ -1,0 +1,5 @@
+[pbase-el6-dep]
+name=PBase EL6 Dependency YUM Repository
+baseurl=http://pbase-foundation.com/yum-repo/pbase-components-el6/1.0/
+enabled=1
+gpgcheck=0

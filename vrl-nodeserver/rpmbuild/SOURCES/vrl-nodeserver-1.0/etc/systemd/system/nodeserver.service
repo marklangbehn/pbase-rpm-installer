@@ -1,0 +1,21 @@
+[Unit]
+Description=VRL Node.js AssetInfo Server
+#Requires=After=mysql.service       # example: if requires the mysql service to run first
+
+[Service]
+ExecStart=/usr/bin/node /usr/local/nodeserver/assetinfo-server/bin/www
+# Required on some systems
+WorkingDirectory=/usr/local/nodeserver/assetinfo-server
+Restart=always
+# Restart service after 10 seconds if node service crashes
+RestartSec=10
+# Output to syslog
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=assetinfo-server
+#User=myalternateuser
+#Group=myalternategroup
+Environment=NODE_ENV=production PORT=3000
+
+[Install]
+WantedBy=multi-user.target

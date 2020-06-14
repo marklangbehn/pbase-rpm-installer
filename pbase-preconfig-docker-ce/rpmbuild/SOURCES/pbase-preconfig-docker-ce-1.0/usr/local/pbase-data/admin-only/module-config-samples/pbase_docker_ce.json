@@ -1,0 +1,5 @@
+{
+  "pbase_preconfig_docker_ce": {
+      "addUserToDockerGroup": "mark"
+   }
+}

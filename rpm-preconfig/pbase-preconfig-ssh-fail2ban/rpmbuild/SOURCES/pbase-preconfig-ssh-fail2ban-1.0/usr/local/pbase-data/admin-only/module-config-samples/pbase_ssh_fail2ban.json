@@ -1,0 +1,8 @@
+{
+  "pbase_ssh_fail2ban" :  {
+    "enable": true,
+    "ignoreip": "[]",
+    "bantime": "",
+    "action": ""
+  }
+}

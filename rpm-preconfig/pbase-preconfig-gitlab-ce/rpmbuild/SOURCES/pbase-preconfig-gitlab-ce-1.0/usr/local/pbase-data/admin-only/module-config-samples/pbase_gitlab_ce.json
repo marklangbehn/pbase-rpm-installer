@@ -1,0 +1,10 @@
+{
+  "pbase_gitlab_ce": {
+      "externalUrlSubdomain": "gitlab",
+      "externalUrlIsHttps": true,
+      "letsEncryptEnable": true,
+      "letsEncryptEmailAddress": "yoursysadmin@yourrealmail.com",
+      "crontabBackupEnable": true,
+      "crontabBackupHour": 2
+   }
+}

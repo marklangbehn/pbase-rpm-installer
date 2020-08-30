@@ -9,7 +9,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-lets-encrypt
-Requires: pbase-lets-encrypt-transitive-dep,jq
+Requires: pbase-lets-encrypt-transitive-dep, pbase-epel, jq
 
 %description
 Configure Let's Encrypt

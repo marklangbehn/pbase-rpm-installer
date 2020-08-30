@@ -216,7 +216,7 @@ fi
 echo "Downloading Mattermost server binary from releases.mattermost.com"
 
 cd /usr/local/pbase-data/pbase-mattermost
-wget -q -O mattermost.tar.gz https://releases.mattermost.com/5.23.0/mattermost-5.23.0-linux-amd64.tar.gz
+wget -q -O mattermost.tar.gz https://releases.mattermost.com/5.25.2/mattermost-5.25.2-linux-amd64.tar.gz
 
 echo "Downloaded file:"
 ls -lh mattermost.tar.gz

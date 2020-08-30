@@ -167,6 +167,8 @@ if [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]]; then
 else
 
   echo "Service enable: firewalld "
+  /bin/systemctl daemon-reload
+
   /bin/systemctl enable firewalld
   /bin/systemctl restart firewalld
 

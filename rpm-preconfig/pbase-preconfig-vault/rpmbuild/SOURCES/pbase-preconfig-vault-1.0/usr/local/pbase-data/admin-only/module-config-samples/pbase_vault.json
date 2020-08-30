@@ -1,0 +1,11 @@
+{
+  "pbase_vault" : {
+    "httpPort": 8200,
+    "firewallEnableExternalAccess": true,
+    "addApacheProxy": false,
+    "protocol": "http",
+    "storageFilePath": "/opt/vault/data",
+    "rootUrl": "http://127.0.0.1:8200/ui",
+    "devMode": false
+  }
+}

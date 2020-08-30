@@ -97,6 +97,6 @@ echo ""
 /usr/local/pbase-data/pbase-website-content/public.tgz
 /usr/local/pbase-data/pbase-website-content/build-deploy/resources/DOT.abba.tar
 /usr/local/pbase-data/pbase-website-content/build-deploy/resources/DOT.htaccess
-/usr/local/pbase-data/pbase-website-content/build-deploy/build-notes.txt
-/usr/local/pbase-data/pbase-website-content/build-deploy/pbase-foundation-build.sh
-/usr/local/pbase-data/pbase-website-content/build-deploy/pbase-foundation-deploy.sh
+%attr(0600,root,root) /usr/local/pbase-data/pbase-website-content/build-deploy/build-notes.txt
+%attr(0700,root,root) /usr/local/pbase-data/pbase-website-content/build-deploy/pbase-foundation-build.sh
+%attr(0700,root,root) /usr/local/pbase-data/pbase-website-content/build-deploy/pbase-foundation-deploy.sh

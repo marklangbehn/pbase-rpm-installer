@@ -9,7 +9,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot 
 
 Provides: pbase-gatsby-tools
-Requires: nodejs,git,autoconf,libtool,pkgconfig,wget,curl,bzip2,make,gcc-c++,pbase-gatsby-tools-transitive-dep
+Requires: git,autoconf,libtool,pkgconfig,wget,curl,bzip2,make,gcc-c++,pbase-gatsby-tools-transitive-dep
 
 %description
 Gatsby JS dependencies

@@ -1,0 +1,10 @@
+{
+  "pbase_smtp" : {
+    "server": "smtp.mailgun.org",
+    "port": 587,
+    "login": "postmaster@mail.virtualrecordlabel.net",
+    "password": "mysmtppassword",
+    "authMethod": "plain",
+    "openSSLVerifyMode": "none"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "pbase_s3storage" : {
+    "s3Enabled": false,
+    "s3Bucket": "",
+    "awsAccessKeyId": "",
+    "awsSecretAccessKeyId": "",
+    "s3AliasHost": ""
+  }
+}

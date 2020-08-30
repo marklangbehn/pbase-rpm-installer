@@ -88,7 +88,7 @@ echo "Downloading IntelliJ from jetbrains.com"
 
 cd /usr/local/pbase-data/pbase-jetbrains-intellij-ide
 
-wget -q https://download.jetbrains.com/idea/ideaIC-2020.1.tar.gz
+wget -q https://download.jetbrains.com/idea/ideaIC-2020.2.tar.gz
 
 echo "Downloaded file from jetbrains.com:"
 ls -lh /usr/local/pbase-data/pbase-jetbrains-intellij-ide/*.gz

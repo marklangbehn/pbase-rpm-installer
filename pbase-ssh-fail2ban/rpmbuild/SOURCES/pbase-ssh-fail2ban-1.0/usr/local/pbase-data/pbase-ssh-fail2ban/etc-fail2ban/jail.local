@@ -1,0 +1,21 @@
+[DEFAULT]
+# "ignoreip" can be a list of IP addresses, CIDR masks or DNS hosts. Fail2ban
+# will not ban a host that matches an address in this list. Several addresses
+# can be defined using space (and/or comma) separator.
+ignoreip = 127.0.0.1/8
+
+# "bantime" is the number of seconds that a host is banned.
+bantime = 48h
+
+# A host is banned if it has generated "maxretry" during the last "findtime"
+# seconds.
+findtime = 30m
+
+# "maxretry" is the number of failures before a host gets banned.
+maxretry = 3
+
+# "backend" specifies the backend used to get files modification.
+# systemd: uses systemd python library to access the systemd journal.
+# Specifying "logpath" is not valid for this backend.
+# See "journalmatch" in the jails associated filter config
+backend=systemd

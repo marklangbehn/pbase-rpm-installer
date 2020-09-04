@@ -238,13 +238,14 @@ parseConfig "SMTP_PORT" ".${PBASE_CONFIG_NAME}.port" "587"
 parseConfig "SMTP_LOGIN" ".${PBASE_CONFIG_NAME}.login" "postmaster@mail.${THISDOMAINNAME}"
 parseConfig "SMTP_PASSWORD" ".${PBASE_CONFIG_NAME}.password" "mysmtppassword"
 parseConfig "SMTP_AUTH_METHOD" ".${PBASE_CONFIG_NAME}.authMethod" "plain"
-parseConfig "SMTP_OPENSSL_VERIFYMODE" ".${PBASE_CONFIG_NAME}.openSSLVerifyMode" "none"
+parseConfig "SMTP_OPENSSL_VERIFY_MODE" ".${PBASE_CONFIG_NAME}.openSSLVerifyMode" "none"
 
 echo "SMTP_SERVER:             $SMTP_SERVER"
 echo "SMTP_PORT:               $SMTP_PORT"
+echo "SMTP_LOGIN:              $SMTP_LOGIN"
 echo "SMTP_PASSWORD:           $SMTP_PASSWORD"
 echo "SMTP_AUTH_METHOD:        $SMTP_AUTH_METHOD"
-echo "SMTP_OPENSSL_VERIFYMODE: $SMTP_OPENSSL_VERIFY_MODE"
+echo "SMTP_OPENSSL_VERIFY_MODE:$SMTP_OPENSSL_VERIFY_MODE"
 
 echo "Checking rbenv"
 su - mastodon -c "rbenv --version"
@@ -325,17 +326,46 @@ sed -i -e "s/^SMTP_PASSWORD=.*/SMTP_PASSWORD=$SMTP_PASSWORD/g"  $ENV_PRODUCTION_
 sed -i -e "s/^SMTP_SERVER=.*/SMTP_SERVER=$SMTP_SERVER/g"  $ENV_PRODUCTION_FILENAME
 sed -i -e "s/^SMTP_SERVER=.*/SMTP_SERVER=$SMTP_SERVER/g"  $ENV_PRODUCTION_FILENAME
 
-##TODO configure S3 storage
+## S3 STORAGE CONFIG
 sed -i -e "s/^S3_ENABLED=.*/S3_ENABLED=false/g"  $ENV_PRODUCTION_FILENAME
 
-## add lines forf SMTP_AUTH and SAFETY_ASSURED flag
+## add lines for SMTP_AUTH and SAFETY_ASSURED flag
 echo ""  >>  $ENV_PRODUCTION_FILENAME
-echo "SMTP_AUTH_METHOD=plain"  >>  $ENV_PRODUCTION_FILENAME
-echo "SMTP_OPENSSL_VERIFY_MODE=none"  >>  $ENV_PRODUCTION_FILENAME
+echo "SMTP_AUTH_METHOD=${SMTP_AUTH_METHOD}"  >>  $ENV_PRODUCTION_FILENAME
+echo "SMTP_OPENSSL_VERIFY_MODE=${SMTP_OPENSSL_VERIFY_MODE}"  >>  $ENV_PRODUCTION_FILENAME
 echo ""  >>  $ENV_PRODUCTION_FILENAME
 echo "SAFETY_ASSURED=1"  >>  $ENV_PRODUCTION_FILENAME
 
 chown mastodon:mastodon /home/mastodon/live/$ENV_PRODUCTION_FILENAME
+
+
+## CRON
+echo "Adding cron jobs:        /etc/crontab"
+
+## create empty log files
+CRONJOB_LOGFILE="/var/log/letsencrypt-sslrenew.log"
+TOOLCTL_LOGFILE="/var/log/mastodon-toolctl-media-remove.log"
+
+touch "$CRONJOB_LOGFILE"
+touch "$TOOLCTL_LOGFILE"
+chown root:root ${CRONJOB_LOGFILE}
+chown mastodon:mastodon ${TOOLCTL_LOGFILE}
+
+## run tasks random minute - under 0:50, random hour before 11pm
+
+RAND_MINUTE="$((2 + RANDOM % 50))"
+RAND_HOUR="$((2 + RANDOM % 22))"
+CRONJOB_LINE1="${RAND_MINUTE} ${RAND_HOUR} * * 2 root /usr/bin/certbot renew >> $CRONJOB_LOGFILE"
+
+RAND_MINUTE="$((2 + RANDOM % 50))"
+RAND_HOUR="$((2 + RANDOM % 23))"
+CRONJOB_LINE2="${RAND_MINUTE} ${RAND_HOUR} * * 4 mastodon cd /home/mastodon/live && RAILS_ENV=production /home/mastodon/.rbenv/shims/bundle exec /home/mastodon/live/bin/tootctl media remove --days=30 >> ${TOOLCTL_LOGFILE} 2>&1"
+
+echo ""  >>  /etc/crontab
+echo "## Added by pbase-mastodon RPM ##"  >>  /etc/crontab
+echo "$CRONJOB_LINE1"  >>  /etc/crontab
+echo "$CRONJOB_LINE2"  >>  /etc/crontab
+
 
 ## finish setup
 echo "Executing:               bundle exec rails db:setup"

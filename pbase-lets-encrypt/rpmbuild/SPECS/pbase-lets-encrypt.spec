@@ -174,7 +174,6 @@ CRONJOB_SCRIPT="/usr/bin/certbot"
 CRONJOB_LOGFILE="/var/log/letsencrypt-sslrenew.log"
 
 RAND_MINUTE="$((2 + RANDOM % 57))"
-
 echo "RAND_MINUTE:             $RAND_MINUTE"
 
 ## line to add to crontab

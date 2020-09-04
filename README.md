@@ -61,9 +61,17 @@ source ~/.bashrc
 tailhttpd
 ```
 
-#### SSH Alternate Port
+#### SSH Fail2Ban or SSH Alternate Port 
 
-Use this if you want to configure SSH to listen on a port other than 22. 
+For sophisticated access monitoring of SSH login attempts use Fail2Ban.
+It requires that firewalld service be installed and enabled.
+```
+yum -y install pbase-firewall-enable
+yum -y install pbase-preconfig-ssh-fail2ban
+yum -y install pbase-ssh-fail2ban
+``` 
+
+Or to simply configure SSH to listen on a port other than 22 use the pbase-ssh-port package. 
 It also lets you choose to permit remote root logins.
 ```
 yum -y install pbase-preconfig-ssh-port
@@ -101,6 +109,10 @@ yum -y install pbase-preconfig-nodejs10
 ```
 now you can install node and npm with
 ```  
+## CentOS 8
+yum -y install --disablerepo=AppStream nodejs
+
+## others
 yum -y install nodejs  
 ```
 
@@ -198,6 +210,15 @@ yum -y install pbase-adminer
 ```
 yum -y install pbase-preconfig-docker-ce
 yum -y install pbase-docker-ce
+```
+
+
+#### KUBERNETES
+#### Install Kuberentes and Minikube
+```
+yum -y install pbase-epel
+yum -y install pbase-kvm
+yum -y install pbase-kubernetes-tools
 ```
 
 Here's some example commands of setting up the Portainer UI with docker.
@@ -330,7 +351,17 @@ yum -y install pbase-mattermost
 yum -y install pbase-lets-encrypt
 ```
 
-#### Gitea UI for git
+#### GitLab CI/CD UI for git
+#### Here's how to stand up a GitLab CE Omnibus stack ready to manage a Git repository.
+GitLab is resource hungry and needs at least 4GB of RAM. It also requires CentOS 8.
+
+```
+yum -y install http://pbase-foundation.com/pbase-preconfig.rpm
+yum -y install pbase-preconfig-gitlab-ce
+yum -y install pbase-gitlab-ce
+```
+
+#### Gitea Lightweight UI for git
 #### Here's how to stand up an Apache server with a proxy to a Gitea service ready to manage a Git repository.
 
 Postgres
@@ -401,18 +432,43 @@ yum -y install google-chrome-stable
   
 ```
 yum -y install pbase-ntp-timesync
+```
+
+#### VirtualBox dependencies
+Install the EPEL repo first to provide the 'dkms' library.
+Then install the pbase-preconfig-virtualbox the package and reboot to activate the VirtualBox environment variables.
+Select the host VirtualBox application's menu item: Devices > Insert the Guest Additions CD Image. 
+This will bring up the "Run" dialog in the guest.
+Follow the prompts to complete the kernel rebuild.
+Finally, reboot your VirtualBox guest VM to see the Guest Additions running.
+```
+yum -y install pbase-epel
 yum -y install pbase-preconfig-virtualbox
 ```
+
+#### CentOS 8 Stream only - realtime kernel
+  
+```
+yum -y install pbase-preconfig-realtime-kernel
+yum -y install pbase-realtime-kernel
+```
+
 
 A wide variety of media components in the rpm-fusion repository.  
 Here's how to install obs-studio:
 ```
 yum -y install pbase-preconfig-rpmfusion
-
-## on CentOS 8 you will need to enable the "PowerTools" repo
-yum -y --enablerepo=PowerTools install SDL2 obs-studio
-yum -y obs-studio
+yum -y install obs-studio
 ```
+
+Here's how to install Mastodon:
+```
+yum -y install http://next.pbase-foundation.com/pbase-preconfig-next.rpm
+yum -y install pbase-preconfig-postgres-mastodon
+yum -y install pbase-postgres
+yum -y install pbase-mastodon
+```
+
 
 #### Roadmap - v1.0 - v1.1 - NEXT
 #### The "pbase-preconfig" stable repository
@@ -424,5 +480,5 @@ The philosophy is to not disrupt the configuration of a production server.
 The roadmap is:  
 version: 1.0 - current stable release RPMs  
 version: 1.1 - planned for a future stable release  
-version: next - used for on going development and pre-release RPMs  
+version: next - used for ongoing development and pre-release RPMs  
 

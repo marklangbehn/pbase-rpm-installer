@@ -355,7 +355,7 @@ chown mastodon:mastodon ${TOOLCTL_LOGFILE}
 
 RAND_MINUTE="$((2 + RANDOM % 50))"
 RAND_HOUR="$((2 + RANDOM % 22))"
-CRONJOB_LINE1="${RAND_MINUTE} ${RAND_HOUR} * * 2 root /usr/bin/certbot renew >> $CRONJOB_LOGFILE"
+CRONJOB_LINE1="${RAND_MINUTE} ${RAND_HOUR} * * 2 root /usr/bin/certbot renew --deploy-hook '/bin/systemctl reload nginx' >> $CRONJOB_LOGFILE"
 
 RAND_MINUTE="$((2 + RANDOM % 50))"
 RAND_HOUR="$((2 + RANDOM % 23))"

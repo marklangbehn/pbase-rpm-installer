@@ -37,7 +37,7 @@ fail() {
 
 copy_if_not_exists() {
   if [ -z "$1" ]  ||  [ -z "$2" ]  ||  [ -z "$3" ]; then
-    echo "All 3 params must be passed to %post.copy_if_not_exists function"
+    echo "All 3 params must be passed to copy_if_not_exists function"
     exit 1
   fi
 

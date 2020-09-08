@@ -1,9 +1,11 @@
 {
   "pbase_mastodon" : {
-    "port": 4000,
+    "port": 3000,
     "addNgnixProxy": true,
     "useSubDomain": false,
     "subDomainName": "",
+    "useWebDomain": false,
+    "webDomainName": "",
     "serverAdmin": "yoursysadmin@yourrealmail.com",
     "singleUserMode": false
   }

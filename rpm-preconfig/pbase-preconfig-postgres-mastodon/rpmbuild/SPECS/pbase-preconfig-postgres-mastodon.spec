@@ -90,7 +90,7 @@ sed -i "s/shomeddata/${RAND_PW_USER}/" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAM
 
 echo ""
 echo "Postgres module config file for Mastodon:"
-echo "Next step - customize your configuration by editing these JSON files: "
+echo "Next step - required - customize your configuration by editing these JSON files:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
 echo "  vi pbase_lets_encrypt.json"
@@ -99,7 +99,7 @@ echo "  vi pbase_postgres.json"
 echo "  vi pbase_smtp.json"
 echo ""
 
-echo "Next step - install postgres service with:"
+echo "Next step - optional install local postgres service with:"
 echo "  yum install pbase-postgres"
 echo ""
 

@@ -47,7 +47,7 @@ append_bashrc_alias() {
 
 copy_if_not_exists() {
   if [ -z "$1" ]  ||  [ -z "$2" ]  ||  [ -z "$3" ]; then
-    echo "All 3 params must be passed to %post.copy_if_not_exists function"
+    echo "All 3 params must be passed to copy_if_not_exists function"
     exit 1
   fi
 
@@ -145,11 +145,15 @@ parseConfig "HTTP_PORT" ".pbase_mastodon.httpPort" "8065"
 parseConfig "ADD_APACHE_PROXY" ".pbase_mastodon.addApacheProxy" "false"
 parseConfig "USE_SUB_DOMAIN" ".pbase_mastodon.useSubDomain" "false"
 parseConfig "SUB_DOMAIN_NAME" ".pbase_mastodon.subDomainName" ""
+parseConfig "USE_WEB_DOMAIN" ".pbase_mastodon.useWebDomain" "false"
+parseConfig "WEB_DOMAIN_NAME" ".pbase_mastodon.webDomainName" ""
 
 echo "HTTP_PORT:               $HTTP_PORT"
 echo "ADD_APACHE_PROXY:        $ADD_APACHE_PROXY"
 echo "USE_SUB_DOMAIN:          $USE_SUB_DOMAIN"
 echo "SUB_DOMAIN_NAME:         $SUB_DOMAIN_NAME"
+echo "USE_WEB_DOMAIN:          $USE_WEB_DOMAIN"
+echo "WEB_DOMAIN_NAME:         $WEB_DOMAIN_NAME"
 
 
 ## use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars

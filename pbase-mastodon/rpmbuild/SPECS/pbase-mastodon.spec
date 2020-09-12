@@ -45,32 +45,6 @@ append_bashrc_alias() {
   fi
 }
 
-copy_if_not_exists() {
-  if [ -z "$1" ]  ||  [ -z "$2" ]  ||  [ -z "$3" ]; then
-    echo "All 3 params must be passed to copy_if_not_exists function"
-    exit 1
-  fi
-
-  FILENAME="$1"
-  SOURCE_DIR="$2"
-  DEST_DIR="$3"
-
-  SOURCE_FILE_PATH=$SOURCE_DIR/$FILENAME
-  DEST_FILE_PATH=$DEST_DIR/$FILENAME
-
-  if [[ -f "$DEST_FILE_PATH" ]] ; then
-    echo "Already exists:          $DEST_FILE_PATH"
-    return 0
-  else
-    echo "Copying file:            $DEST_FILE_PATH"
-    /bin/cp -rf --no-clobber $SOURCE_FILE_PATH  $DEST_DIR
-    return 1
-  fi
-}
-
-
-echo "PBase Mastodon service"
-
 ## config is stored in json file with root-only permsissions
 ## it can be one of two places:
 ##     /usr/local/pbase-data/admin-only/pbase_module_config.json
@@ -127,12 +101,25 @@ parseConfig() {
 
 echo "PBase Mastodon server install"
 
-## check if prerequisite config rpm has been installed
+## check if prerequisite base config rpm has been installed
 if [[ ! -d "/home/mastodon" ]]; then
   echo "/home/mastodon directory not found - exiting"
   exit 0
 fi
 
+## check if already installed
+if [[ -e "/home/mastodon/live/.env.production" ]]; then
+  echo "/home/mastodon/live/.env.production already exists - exiting"
+  exit 0
+fi
+
+
+THISHOSTNAME="$(hostname)"
+THISDOMAINNAME="$(hostname -d)"
+
+echo ""
+echo "Hostname:                $THISHOSTNAME"
+echo "Domainname:              $THISDOMAINNAME"
 
 ## Mastodon config
 ## look for either separate config file "pbase_mastodon.json" or all-in-one file: "pbase_module_config.json"
@@ -142,18 +129,23 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config value from JSON file
 parseConfig "HTTP_PORT" ".pbase_mastodon.httpPort" "8065"
-parseConfig "ADD_APACHE_PROXY" ".pbase_mastodon.addApacheProxy" "false"
-parseConfig "USE_SUB_DOMAIN" ".pbase_mastodon.useSubDomain" "false"
+parseConfig "ADD_NGINX_PROXY" ".pbase_mastodon.addNgnixProxy" "true"
 parseConfig "SUB_DOMAIN_NAME" ".pbase_mastodon.subDomainName" ""
-parseConfig "USE_WEB_DOMAIN" ".pbase_mastodon.useWebDomain" "false"
 parseConfig "WEB_DOMAIN_NAME" ".pbase_mastodon.webDomainName" ""
+parseConfig "ALTERNATE_DOMAINS" ".pbase_mastodon.alternateDomains" ""
+parseConfig "SINGLE_USER_MODE" ".pbase_mastodon.singleUserMode" "false"
+parseConfig "AUTHORIZED_FETCH" ".pbase_mastodon.authorizedFetch" "false"
+parseConfig "LIMITED_FEDERATION_MODE" ".pbase_mastodon.limitedFederationMode" "false"
+
 
 echo "HTTP_PORT:               $HTTP_PORT"
-echo "ADD_APACHE_PROXY:        $ADD_APACHE_PROXY"
-echo "USE_SUB_DOMAIN:          $USE_SUB_DOMAIN"
+echo "ADD_NGINX_PROXY:         $ADD_NGINX_PROXY"
 echo "SUB_DOMAIN_NAME:         $SUB_DOMAIN_NAME"
-echo "USE_WEB_DOMAIN:          $USE_WEB_DOMAIN"
 echo "WEB_DOMAIN_NAME:         $WEB_DOMAIN_NAME"
+echo "ALTERNATE_DOMAINS:       $ALTERNATE_DOMAINS"
+echo "SINGLE_USER_MODE:        $SINGLE_USER_MODE"
+echo "AUTHORIZED_FETCH:        $AUTHORIZED_FETCH"
+echo "LIMITED_FEDERATION_MODE: $LIMITED_FEDERATION_MODE"
 
 
 ## use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars
@@ -190,12 +182,10 @@ echo "CONFIG_DB_CHARSET:       $CONFIG_DB_CHARSET"
 
 echo "CONFIG_DB_STARTSVC:      $CONFIG_DB_STARTSVC"
 echo "CONFIG_DB_INSTALL:       $CONFIG_DB_INSTALL"
-echo ""
 echo "CONFIG_DB_NAME:          $CONFIG_DB_NAME"
 echo "CONFIG_DB_USER:          $CONFIG_DB_USER"
 echo "CONFIG_DB_PSWD:          $CONFIG_DB_PSWD"
-
-## Let's Encrypt config
+echo ""
 
 PBASE_CONFIG_FILENAME="pbase_lets_encrypt.json"
 
@@ -220,17 +210,11 @@ if [[ $ADDITIONAL_SUBDOMAIN != "" ]] ; then
 fi
 
 
-THISHOSTNAME="$(hostname)"
-THISDOMAINNAME="$(hostname -d)"
-
-echo ""
-echo "Hostname:                $THISHOSTNAME"
-echo "Domainname:              $THISDOMAINNAME"
-
 ## Outgoing SMTP config
 PBASE_CONFIG_FILENAME="pbase_smtp.json"
 PBASE_CONFIG_NAME="pbase_smtp"
 
+echo ""
 echo "PBASE_CONFIG_FILENAME:   $PBASE_CONFIG_FILENAME"
 echo "PBASE_CONFIG_NAME:       $PBASE_CONFIG_NAME"
 
@@ -256,9 +240,10 @@ su - mastodon -c "rbenv --version"
 
 
 ## REDIS
+echo ""
+echo "Starting redis service"
 systemctl daemon-reload
 systemctl enable redis
-echo "Starting service:        /etc/systemd/system/redis"
 
 systemctl start redis
 systemctl status redis
@@ -290,8 +275,10 @@ else
 fi
 
 
-echo "Starting NGINX service"
+echo ""
+echo "Starting nginx service"
 systemctl daemon-reload
+
 systemctl enable nginx
 systemctl start nginx
 
@@ -304,6 +291,21 @@ OTP_SECRET=$(su - mastodon -c "cd ~/live  &&  RAILS_ENV=production bundle exec r
 echo "SECRET_KEY_BASE:         $SECRET_KEY_BASE"
 echo "OTP_SECRET:              $OTP_SECRET"
 
+
+VAPID_PAIR=$(su - mastodon -c "cd ~/live  &&  RAILS_ENV=production bundle exec rake mastodon:webpush:generate_vapid_key")
+
+echo "Vapid key pair generated:"
+echo $VAPID_PAIR
+
+VAPIDPRIVATEKEY=$(echo $VAPID_PAIR | cut -f 1 -d' ')
+VAPIDPUBLICKEY=$(echo $VAPID_PAIR | cut -f 2 -d' ')
+
+VPRIVATEKEY=$(echo $VAPIDPRIVATEKEY | sed s/VAPID_PRIVATE_KEY=//)
+VPUBLICKEY=$(echo $VAPIDPUBLICKEY | sed s/VAPID_PUBLIC_KEY=//)
+
+echo "VAPID_PRIVATE_KEY:       $VPRIVATEKEY"
+echo "VAPID_PUBLIC_KEY:        $VPUBLICKEY"
+
 ## CONFIGURE MASTODON
 ## copy sample template and fill in config params
 
@@ -313,32 +315,75 @@ cd /home/mastodon/live/
 ENV_PRODUCTION_FILENAME=".env.production"
 /bin/cp -f .env.production.sample .env.production
 
-sed -i -e "s/^DB_HOST=.*/DB_HOST=$CONFIG_DB_HOSTNAME/g"  $ENV_PRODUCTION_FILENAME
-sed -i -e "s/^DB_USER=.*/DB_USER=$CONFIG_DB_USER/g"  $ENV_PRODUCTION_FILENAME
-sed -i -e "s/^DB_NAME=.*/DB_NAME=$CONFIG_DB_NAME/g"  $ENV_PRODUCTION_FILENAME
-sed -i -e "s/^DB_PASS=.*/DB_PASS=$CONFIG_DB_PSWD/g"  $ENV_PRODUCTION_FILENAME
-sed -i -e "s/^DB_PORT=.*/DB_PORT=$CONFIG_DB_PORT/g"  $ENV_PRODUCTION_FILENAME
+sed -i -e "s/^DB_HOST=.*/DB_HOST=$CONFIG_DB_HOSTNAME/"  $ENV_PRODUCTION_FILENAME
+sed -i -e "s/^DB_USER=.*/DB_USER=$CONFIG_DB_USER/"  $ENV_PRODUCTION_FILENAME
+sed -i -e "s/^DB_NAME=.*/DB_NAME=$CONFIG_DB_NAME/"  $ENV_PRODUCTION_FILENAME
+sed -i -e "s/^DB_PASS=.*/DB_PASS=$CONFIG_DB_PSWD/"  $ENV_PRODUCTION_FILENAME
+sed -i -e "s/^DB_PORT=.*/DB_PORT=$CONFIG_DB_PORT/"  $ENV_PRODUCTION_FILENAME
 
-sed -i -e "s/^LOCAL_DOMAIN=.*/LOCAL_DOMAIN=$THISDOMAINNAME/g"  $ENV_PRODUCTION_FILENAME
-sed -i -e "s/^SECRET_KEY_BASE=.*/SECRET_KEY_BASE=$SECRET_KEY_BASE/g"  $ENV_PRODUCTION_FILENAME
-sed -i -e "s/^OTP_SECRET=.*/OTP_SECRET=$OTP_SECRET/g"  $ENV_PRODUCTION_FILENAME
+sed -i -e "s/^LOCAL_DOMAIN=.*/LOCAL_DOMAIN=$THISDOMAINNAME/"  $ENV_PRODUCTION_FILENAME
+sed -i -e "s/^SECRET_KEY_BASE=.*/SECRET_KEY_BASE=$SECRET_KEY_BASE/"  $ENV_PRODUCTION_FILENAME
+sed -i -e "s/^OTP_SECRET=.*/OTP_SECRET=$OTP_SECRET/"  $ENV_PRODUCTION_FILENAME
 
-sed -i -e "s/^SMTP_SERVER=.*/SMTP_SERVER=$SMTP_SERVER/g"  $ENV_PRODUCTION_FILENAME
-sed -i -e "s/^SMTP_PORT=.*/SMTP_PORT=$SMTP_PORT/g"  $ENV_PRODUCTION_FILENAME
-sed -i -e "s/^SMTP_LOGIN=.*/SMTP_LOGIN=$SMTP_LOGIN/g"  $ENV_PRODUCTION_FILENAME
-sed -i -e "s/^SMTP_PASSWORD=.*/SMTP_PASSWORD=$SMTP_PASSWORD/g"  $ENV_PRODUCTION_FILENAME
-sed -i -e "s/^SMTP_SERVER=.*/SMTP_SERVER=$SMTP_SERVER/g"  $ENV_PRODUCTION_FILENAME
-sed -i -e "s/^SMTP_SERVER=.*/SMTP_SERVER=$SMTP_SERVER/g"  $ENV_PRODUCTION_FILENAME
+sed -i -e "s/^SMTP_SERVER=.*/SMTP_SERVER=$SMTP_SERVER/"  $ENV_PRODUCTION_FILENAME
+sed -i -e "s/^SMTP_PORT=.*/SMTP_PORT=$SMTP_PORT/"  $ENV_PRODUCTION_FILENAME
+sed -i -e "s/^SMTP_LOGIN=.*/SMTP_LOGIN=$SMTP_LOGIN/"  $ENV_PRODUCTION_FILENAME
+sed -i -e "s/^SMTP_PASSWORD=.*/SMTP_PASSWORD=$SMTP_PASSWORD/"  $ENV_PRODUCTION_FILENAME
+sed -i -e "s/^SMTP_SERVER=.*/SMTP_SERVER=$SMTP_SERVER/"  $ENV_PRODUCTION_FILENAME
+sed -i -e "s/^SMTP_FROM_ADDRESS=.*/SMTP_FROM_ADDRESS=notifications@${THISDOMAINNAME}/"  $ENV_PRODUCTION_FILENAME
 
+
+## set vapid keys
+sed -i -e "s/^VAPID_PRIVATE_KEY=.*/VAPID_PRIVATE_KEY=$VPRIVATEKEY/"  $ENV_PRODUCTION_FILENAME
+sed -i -e "s/^VAPID_PUBLIC_KEY=.*/VAPID_PUBLIC_KEY=$VPUBLICKEY/"  $ENV_PRODUCTION_FILENAME
+
+
+
+echo ""  >>  $ENV_PRODUCTION_FILENAME
+echo "# Added by RPM"  >>  $ENV_PRODUCTION_FILENAME
+echo "# ------------"  >>  $ENV_PRODUCTION_FILENAME
+
+## may have separate WEB_DOMAIN
+if [[ $WEB_DOMAIN_NAME != "" ]] ; then
+  echo "WEB_DOMAIN:              $WEB_DOMAIN_NAME"
+  echo "WEB_DOMAIN=${WEB_DOMAIN_NAME}"  >>  $ENV_PRODUCTION_FILENAME
+fi
+
+
+## may have enable secure mode
+if [[ $AUTHORIZED_FETCH == "true" ]] ; then
+  echo "AUTHORIZED_FETCH:        $AUTHORIZED_FETCH"
+  echo "AUTHORIZED_FETCH=true"  >>  $ENV_PRODUCTION_FILENAME
+fi
+
+if [[ $LIMITED_FEDERATION_MODE == "true" ]] ; then
+  echo "LIMITED_FEDERATION_MODE: $LIMITED_FEDERATION_MODE"
+  echo "LIMITED_FEDERATION_MODE=true"  >>  $ENV_PRODUCTION_FILENAME
+fi
+
+
+
+## TODO: configure with values in pbase_s3storage.json
 ## S3 STORAGE CONFIG
 sed -i -e "s/^S3_ENABLED=.*/S3_ENABLED=false/g"  $ENV_PRODUCTION_FILENAME
+
 
 ## add lines for SMTP_AUTH and SAFETY_ASSURED flag
 echo ""  >>  $ENV_PRODUCTION_FILENAME
 echo "SMTP_AUTH_METHOD=${SMTP_AUTH_METHOD}"  >>  $ENV_PRODUCTION_FILENAME
 echo "SMTP_OPENSSL_VERIFY_MODE=${SMTP_OPENSSL_VERIFY_MODE}"  >>  $ENV_PRODUCTION_FILENAME
 echo ""  >>  $ENV_PRODUCTION_FILENAME
+
+
+## SINGLE_USER_MODE
+if [[ $SINGLE_USER_MODE == "true" ]]; then
+  echo "Configuring:             SINGLE_USER_MODE=true"
+  echo "SINGLE_USER_MODE=true"  >>  $ENV_PRODUCTION_FILENAME
+fi
+
+## set SAFETY_ASSURED flag in env file to enable DB setup
 echo "SAFETY_ASSURED=1"  >>  $ENV_PRODUCTION_FILENAME
+
 
 chown mastodon:mastodon /home/mastodon/live/$ENV_PRODUCTION_FILENAME
 
@@ -352,10 +397,11 @@ TOOLCTL_LOGFILE="/var/log/mastodon-toolctl-media-remove.log"
 
 touch "$CRONJOB_LOGFILE"
 touch "$TOOLCTL_LOGFILE"
+
 chown root:root ${CRONJOB_LOGFILE}
 chown mastodon:mastodon ${TOOLCTL_LOGFILE}
 
-## run tasks random minute - under 0:50, random hour before 11pm
+## run tasks at random minute - under 0:50, random hour before 11pm
 
 RAND_MINUTE="$((2 + RANDOM % 50))"
 RAND_HOUR="$((2 + RANDOM % 22))"
@@ -378,6 +424,9 @@ su - mastodon -c "cd ~/live  &&  RAILS_ENV=production bundle exec rails db:setup
 echo "Executing:               bundle exec rails assets:precompile"
 su - mastodon -c "cd ~/live  &&  RAILS_ENV=production bundle exec rails assets:precompile"
 
+## unset SAFETY_ASSURED flag - DB setup is done
+sed -i -e "s/SAFETY_ASSURED=1//"  $ENV_PRODUCTION_FILENAME
+
 
 ## Add aliases helpful for admin tasks to .bashrc
 ## add aliases
@@ -389,18 +438,21 @@ append_bashrc_alias editnginxconf "vi /etc/nginx/conf.d/mastodon.conf"
 append_bashrc_alias editmastodonconf "vi /home/mastodon/live/.env.production"
 
 
-echo "Starting Mastodon services"
+echo ""
+echo "Starting mastodon services"
+
 systemctl enable mastodon-web mastodon-sidekiq mastodon-streaming
 systemctl start mastodon-web mastodon-sidekiq mastodon-streaming
 
 systemctl status mastodon-web
-#systemctl status mastodon-web mastodon-sidekiq mastodon-streaming
 
 echo "Mastodon configuration:  /home/mastodon/live/.env.production"
 
 EXTERNALURL="https://$THISDOMAINNAME"
 echo ""
 echo "Next Step - required - login to your Mastodon instance now to create your admin account"
+echo ""
+
 echo "Mastodon Ready:            $EXTERNALURL"
 echo ""
 

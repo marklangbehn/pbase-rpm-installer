@@ -463,12 +463,19 @@ yum -y install obs-studio
 
 Here's how to install Mastodon:
 ```
-yum -y install http://next.pbase-foundation.com/pbase-preconfig-next.rpm
+yum -y install http://pbase-foundation.com/pbase-preconfig.rpm
 yum -y install pbase-preconfig-postgres-mastodon
 yum -y install pbase-postgres
 yum -y install pbase-mastodon
 ```
 
+Here's how to install Peertube:
+```
+yum -y install http://pbase-foundation.com/pbase-preconfig.rpm
+yum -y install pbase-preconfig-postgres-peertube
+yum -y install pbase-postgres
+yum -y install pbase-peertube
+```
 
 #### Roadmap - v1.0 - v1.1 - NEXT
 #### The "pbase-preconfig" stable repository

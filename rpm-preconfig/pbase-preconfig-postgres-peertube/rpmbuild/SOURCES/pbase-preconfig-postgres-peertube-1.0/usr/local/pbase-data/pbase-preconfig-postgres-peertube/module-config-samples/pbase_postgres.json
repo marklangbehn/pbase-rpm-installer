@@ -1,0 +1,23 @@
+{
+  "pbase_postgres": [
+    {
+      "default": {
+        "hostName": "localhost",
+        "port": "5432",
+        "startService": true,
+        "enableRemoteAccess": true,
+        "install": true,
+        "database": [
+          {
+            "name": "peertube_prod",
+            "user": "peertube",
+            "password": "shomeddata",
+            "encoding": "UTF8",
+            "createDbWithTemplate0": true,
+            "grantCreateDatabase": false
+          }
+        ]
+      }
+    }
+  ]
+}

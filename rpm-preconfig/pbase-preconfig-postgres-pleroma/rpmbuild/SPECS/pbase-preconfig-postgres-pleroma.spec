@@ -1,19 +1,19 @@
-Name: pbase-preconfig-postgres-mastodon
+Name: pbase-preconfig-postgres-pleroma
 Version: 1.0
 Release: 0
-Summary: PBase Postgres preconfigure rpm, preset user and DB name for use by pbase-mastodon
+Summary: PBase Postgres preconfigure rpm, preset user and DB name for use by pbase-pleroma
 Group: System Environment/Base
 License: Apache-2.0
 URL: https://pbase-foundation.com
-Source0: pbase-preconfig-postgres-mastodon-1.0.tar.gz
+Source0: pbase-preconfig-postgres-pleroma-1.0.tar.gz
 BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
-Provides: pbase-preconfig-postgres-mastodon
-Requires: pbase-preconfig-yarn, pbase-epel
+Provides: pbase-preconfig-postgres-pleroma
+Requires: pbase-epel, pbase-preconfig-erlang
 
 %description
-Configure Postgres preset user and DB name for use by pbase-mastodon
+Configure Postgres preset user and DB name for use by pbase-pleroma
 
 %prep
 %setup -q
@@ -67,56 +67,48 @@ check_linux_version() {
 }
 
 
-echo "PBase Postgres create config preset user and DB name for use by pbase-mastodon"
-
-THISHOSTNAME="$(hostname)"
-THISDOMAINNAME="$(hostname -d)"
-
-echo "Hostname:                $THISHOSTNAME"
-echo "Domainname:              $THISDOMAINNAME"
+echo "PBase Postgres create config preset user and DB name for use by pbase-pleroma"
 
 MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
-MODULE_SAMPLES_DIR="/usr/local/pbase-data/pbase-preconfig-postgres-mastodon/module-config-samples"
+MODULE_SAMPLES_DIR="/usr/local/pbase-data/pbase-preconfig-postgres-pleroma/module-config-samples"
 DB_CONFIG_FILENAME="pbase_postgres.json"
 
 
-echo "Mastodon config:         ${MODULE_CONFIG_DIR}/pbase_mastodon.json"
+echo "Pleroma config:         ${MODULE_CONFIG_DIR}/pbase_pleroma.json"
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_lets_encrypt.json  ${MODULE_CONFIG_DIR}/
-/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_mastodon.json  ${MODULE_CONFIG_DIR}/
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_pleroma.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_postgres.json  ${MODULE_CONFIG_DIR}/
-/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_smtp.json  ${MODULE_CONFIG_DIR}/
 
 
-## use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars
+# use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars
 RAND_PW_USER="u$(date +%s | sha256sum | base64 | head -c 8)"
 echo "RAND_PW_USER:            $RAND_PW_USER"
 
-## provide random password in database config file
+## provide random password in JSON config file
 sed -i "s/shomeddata/${RAND_PW_USER}/" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}"
 
-## provide domainname in smtp config file
-sed -i "s/example.com/${THISDOMAINNAME}/" "${MODULE_CONFIG_DIR}/pbase_smtp.json"
-
-
 echo ""
-echo "Postgres, SMTP and Let's Encrypt module config files for Mastodon added."
-echo "Next step - required - customize your configuration by editing these JSON files:"
+echo "Postgres module config file for Pleroma:"
+echo "Next step - a) change the default Pleroma port, or select an "
+echo "               Proxy for a subdomain or the base domain by "
+echo "               editing pbase_pleroma.json"
+echo "            b) change the default Postgres DB application-database, "
+echo "               user, password and other config by "
+echo "               pbase_postgres.json. For example:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
-echo "  vi pbase_lets_encrypt.json"
-echo "  vi pbase_mastodon.json"
+## echo "  cp pbase_pleroma.json pbase_pleroma.json"
+echo "  vi pbase_pleroma.json"
 echo "  vi pbase_postgres.json"
-echo "  vi pbase_smtp.json"
-echo ""
 
-echo "Next step - optional install local postgres service with:"
+
+echo "Next step - install postgres service with:"
 echo "  yum install pbase-postgres"
 echo ""
 
 %files
 %defattr(600,root,root,700)
-/usr/local/pbase-data/pbase-preconfig-postgres-mastodon/module-config-samples/pbase_lets_encrypt.json
-/usr/local/pbase-data/pbase-preconfig-postgres-mastodon/module-config-samples/pbase_mastodon.json
-/usr/local/pbase-data/pbase-preconfig-postgres-mastodon/module-config-samples/pbase_postgres.json
-/usr/local/pbase-data/pbase-preconfig-postgres-mastodon/module-config-samples/pbase_s3storage.json
-/usr/local/pbase-data/pbase-preconfig-postgres-mastodon/module-config-samples/pbase_smtp.json
+/usr/local/pbase-data/pbase-preconfig-postgres-pleroma/module-config-samples/pbase_lets_encrypt.json
+/usr/local/pbase-data/pbase-preconfig-postgres-pleroma/module-config-samples/pbase_pleroma.json
+/usr/local/pbase-data/pbase-preconfig-postgres-pleroma/module-config-samples/pbase_postgres.json
+/usr/local/pbase-data/pbase-preconfig-postgres-pleroma/module-config-samples/pbase_smtp.json

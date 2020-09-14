@@ -2,22 +2,34 @@
 ## PBase RPM Installer Application Components
 ##### Version 1.0
 
-#### Our Almost Famous 3-Minute Installation
-The PBase RPM installer is a set of our base components to build Linux web servers and desktops.
-Here is how to install a whole application stack with just four YUM commands. 
-It includes Apache, a NodeJS/Express service, and the content of a GatsbyJS based website.
-```
-yum -y install http://pbase-foundation.com/pbase-preconfig.rpm
-yum -y install vrl-preconfig
-yum -y install vrl-website-content
-yum -y install vrl-assetinfo-app
-```
+Installing and configuring a Linux server can be challenging. PBase Foundation is a set of configurable RPM installers
+that provide a foundation for servers and desktops that work consistently across several versions
+of the Red Hat Enterprise Linux and CentOS operating system family.
 
-And if your server has a registered DNS domain name you can configure HTTPS with:
-```
-yum -y install pbase-preconfig-lets-encrypt
+## Our Almost Famous 3-Minute Installation
+
+Here's how to stand up a WordPress instance on an Apache server with a MySQL database.
+```jsx
+yum -y install http://pbase-foundation.com/pbase-preconfig.rpm
+yum -y install pbase-preconfig-mysql-wordpress
+yum -y install pbase-apache
+yum -y install pbase-mysql
+yum -y install pbase-wordpress
 yum -y install pbase-lets-encrypt
 ```
+
+Additionally, you may want to lock down SSH access and enable the firewall.
+```jsx
+yum -y install pbase-fail2ban
+yum -y install pbase-firewall-enable
+```
+
+The goal of the PBase project is to provide base RPM packages for use as starting points for products.
+A product-base or "pbase" for short.
+
+Many of the PBase RPMs are configurable with "preconfig" JSON files that override the default settings.
+This enables entire application stacks to be configured and installed with ease.
+
 
 #### PREREQUISITES
 Requires a Red Hat EL compatible operating system such as:  
@@ -453,6 +465,8 @@ yum -y install pbase-preconfig-realtime-kernel
 yum -y install pbase-realtime-kernel
 ```
 
+#### RPMFusion
+
 
 A wide variety of media components in the rpm-fusion repository.  
 Here's how to install obs-studio:
@@ -460,6 +474,9 @@ Here's how to install obs-studio:
 yum -y install pbase-preconfig-rpmfusion
 yum -y install obs-studio
 ```
+
+
+#### ActivityPub application stacks
 
 Here's how to install Mastodon:
 ```
@@ -477,12 +494,20 @@ yum -y install pbase-postgres
 yum -y install pbase-peertube
 ```
 
+Here's how to install Funkwhale:
+```
+yum -y install http://pbase-foundation.com/pbase-preconfig.rpm
+yum -y install pbase-preconfig-postgres-funkwhale
+yum -y install pbase-postgres
+yum -y install pbase-funkwhale
+```
+
 #### Roadmap - v1.0 - v1.1 - NEXT
 #### The "pbase-preconfig" stable repository
 The "pbase-preconfig" yum repository described above will maintain stable version numbering.
 Meaning, when you do a "yum update" for your whole system the PBase components will 
 only perform a version-update when absolutely required.
-The philosophy is to not disrupt the configuration of a production server. 
+The philosophy is to not disrupt the configuration of a production server when an update happens. 
   
 The roadmap is:  
 version: 1.0 - current stable release RPMs  

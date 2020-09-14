@@ -5,7 +5,10 @@
     "awsAccessKeyId": "",
     "awsSecretAccessKeyId": "",
     "awsS3RegionName": "",
-    "awsS3AliasHost": "",
-    "awsS3HostName": ""
+    "awsS3CustomDomain": "",
+    "awsS3EndpointUrl": "",
+    "awsLocation": "",
+    "proxyMedia": "",
+    "s3AliasHost": ""
   }
 }

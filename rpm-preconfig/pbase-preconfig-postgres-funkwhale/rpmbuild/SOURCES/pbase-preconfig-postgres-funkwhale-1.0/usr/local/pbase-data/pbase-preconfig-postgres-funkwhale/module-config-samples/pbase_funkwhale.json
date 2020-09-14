@@ -1,0 +1,9 @@
+{
+  "pbase_funkwhale" : {
+    "funkwhaleVersion": "1.0",
+    "port": 5000,
+    "addNgnixProxy": true,
+    "useSubDomain": false,
+    "subDomainName": ""
+  }
+}

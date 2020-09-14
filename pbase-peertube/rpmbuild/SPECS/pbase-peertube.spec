@@ -234,10 +234,6 @@ systemctl status redis
 ## need symlink for python3 to python for youtube-dl to work
 ln -s /usr/bin/python3 /usr/bin/python
 
-## install the "yq" tool to edit yaml config file
-#echo "Installing yq utility with pip3"
-#pip3 install yq
-
 
 ## POSTGRES
 echo "Enable Postgres extensions used by PeerTube"

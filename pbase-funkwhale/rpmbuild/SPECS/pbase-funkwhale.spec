@@ -432,10 +432,6 @@ echo ""
 echo "Executing DB create:     python api/manage.py migrate"
 su - funkwhale -c "source /srv/funkwhale/virtualenv/bin/activate  &&  cd /srv/funkwhale  &&  python3 api/manage.py migrate"
 
-#echo ""
-#echo "Initial user account:    python3 api/manage.py createsuperuser"
-#su - funkwhale -c "source /srv/funkwhale/virtualenv/bin/activate  &&  cd /srv/funkwhale  &&  python3 api/manage.py createsuperuser"
-
 echo ""
 echo "Static resources:        python api/manage.py collectstatic"
 su - funkwhale -c "source /srv/funkwhale/virtualenv/bin/activate  &&  cd /srv/funkwhale  &&  python3 api/manage.py collectstatic"

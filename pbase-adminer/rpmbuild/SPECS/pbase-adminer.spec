@@ -86,26 +86,22 @@ elif [[ -d "/var/www/html" ]]; then
 fi
 
 SUBFOLDER=""
-##SUBFOLDER="pbase/"
+##SUBFOLDER="pbase"
 
 if [[ -e ${ALT_ROOT}/index.html ]]; then
   echo "Found existing htdocs:   ${ALT_ROOT}/index.html"
-  echo "Installing adminer:      ${ALT_ROOT}/${SUBFOLDER}adminer-all.php"
-  echo "                         ${ALT_ROOT}/${SUBFOLDER}adminer-mysql.php"
   ADMINER_URL="http://${THISHOSTNAME}/${SUBFOLDER}adminer-mysql.php"
+  ADMINER_ALL="http://${THISHOSTNAME}/${SUBFOLDER}adminer-all.php"
 
-  /bin/cp -f --no-clobber /usr/local/pbase-data/pbase-adminer/var-www-html/adminer-all.php  ${ALT_ROOT}/${SUBFOLDER}
-  /bin/cp -f --no-clobber /usr/local/pbase-data/pbase-adminer/var-www-html/adminer-mysql.php  ${ALT_ROOT}/${SUBFOLDER}
-  /bin/cp -f --no-clobber /usr/local/pbase-data/pbase-adminer/var-www-html/adminer.css  ${ALT_ROOT}/${SUBFOLDER}
+  tar zxf /usr/local/pbase-data/pbase-adminer/var-www-html/adminer-bundle.tgz -C ${ALT_ROOT}/${SUBFOLDER}/
+  ls -l ${ALT_ROOT}/${SUBFOLDER}
 else
   echo "Assume htdocs:           /var/www/html/"
-  echo "Installing adminer:      /var/www/html/${SUBFOLDER}adminer-all.php"
-  echo "                         /var/www/html/${SUBFOLDER}adminer-mysql.php"
-  ADMINER_URL="http://${THISHOSTNAME}/${SUBFOLDER}adminer-mysql.php"
+  ADMINER_URL="http://${THISHOSTNAME}/${SUBFOLDER}/adminer-mysql.php"
+  ADMINER_ALL="http://${THISHOSTNAME}/${SUBFOLDER}/adminer-all.php"
 
-  /bin/cp -f --no-clobber /usr/local/pbase-data/pbase-adminer/var-www-html/adminer-all.php  /var/www/html/${SUBFOLDER}
-  /bin/cp -f --no-clobber /usr/local/pbase-data/pbase-adminer/var-www-html/adminer-mysql.php  /var/www/html/${SUBFOLDER}
-  /bin/cp -f --no-clobber /usr/local/pbase-data/pbase-adminer/var-www-html/adminer.css  /var/www/html/${SUBFOLDER}
+  tar zxf /usr/local/pbase-data/pbase-adminer/var-www-html/adminer-bundle.tgz -C /var/www/html/${SUBFOLDER}/
+  ls -l /var/www/html/${SUBFOLDER}
 fi
 
 check_linux_version
@@ -122,11 +118,10 @@ fi
 echo "Next step, open Adminer with this URL"
 #echo "Restart Apache:          systemctl restart httpd"
 echo "Adminer URL:             ${ADMINER_URL}"
+echo "   or                    ${ADMINER_ALL}"
 echo " "
 
 
 %files
 %defattr(-,root,root,-)
-/usr/local/pbase-data/pbase-adminer/var-www-html/adminer.css
-/usr/local/pbase-data/pbase-adminer/var-www-html/adminer-all.php
-/usr/local/pbase-data/pbase-adminer/var-www-html/adminer-mysql.php
+/usr/local/pbase-data/pbase-adminer/var-www-html/adminer-bundle.tgz

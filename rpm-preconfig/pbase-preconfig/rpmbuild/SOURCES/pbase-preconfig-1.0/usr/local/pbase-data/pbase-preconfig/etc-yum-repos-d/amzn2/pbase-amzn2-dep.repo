@@ -1,5 +1,5 @@
 [pbase-amzn2-dep]
 name=PBase Amazon Linux 2 Dependency YUM Repository
-baseurl=http://pbase-foundation.com/yum-repo/pbase-components-amzn2/1.0/
+baseurl=https://pbase-foundation.com/yum-repo/pbase-components-amzn2/1.0/
 enabled=1
 gpgcheck=0

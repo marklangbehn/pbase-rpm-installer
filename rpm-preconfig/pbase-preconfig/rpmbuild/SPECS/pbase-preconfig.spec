@@ -171,6 +171,16 @@ check_linux_version() {
   fi
 }
 
+service_exists() {
+    local n=$1
+    if [[ $(/bin/systemctl list-units --all -t service --full --no-legend "$n" | cut -f1 -d' ') == $n ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+
 
 echo ""
 echo "PBase bootstrap preconfig"
@@ -221,19 +231,18 @@ if [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]]; then
   /sbin/service iptables stop
   chkconfig iptables off
 else
-  #/bin/systemctl stop iptables.service
-  #/bin/systemctl disable iptables.service
-  echo "Disable firewalld service"
-
-  /bin/systemctl stop firewalld
-  /bin/systemctl disable firewalld
+  if service_exists firewalld.service; then
+    echo "Disabling firewalld service - enable it after installing services"
+    /bin/systemctl stop firewalld
+    /bin/systemctl disable firewalld
+  fi
 fi
 
 
 if [[ "$AMAZON1_RELEASE" != "" ]]; then
   echo "AMAZON1_RELEASE:         $AMAZON1_RELEASE"
 elif [[ "$AMAZON2_RELEASE" != "" ]]; then
-  echo "AMAZON2_RELEASE:           $AMAZON2_RELEASE"
+  echo "AMAZON2_RELEASE:         $AMAZON2_RELEASE"
 fi
 
 
@@ -246,6 +255,7 @@ if [[ "$AMAZON1_RELEASE" != "" ]]; then
 elif [[ "$AMAZON2_RELEASE" != "" ]]; then
   echo "AMZN2 Dependency repo:   pbase-amzn2-dep.repo"
   /bin/cp -f /usr/local/pbase-data/pbase-preconfig/etc-yum-repos-d/amzn2/pbase-amzn2-dep.repo /etc/yum.repos.d/
+  /bin/cp -f /usr/local/pbase-data/pbase-preconfig/etc-yum-repos-d/amzn2/amzn2extra-php72.repo /etc/yum.repos.d/
 elif [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]] ; then
   echo "EL6 Dependency repo:     pbase-el6-dep.repo"
   /bin/cp -f /usr/local/pbase-data/pbase-preconfig/etc-yum-repos-d/el6/pbase-el6-dep.repo /etc/yum.repos.d/
@@ -266,7 +276,7 @@ fi
 
 echo ""
 
-## add aliases
+## Add aliases helpful for admin tasks to .bashrc
 echo "" >> /root/.bashrc
 append_bashrc_alias lltr "ls -ltr"
 append_bashrc_alias ipaddr "ip addr | grep \"inet \""
@@ -278,28 +288,15 @@ else
 fi
 
 echo ""
-echo "The PBase RPM modules' configuration can be customized with a JSON file "
+echo "PBase RPM repositories enabled "
 echo ""
 
-echo "Next steps - option #1 - Customize the configuration with JSON files for specifc"
-echo "    PBase RPM modules by simply making a copy of a sample file and editing it."
-echo "    Many of the PBase RPMs place a sample JSON file in the directory:"
-echo "        /usr/local/pbase-data/admin-only/module-config-samples/"
-echo ""
-echo "    For example the pbase-apache module would be customized by:"
-echo ""
-echo "    yum -y install pbase-preconfig-apache"
-echo "    cd /usr/local/pbase-data/admin-only/module-config.d/"
-echo "    cp ../module-config-samples/pbase_apache.json ."
-echo "    vi pbase_apache.json"
-echo ""
-echo "    After that file has been edited complete the install with:"
-echo "    yum -y install pbase-apache"
-
-echo ""
-echo "Next steps - option #2 - Use the default configurations provided by the RPMs."
-echo "    This is intended for development workstations or demo servers "
-echo "    that can be configured afterwards if needed."
+echo "Next steps - continue to install other pbase RPM modules"
+echo "    The pbase-preconfig-* modules will place .json files in the directory:"
+echo "       /usr/local/pbase-data/admin-only/module-config.d/"
+echo "    ...  or samples to be copied to 'module-config.d' in:"
+echo "       /usr/local/pbase-data/admin-only/module-config-samples/"
+echo "    Modify these default configurations if needed."
 echo ""
 
 
@@ -314,7 +311,6 @@ echo "rpm preuninstall"
 ## root only access to pbase configuration directories
 %defattr(600,root,root,700)
 /etc/yum.repos.d/pbase.repo
-/usr/local/pbase-data/admin-only/module-config.d
 /usr/local/pbase-data/pbase-preconfig/etc-yum-repos-d/amzn1/epel.repo
 /usr/local/pbase-data/pbase-preconfig/etc-yum-repos-d/amzn1/pbase-amzn1-dep.repo
 /usr/local/pbase-data/pbase-preconfig/etc-yum-repos-d/amzn2/epel.repo

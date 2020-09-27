@@ -1,5 +1,5 @@
 [pbase]
 name=PBase YUM Repository
-baseurl=http://pbase-foundation.com/yum-repo/pbase-components/1.0/
+baseurl=https://pbase-foundation.com/yum-repo/pbase-components/1.0/
 enabled=1
 gpgcheck=0

@@ -110,7 +110,7 @@ echo "  vi pbase_smtp.json"
 echo ""
 
 echo "Next step - optional install local postgres service with:"
-echo "  yum install pbase-postgres"
+echo "  yum -y install pbase-postgres"
 echo ""
 
 %files

@@ -5,7 +5,7 @@
     "database": "postgres",
     "protocol": "http",
     "domain": "pbase-foundation.com",
-    "rootUrl": "http://pbase-foundation.com/git/",
+    "rootUrl": "https://pbase-foundation.com/git/",
     "disableRegistration": false,
     "requireSigninView": false
   }

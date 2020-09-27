@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-preconfig-mysql-wordpress
-Requires: pbase-php-transitive-dep
+Requires: pbase-php-transitive-dep, pbase-epel
 
 %description
 Configure MySQL preset user and DB name for use by pbase-wordpress
@@ -103,11 +103,12 @@ sed -i "s/SHOmeddata/${RAND_PW_ROOT}/" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAM
 echo ""
 echo "MySQL module config file for Wordpress:"
 echo "Next step - change the default MySQL DB root password and application-db"
-echo "              config by editing pbase_mysql.json"
-echo "            change the Apache admin email and proxy URI"
+echo "              config if needed by editing pbase_mysql.json"
+echo "            change the Apache admin email if needed "
 echo "              by editing pbase_apache.json"
-echo "            change the URI to be 'wordpress', or some other string, or '' (empty string)"
-echo "              by editing pbase_wordpress.json"
+echo "            change the Wordpress URI to be a string like 'wordpress' or 'blog'"
+echo "              by editing the wordpressUriBase field in pbase_wordpress.json"
+echo "              default is '' to configures Wordpress as the root-level website"
 echo "            For example:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
@@ -116,15 +117,13 @@ echo "  vi pbase_apache.json"
 echo "  vi pbase_wordpress.json"
 echo ""
 
-echo "Next step - install mysqld service with:"
+echo "Next step - install Wordpress application stack with:"
 echo ""
-echo "  yum -y install pbase-mysql"
-#echo "  yum -y install pbase-mysql80community"
+echo "  yum -y install pbase-wordpress-allinone"
 echo ""
 
 %files
 %defattr(600,root,root,700)
-/usr/local/pbase-data/admin-only/module-config.d/
 /usr/local/pbase-data/pbase-preconfig-mysql-wordpress/module-config-samples/pbase_apache.json
 /usr/local/pbase-data/pbase-preconfig-mysql-wordpress/module-config-samples/pbase_mysql.json
 /usr/local/pbase-data/pbase-preconfig-mysql-wordpress/module-config-samples/pbase_wordpress.json

@@ -33,11 +33,14 @@ fail() {
 echo "EPEL repo transitive dependencies for EL8/CentOS 8"
 
 ## Enable PowerTools repo
+## change repo enable flag: enabled=0
 
 if [[ -e "/etc/yum.repos.d/CentOS-PowerTools.repo" ]] ; then
-  ## change repo enable flag: enabled=0
   echo "Enabling PowerTools:     /etc/yum.repos.d/CentOS-PowerTools.repo"
   /bin/sed -i "s/enabled=0/enabled=1/" /etc/yum.repos.d/CentOS-PowerTools.repo
+elif [[ -e "/etc/yum.repos.d/CentOS-Stream-PowerTools.repo" ]] ; then
+  echo "Enabling PowerTools:     /etc/yum.repos.d/CentOS-Stream-PowerTools.repo"
+  /bin/sed -i "s/enabled=0/enabled=1/" /etc/yum.repos.d/CentOS-Stream-PowerTools.repo
 else
   echo "Could not find repo:     /etc/yum.repos.d/CentOS-PowerTools.repo"
 fi

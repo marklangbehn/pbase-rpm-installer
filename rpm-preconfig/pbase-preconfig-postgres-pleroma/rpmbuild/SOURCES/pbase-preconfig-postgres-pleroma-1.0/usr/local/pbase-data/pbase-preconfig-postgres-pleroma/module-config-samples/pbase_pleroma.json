@@ -1,9 +1,0 @@
-{
-  "pbase_pleroma" : {
-    "port": 4000,
-    "addNgnixProxy": true,
-    "useSubDomain": false,
-    "subDomainName": "",
-    "subDomainServerAdmin": "yoursysadmin@yourrealmail.com"
-  }
-}

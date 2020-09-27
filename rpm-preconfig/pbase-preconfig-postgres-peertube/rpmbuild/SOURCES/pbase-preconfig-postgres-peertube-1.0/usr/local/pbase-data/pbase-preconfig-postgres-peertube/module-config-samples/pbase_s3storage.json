@@ -4,6 +4,11 @@
     "s3Bucket": "",
     "awsAccessKeyId": "",
     "awsSecretAccessKeyId": "",
+    "awsS3RegionName": "",
+    "awsS3CustomDomain": "",
+    "awsS3EndpointUrl": "",
+    "awsLocation": "",
+    "proxyMedia": "",
     "s3AliasHost": ""
   }
 }

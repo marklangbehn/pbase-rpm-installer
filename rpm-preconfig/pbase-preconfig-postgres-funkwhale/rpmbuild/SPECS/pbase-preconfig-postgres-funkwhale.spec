@@ -100,7 +100,7 @@ sed -i "s/example.com/${THISDOMAINNAME}/" "${MODULE_CONFIG_DIR}/pbase_smtp.json"
 
 
 echo ""
-echo "Postgres, SMTP and Let's Encrypt module config files for funkwhale added."
+echo "Postgres, SMTP and Let's Encrypt module config files for Funkwhale added."
 echo "Next step - required - customize your configuration by editing these JSON files: "
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"

@@ -76,7 +76,7 @@ copy_if_not_exists() {
 
 echo "PBase Gitea service"
 
-## config is stored in json file with root-only permsissions
+## config is stored in json file with root-only permissions
 ## it can be one of two places:
 ##     /usr/local/pbase-data/admin-only/pbase_module_config.json
 ## or
@@ -155,7 +155,7 @@ fi
 echo "Downloading Gitea server binary from gitea.io"
 
 ##TODO how to find latest version dynamically?
-VER="1.12.4"
+VER="1.12.5"
 
 DOWNLOAD_URL="https://github.com/go-gitea/gitea/releases/download/v${VER}/gitea-${VER}-linux-amd64.xz"
 

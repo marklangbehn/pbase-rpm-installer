@@ -114,7 +114,7 @@ RAND_PW_ROOT="r$(date +%s | sha256sum | base64 | head -c 16 | tail -c 8)"
 echo "RAND_PW_USER:            $RAND_PW_USER"
 echo "RAND_PW_ROOT:            $RAND_PW_ROOT"
 
-## config is stored in json file with root-only permsissions
+## config is stored in json file with root-only permissions
 ## it can be one of two places:
 ##     /usr/local/pbase-data/admin-only/pbase_module_config.json
 ## or
@@ -212,7 +212,12 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 parseConfig "WORDPRESS_URI_BASE"  ".pbase_wordpress.wordpressUriBase" "wordpress"
 
 echo "WORDPRESS_URI_BASE:      $WORDPRESS_URI_BASE"
-SLASH_WORDPRESS_URI_BASE="/${WORDPRESS_URI_BASE}"
+SLASH_WORDPRESS_URI_BASE=""
+
+if [[ "${WORDPRESS_URI_BASE}" != "" ]]; then
+  SLASH_WORDPRESS_URI_BASE="/${WORDPRESS_URI_BASE}"
+fi
+
 ##echo "SLASH_WORDPRESS_URI_BASE: ${SLASH_WORDPRESS_URI_BASE}"
 echo ""
 

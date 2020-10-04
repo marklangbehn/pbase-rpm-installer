@@ -488,7 +488,7 @@ Here's how to install Mastodon:
 yum -y install https://pbase-foundation.com/pbase-preconfig.rpm
 yum -y install pbase-preconfig-postgres-mastodon
 yum -y install pbase-postgres
-yum -y install pbase-mastodon
+yum -y install activpb-mastodon
 ```
 
 Here's how to install Peertube:
@@ -496,14 +496,5 @@ Here's how to install Peertube:
 yum -y install https://pbase-foundation.com/pbase-preconfig.rpm
 yum -y install pbase-preconfig-postgres-peertube
 yum -y install pbase-postgres
-yum -y install pbase-peertube
+yum -y install activpb-peertube
 ```
-
-Here's how to install Funkwhale:
-```
-yum -y install https://pbase-foundation.com/pbase-preconfig.rpm
-yum -y install pbase-preconfig-postgres-funkwhale
-yum -y install pbase-postgres
-yum -y install pbase-funkwhale
-```
-

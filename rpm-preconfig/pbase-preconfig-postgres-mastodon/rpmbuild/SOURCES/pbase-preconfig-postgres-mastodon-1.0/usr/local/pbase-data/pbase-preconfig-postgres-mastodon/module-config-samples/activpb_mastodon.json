@@ -1,5 +1,5 @@
 {
-  "pbase_mastodon" : {
+  "activpb_mastodon" : {
     "port": 3000,
     "addNgnixProxy": true,
     "subDomainName": "",

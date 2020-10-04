@@ -1,15 +1,15 @@
-Name: pbase-mastodon-ruby
+Name: activpb-mastodon-ruby
 Version: 1.0
 Release: 0
 Summary: PBase Mastodon Ruby and Dependencies rpm
 Group: System Environment/Base
 License: Apache-2.0
 URL: https://pbase-foundation.com
-Source0: pbase-mastodon-ruby-1.0.tar.gz
+Source0: activpb-mastodon-ruby-1.0.tar.gz
 BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
-Provides: pbase-mastodon-ruby
+Provides: activpb-mastodon-ruby
 Requires: redis, yarn, protobuf-devel, redhat-rpm-config, nodejs, nginx, tar, jq, curl, git, gpg, gcc, git-core, zlib, zlib-devel, gcc-c++, patch, readline, readline-devel, libffi-devel, openssl-devel, make, autoconf, automake, libtool, bison, curl, sqlite-devel, libxml2-devel, libxslt-devel, gdbm-devel, ncurses-devel, glibc-headers, libidn, libidn-devel, glibc-devel, libicu-devel, protobuf, bzip2, ImageMagick, certbot
 
 %description
@@ -62,7 +62,7 @@ su - mastodon -c "cd /home/mastodon/.rbenv && src/configure && make -C src"
 
 echo "Add rbenv lines .bashrc"
 
-cat /home/mastodon/.bashrc /usr/local/pbase-data/pbase-mastodon-ruby/ruby-bashrc.sh  >  /home/mastodon/.bashrc-rbenv
+cat /home/mastodon/.bashrc /usr/local/pbase-data/activpb-mastodon-ruby/ruby-bashrc.sh  >  /home/mastodon/.bashrc-rbenv
 /bin/cp -f /home/mastodon/.bashrc-rbenv /home/mastodon/.bashrc
 chown mastodon:mastodon /home/mastodon/.bashrc
 
@@ -79,4 +79,4 @@ echo "Mastodon Ruby and Dependencies installed"
 
 %files
 %defattr(-,root,root,-)
-/usr/local/pbase-data/pbase-mastodon-ruby/ruby-bashrc.sh
+/usr/local/pbase-data/activpb-mastodon-ruby/ruby-bashrc.sh

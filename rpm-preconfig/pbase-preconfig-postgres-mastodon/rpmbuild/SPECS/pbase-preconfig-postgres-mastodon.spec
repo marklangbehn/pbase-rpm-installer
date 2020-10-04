@@ -80,9 +80,9 @@ MODULE_SAMPLES_DIR="/usr/local/pbase-data/pbase-preconfig-postgres-mastodon/modu
 DB_CONFIG_FILENAME="pbase_postgres.json"
 
 
-echo "Mastodon config:         ${MODULE_CONFIG_DIR}/pbase_mastodon.json"
+echo "Mastodon config:         ${MODULE_CONFIG_DIR}/activpb_mastodon.json"
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_lets_encrypt.json  ${MODULE_CONFIG_DIR}/
-/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_mastodon.json  ${MODULE_CONFIG_DIR}/
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/activpb_mastodon.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_postgres.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_smtp.json  ${MODULE_CONFIG_DIR}/
 
@@ -104,7 +104,7 @@ echo "Next step - required - customize your configuration by editing these JSON 
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
 echo "  vi pbase_lets_encrypt.json"
-echo "  vi pbase_mastodon.json"
+echo "  vi activpb_mastodon.json"
 echo "  vi pbase_postgres.json"
 echo "  vi pbase_smtp.json"
 echo ""
@@ -115,8 +115,8 @@ echo ""
 
 %files
 %defattr(600,root,root,700)
+/usr/local/pbase-data/pbase-preconfig-postgres-mastodon/module-config-samples/activpb_mastodon.json
 /usr/local/pbase-data/pbase-preconfig-postgres-mastodon/module-config-samples/pbase_lets_encrypt.json
-/usr/local/pbase-data/pbase-preconfig-postgres-mastodon/module-config-samples/pbase_mastodon.json
 /usr/local/pbase-data/pbase-preconfig-postgres-mastodon/module-config-samples/pbase_postgres.json
 /usr/local/pbase-data/pbase-preconfig-postgres-mastodon/module-config-samples/pbase_s3storage.json
 /usr/local/pbase-data/pbase-preconfig-postgres-mastodon/module-config-samples/pbase_smtp.json

@@ -84,7 +84,7 @@ check_linux_version() {
 
 echo "PBase Postgres server"
 
-## config is stored in json file with root-only permsissions
+## config is stored in json file with root-only permissions
 ## it can be one of two places:
 ##     /usr/local/pbase-data/admin-only/pbase_module_config.json
 ## or
@@ -141,7 +141,7 @@ parseConfig() {
 ## use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars
 RAND_PW_USER="u$(date +%s | sha256sum | base64 | head -c 8)"
 
-echo "RAND_PW_USER:    $RAND_PW_USER"
+#echo "RAND_PW_USER:            $RAND_PW_USER"
 
 ## look for either separate config file "pbase_postgres.json" or all-in-one file: "pbase_module_config.json"
 PBASE_CONFIG_FILENAME="pbase_postgres.json"
@@ -385,10 +385,10 @@ if [[ "$REDHAT_RELEASE_DIGIT" == "6" ]]; then
   append_bashrc_alias statuspostgres "service postgres status"
   append_bashrc_alias restartpostgres "service postgres restart"
 else
-  append_bashrc_alias stoppostgres "/bin/systemctl stop postgres"
-  append_bashrc_alias startpostgres "/bin/systemctl start postgres"
-  append_bashrc_alias statuspostgres "/bin/systemctl status postgres"
-  append_bashrc_alias restartpostgres "/bin/systemctl restart postgres"
+  append_bashrc_alias stoppostgres "/bin/systemctl stop postgresql"
+  append_bashrc_alias startpostgres "/bin/systemctl start postgresql"
+  append_bashrc_alias statuspostgres "/bin/systemctl status postgresql"
+  append_bashrc_alias restartpostgres "/bin/systemctl restart postgresql"
 fi
 
 

@@ -1,7 +1,7 @@
 Name: pbase-preconfig-postgres-peertube
 Version: 1.0
 Release: 0
-Summary: PBase Postgres preconfigure rpm, preset user and DB name for use by pbase-peertube
+Summary: PBase Postgres preconfigure rpm, preset user and DB name for use by activpb-peertube
 Group: System Environment/Base
 License: Apache-2.0
 URL: https://pbase-foundation.com
@@ -13,7 +13,7 @@ Provides: pbase-preconfig-postgres-peertube
 Requires: pbase-preconfig-yarn, pbase-epel, pbase-preconfig-rpmfusion, jq
 
 %description
-Configure Postgres preset user and DB name for use by pbase-peertube
+Configure Postgres preset user and DB name for use by activpb-peertube
 
 %prep
 %setup -q
@@ -67,7 +67,7 @@ check_linux_version() {
 }
 
 
-echo "PBase Postgres create config preset user and DB name for use by pbase-peertube"
+echo "PBase Postgres create config preset user and DB name for use by activpb-peertube"
 
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
@@ -80,9 +80,9 @@ MODULE_SAMPLES_DIR="/usr/local/pbase-data/pbase-preconfig-postgres-peertube/modu
 DB_CONFIG_FILENAME="pbase_postgres.json"
 
 
-echo "Peertube config:         ${MODULE_CONFIG_DIR}/pbase_peertube.json"
+echo "Peertube config:         ${MODULE_CONFIG_DIR}/activpb_peertube.json"
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_lets_encrypt.json  ${MODULE_CONFIG_DIR}/
-/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_peertube.json  ${MODULE_CONFIG_DIR}/
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/activpb_peertube.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_postgres.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_smtp.json  ${MODULE_CONFIG_DIR}/
 
@@ -104,7 +104,7 @@ echo "Next step - required - customize your configuration by editing these JSON 
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
 echo "  vi pbase_lets_encrypt.json"
-echo "  vi pbase_peertube.json"
+echo "  vi activpb_peertube.json"
 echo "  vi pbase_postgres.json"
 echo "  vi pbase_smtp.json"
 echo ""
@@ -115,8 +115,8 @@ echo ""
 
 %files
 %defattr(600,root,root,700)
+/usr/local/pbase-data/pbase-preconfig-postgres-peertube/module-config-samples/activpb_peertube.json
 /usr/local/pbase-data/pbase-preconfig-postgres-peertube/module-config-samples/pbase_lets_encrypt.json
-/usr/local/pbase-data/pbase-preconfig-postgres-peertube/module-config-samples/pbase_peertube.json
 /usr/local/pbase-data/pbase-preconfig-postgres-peertube/module-config-samples/pbase_postgres.json
 /usr/local/pbase-data/pbase-preconfig-postgres-peertube/module-config-samples/pbase_s3storage.json
 /usr/local/pbase-data/pbase-preconfig-postgres-peertube/module-config-samples/pbase_smtp.json

@@ -80,9 +80,9 @@ MODULE_SAMPLES_DIR="/usr/local/pbase-data/pbase-preconfig-postgres-funkwhale/mod
 DB_CONFIG_FILENAME="pbase_postgres.json"
 
 
-echo "Funkwhale config:        ${MODULE_CONFIG_DIR}/pbase_funkwhale.json"
+echo "Funkwhale config:        ${MODULE_CONFIG_DIR}/activpb_funkwhale.json"
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_lets_encrypt.json  ${MODULE_CONFIG_DIR}/
-/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_funkwhale.json  ${MODULE_CONFIG_DIR}/
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/activpb_funkwhale.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_s3storage.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_postgres.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_smtp.json  ${MODULE_CONFIG_DIR}/
@@ -105,7 +105,7 @@ echo "Next step - required - customize your configuration by editing these JSON 
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
 echo "  vi pbase_lets_encrypt.json"
-echo "  vi pbase_funkwhale.json"
+echo "  vi activpb_funkwhale.json"
 echo "  vi pbase_s3storage.json"
 echo "  vi pbase_postgres.json"
 echo "  vi pbase_smtp.json"
@@ -117,8 +117,8 @@ echo ""
 
 %files
 %defattr(600,root,root,700)
+/usr/local/pbase-data/pbase-preconfig-postgres-funkwhale/module-config-samples/activpb_funkwhale.json
 /usr/local/pbase-data/pbase-preconfig-postgres-funkwhale/module-config-samples/pbase_lets_encrypt.json
-/usr/local/pbase-data/pbase-preconfig-postgres-funkwhale/module-config-samples/pbase_funkwhale.json
 /usr/local/pbase-data/pbase-preconfig-postgres-funkwhale/module-config-samples/pbase_postgres.json
 /usr/local/pbase-data/pbase-preconfig-postgres-funkwhale/module-config-samples/pbase_s3storage.json
 /usr/local/pbase-data/pbase-preconfig-postgres-funkwhale/module-config-samples/pbase_smtp.json

@@ -1,4 +1,4 @@
-Name: pbase-mastodon
+Name: activpb-mastodon
 Version: 1.0
 Release: 0
 Summary: PBase Mastodon service rpm
@@ -8,8 +8,8 @@ URL: https://pbase-foundation.com
 BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
-Provides: pbase-mastodon
-Requires: pbase-mastodon-bundle
+Provides: activpb-mastodon
+Requires: activpb-mastodon-bundle
 
 %description
 PBase Mastodon service
@@ -45,15 +45,15 @@ append_bashrc_alias() {
   fi
 }
 
-## config is stored in json file with root-only permsissions
+## config is stored in json file with root-only permissions
 ## it can be one of two places:
 ##     /usr/local/pbase-data/admin-only/pbase_module_config.json
 ## or
-##     /usr/local/pbase-data/admin-only/module-config.d/pbase_mastodon.json
+##     /usr/local/pbase-data/admin-only/module-config.d/activpb_mastodon.json
 
 
 locateConfigFile() {
-  ## name of config file is passed in param $1 - for example "pbase_mastodon.json"
+  ## name of config file is passed in param $1 - for example "activpb_mastodon.json"
   PBASE_CONFIG_FILENAME="$1"
 
   PBASE_CONFIG_BASE="/usr/local/pbase-data/admin-only"
@@ -122,20 +122,20 @@ echo "Hostname:                $THISHOSTNAME"
 echo "Domainname:              $THISDOMAINNAME"
 
 ## Mastodon config
-## look for either separate config file "pbase_mastodon.json" or all-in-one file: "pbase_module_config.json"
-PBASE_CONFIG_FILENAME="pbase_mastodon.json"
+## look for either separate config file "activpb_mastodon.json" or all-in-one file: "pbase_module_config.json"
+PBASE_CONFIG_FILENAME="activpb_mastodon.json"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config value from JSON file
-parseConfig "HTTP_PORT" ".pbase_mastodon.httpPort" "8065"
-parseConfig "ADD_NGINX_PROXY" ".pbase_mastodon.addNgnixProxy" "true"
-parseConfig "SUB_DOMAIN_NAME" ".pbase_mastodon.subDomainName" ""
-parseConfig "WEB_DOMAIN_NAME" ".pbase_mastodon.webDomainName" ""
-parseConfig "ALTERNATE_DOMAINS" ".pbase_mastodon.alternateDomains" ""
-parseConfig "SINGLE_USER_MODE" ".pbase_mastodon.singleUserMode" "false"
-parseConfig "AUTHORIZED_FETCH" ".pbase_mastodon.authorizedFetch" "false"
-parseConfig "LIMITED_FEDERATION_MODE" ".pbase_mastodon.limitedFederationMode" "false"
+parseConfig "HTTP_PORT" ".activpb_mastodon.httpPort" "8065"
+parseConfig "ADD_NGINX_PROXY" ".activpb_mastodon.addNgnixProxy" "true"
+parseConfig "SUB_DOMAIN_NAME" ".activpb_mastodon.subDomainName" ""
+parseConfig "WEB_DOMAIN_NAME" ".activpb_mastodon.webDomainName" ""
+parseConfig "ALTERNATE_DOMAINS" ".activpb_mastodon.alternateDomains" ""
+parseConfig "SINGLE_USER_MODE" ".activpb_mastodon.singleUserMode" "false"
+parseConfig "AUTHORIZED_FETCH" ".activpb_mastodon.authorizedFetch" "false"
+parseConfig "LIMITED_FEDERATION_MODE" ".activpb_mastodon.limitedFederationMode" "false"
 
 
 echo "HTTP_PORT:               $HTTP_PORT"
@@ -404,7 +404,7 @@ RAND_HOUR="$((2 + RANDOM % 23))"
 CRONJOB_LINE2="${RAND_MINUTE} ${RAND_HOUR} * * 4 mastodon cd /home/mastodon/live && RAILS_ENV=production /home/mastodon/.rbenv/shims/bundle exec /home/mastodon/live/bin/tootctl media remove --days=30 >> ${TOOLCTL_LOGFILE} 2>&1"
 
 echo ""  >>  /etc/crontab
-echo "## Added by pbase-mastodon RPM ##"  >>  /etc/crontab
+echo "## Added by activpb-mastodon RPM ##"  >>  /etc/crontab
 
 if [[ $CONFIG_ENABLE_AUTORENEW == "true" ]]; then
   touch "$CRONJOB_LOGFILE"

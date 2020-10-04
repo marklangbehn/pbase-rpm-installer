@@ -1,6 +1,7 @@
 {
-  "pbase_peertube" : {
-    "port": 9000,
+  "activpb_funkwhale" : {
+    "funkwhaleVersion": "1.0",
+    "port": 5000,
     "addNgnixProxy": true,
     "useSubDomain": false,
     "subDomainName": ""

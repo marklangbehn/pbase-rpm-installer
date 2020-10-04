@@ -1,15 +1,15 @@
-Name: pbase-funkwhale
+Name: activpb-funkwhale
 Version: 1.0
 Release: 0
 Summary: PBase Funkwhale service rpm
 Group: System Environment/Base
 License: Apache-2.0
 URL: https://pbase-foundation.com
-Source0: pbase-funkwhale-1.0.tar.gz
+Source0: activpb-funkwhale-1.0.tar.gz
 BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
-Provides: pbase-funkwhale
+Provides: activpb-funkwhale
 Requires: nginx, postgresql, openssl, openssl-devel, openldap-devel, libjpeg-devel, libpq-devel, python3-devel, wget, redis, git, make, gcc, ffmpeg, nodejs, unzip, certbot, jq, python3-pip, python3-virtualenv, libffi-devel, bzip2-devel, gettext, file-libs, lame
 
 %description
@@ -50,15 +50,15 @@ append_bashrc_alias() {
   fi
 }
 
-## config is stored in json file with root-only permsissions
+## config is stored in json file with root-only permissions
 ## it can be one of two places:
 ##     /usr/local/pbase-data/admin-only/pbase_module_config.json
 ## or
-##     /usr/local/pbase-data/admin-only/module-config.d/pbase_funkwhale.json
+##     /usr/local/pbase-data/admin-only/module-config.d/activpb_funkwhale.json
 
 
 locateConfigFile() {
-  ## name of config file is passed in param $1 - for example "pbase_funkwhale.json"
+  ## name of config file is passed in param $1 - for example "activpb_funkwhale.json"
   PBASE_CONFIG_FILENAME="$1"
 
   PBASE_CONFIG_BASE="/usr/local/pbase-data/admin-only"
@@ -121,17 +121,17 @@ echo "Hostname:                $THISHOSTNAME"
 echo "Domainname:              $THISDOMAINNAME"
 
 ## funkwhale config
-## look for either separate config file "pbase_funkwhale.json" or all-in-one file: "pbase_module_config.json"
-PBASE_CONFIG_FILENAME="pbase_funkwhale.json"
+## look for either separate config file "activpb_funkwhale.json" or all-in-one file: "pbase_module_config.json"
+PBASE_CONFIG_FILENAME="activpb_funkwhale.json"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config value from JSON file
-parseConfig "FUNKWHALE_VERSION" ".pbase_funkwhale.funkwhaleVersion" "1.0"
-parseConfig "HTTP_PORT" ".pbase_funkwhale.port" "4000"
-parseConfig "ADD_NGINX_PROXY" ".pbase_funkwhale.addNgnixProxy" "false"
-parseConfig "USE_SUB_DOMAIN" ".pbase_funkwhale.useSubDomain" "false"
-parseConfig "SUB_DOMAIN_NAME" ".pbase_funkwhale.subDomainName" ""
+parseConfig "FUNKWHALE_VERSION" ".activpb_funkwhale.funkwhaleVersion" "1.0"
+parseConfig "HTTP_PORT" ".activpb_funkwhale.port" "4000"
+parseConfig "ADD_NGINX_PROXY" ".activpb_funkwhale.addNgnixProxy" "false"
+parseConfig "USE_SUB_DOMAIN" ".activpb_funkwhale.useSubDomain" "false"
+parseConfig "SUB_DOMAIN_NAME" ".activpb_funkwhale.subDomainName" ""
 
 echo "HTTP_PORT:               $HTTP_PORT"
 echo "ADD_NGINX_PROXY:         $ADD_NGINX_PROXY"
@@ -330,7 +330,9 @@ echo "Executing:               source /srv/funkwhale/virtualenv/bin/activate"
 source /srv/funkwhale/virtualenv/bin/activate
 
 echo "Installing Python dependencies"
+pip3 install --upgrade pip
 pip3 install wheel
+
 pip3 install -r api/requirements/base.txt
 pip3 install -r api/requirements/local.txt
 pip3 install -r api/requirements/test.txt
@@ -427,6 +429,10 @@ if [[ $S3_ENABLED == "true" ]]; then
   echo "" >>  /srv/funkwhale/config/.env
 fi
 
+
+## set ownership
+chown -R funkwhale:funkwhale /srv/funkwhale/
+
 ## BUILD
 
 echo ""
@@ -439,7 +445,7 @@ su - funkwhale -c "source /srv/funkwhale/virtualenv/bin/activate  &&  cd /srv/fu
 
 
 # create a final nginx configuration using the template based on your environment
-cd /usr/local/pbase-data/pbase-funkwhale/etc-nginx-conf-d
+cd /usr/local/pbase-data/activpb-funkwhale/etc-nginx-conf-d
 
 set -a && source /srv/funkwhale/config/.env && set +a
 envsubst "`env | awk -F = '{printf \" $%s\", $$1}'`"  <  nginx.template  >  funkwhale.conf
@@ -460,7 +466,7 @@ if [[ $EXECUTE_CERTBOT_CMD == "true" ]] ; then
   echo "Executing:               certbot certonly --standalone -d ${THISDOMAINNAME} -m ${EMAIL_ADDR} --agree-tos -n"
   certbot certonly --standalone -d ${THISDOMAINNAME} -m ${EMAIL_ADDR} --agree-tos -n
 else
-  echo "Skipping certbot:      EXECUTE_CERTBOT_CMD=false"
+  echo "Skipping certbot:        EXECUTE_CERTBOT_CMD=false"
 fi
 
 
@@ -482,7 +488,7 @@ if [[ $CONFIG_ENABLE_AUTORENEW == "true" ]]; then
   CRONJOB_LINE1="${RAND_MINUTE} ${RAND_HOUR} * * * root /usr/bin/certbot renew --deploy-hook '/bin/systemctl reload nginx' >> $CRONJOB_LOGFILE"
 
   echo ""  >>  /etc/crontab
-  echo "## Added by pbase-funkwhale RPM ##"  >>  /etc/crontab
+  echo "## Added by activpb-funkwhale RPM ##"  >>  /etc/crontab
   echo "$CRONJOB_LINE1"  >>  /etc/crontab
 else
   echo "Crontab unchanged:       enableAutoRenew=false"
@@ -509,7 +515,7 @@ chmod 0600 /srv/funkwhale/config/.env
 chown funkwhale:funkwhale /srv/funkwhale/config/.env
 
 echo "Funkwhale services:      /etc/systemd/system/"
-/bin/cp -f --no-clobber /usr/local/pbase-data/pbase-funkwhale/etc-systemd-system/*  /etc/systemd/system/
+/bin/cp -f --no-clobber /usr/local/pbase-data/activpb-funkwhale/etc-systemd-system/*  /etc/systemd/system/
 
 
 echo ""
@@ -546,10 +552,10 @@ echo ""
 
 %files
 %defattr(-,root,root,-)
-/usr/local/pbase-data/pbase-funkwhale/etc-nginx-conf-d/funkwhale_proxy.conf
-/usr/local/pbase-data/pbase-funkwhale/etc-nginx-conf-d/nginx.template
-/usr/local/pbase-data/pbase-funkwhale/etc-systemd-system/funkwhale.target
-/usr/local/pbase-data/pbase-funkwhale/etc-systemd-system/funkwhale-beat.service
-/usr/local/pbase-data/pbase-funkwhale/etc-systemd-system/funkwhale-server.service
-/usr/local/pbase-data/pbase-funkwhale/etc-systemd-system/funkwhale-worker.service
+/usr/local/pbase-data/activpb-funkwhale/etc-nginx-conf-d/funkwhale_proxy.conf
+/usr/local/pbase-data/activpb-funkwhale/etc-nginx-conf-d/nginx.template
+/usr/local/pbase-data/activpb-funkwhale/etc-systemd-system/funkwhale.target
+/usr/local/pbase-data/activpb-funkwhale/etc-systemd-system/funkwhale-beat.service
+/usr/local/pbase-data/activpb-funkwhale/etc-systemd-system/funkwhale-server.service
+/usr/local/pbase-data/activpb-funkwhale/etc-systemd-system/funkwhale-worker.service
 

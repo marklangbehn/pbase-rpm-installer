@@ -80,7 +80,7 @@ append_bashrc_alias() {
 }
 
 
-## config is stored in json file with root-only permsissions
+## config is stored in json file with root-only permissions
 ## it can be one of two places:
 ##     /usr/local/pbase-data/admin-only/pbase_module_config.json
 ## or
@@ -251,9 +251,12 @@ echo "Enabling YUM repos:      /etc/yum.repos.d/"
 
 if [[ "$AMAZON1_RELEASE" != "" ]]; then
   echo "AMZN1 Dependency repo:   pbase-amzn1-dep.repo"
+  echo "EPEL repo:               epel.repo"
+  /bin/cp -f /usr/local/pbase-data/pbase-preconfig/etc-yum-repos-d/amzn1/epel.repo /etc/yum.repos.d/
   /bin/cp -f /usr/local/pbase-data/pbase-preconfig/etc-yum-repos-d/amzn1/pbase-amzn1-dep.repo /etc/yum.repos.d/
 elif [[ "$AMAZON2_RELEASE" != "" ]]; then
   echo "AMZN2 Dependency repo:   pbase-amzn2-dep.repo"
+  echo "AMZN2 PHP 7.2 repo:      amzn2extra-php72.repo"
   /bin/cp -f /usr/local/pbase-data/pbase-preconfig/etc-yum-repos-d/amzn2/pbase-amzn2-dep.repo /etc/yum.repos.d/
   /bin/cp -f /usr/local/pbase-data/pbase-preconfig/etc-yum-repos-d/amzn2/amzn2extra-php72.repo /etc/yum.repos.d/
 elif [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]] ; then

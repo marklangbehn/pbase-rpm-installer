@@ -1,4 +1,4 @@
-Name: pbase-mastodon-bundle
+Name: activpb-mastodon-bundle
 Version: 1.0
 Release: 0
 Summary: PBase Mastodon service rpm
@@ -8,8 +8,8 @@ URL: https://pbase-foundation.com
 BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
-Provides: pbase-mastodon-bundle
-Requires: pbase-mastodon-ruby
+Provides: activpb-mastodon-bundle
+Requires: activpb-mastodon-ruby
 
 %description
 PBase Mastodon Ruby bundler

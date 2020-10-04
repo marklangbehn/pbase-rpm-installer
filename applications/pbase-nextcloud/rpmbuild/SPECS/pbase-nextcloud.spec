@@ -108,7 +108,7 @@ copy_if_not_exists() {
 
 echo "PBase NextCloud installer"
 
-## config is stored in json file with root-only permsissions
+## config is stored in json file with root-only permissions
 ## it can be one of two places:
 ##     /usr/local/pbase-data/admin-only/pbase_module_config.json
 ## or

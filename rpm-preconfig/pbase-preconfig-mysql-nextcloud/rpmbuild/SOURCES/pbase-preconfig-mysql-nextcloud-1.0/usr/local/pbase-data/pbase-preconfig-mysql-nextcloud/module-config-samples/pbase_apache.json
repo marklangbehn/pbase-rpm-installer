@@ -1,0 +1,10 @@
+{
+  "pbase_apache" : {
+    "addSelfToEtcHosts": false,
+    "addSecurityHeaders": true,
+    "restrictHttpMethods": true,
+    "useSitesEnabledConf": false,
+    "enableIndexPhp": false,
+    "serverAdmin": "yoursysadmin@yourrealmail.com"
+  }
+}

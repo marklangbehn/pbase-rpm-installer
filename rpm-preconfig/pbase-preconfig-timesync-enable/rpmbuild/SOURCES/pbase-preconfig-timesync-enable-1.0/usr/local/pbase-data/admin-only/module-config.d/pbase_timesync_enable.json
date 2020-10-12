@@ -1,0 +1,6 @@
+{
+  "pbase_timesync_enable" : {
+    "timeZone": "UTC",
+    "servers": []
+  }
+}

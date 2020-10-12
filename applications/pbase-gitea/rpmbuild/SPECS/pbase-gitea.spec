@@ -155,7 +155,7 @@ fi
 echo "Downloading Gitea server binary from gitea.io"
 
 ##TODO how to find latest version dynamically?
-VER="1.12.5"
+VER="1.12.4"
 
 DOWNLOAD_URL="https://github.com/go-gitea/gitea/releases/download/v${VER}/gitea-${VER}-linux-amd64.xz"
 

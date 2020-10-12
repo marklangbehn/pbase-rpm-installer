@@ -10,7 +10,8 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-preconfig-postgres-nextcloud
-Requires: php-pgsql, php-pdo_pgsql
+Requires: php-pgsql, php-pdo_pgsql, pbase-epel
+
 %description
 Configure Postgres preset user and DB name for use by pbase-nextcloud, add Postgres PHP dependencies
 
@@ -27,7 +28,7 @@ rm -rf "$RPM_BUILD_ROOT"
 %pre
 
 %post
-echo "rpm postinstall $1"
+#echo "rpm postinstall $1"
 
 fail() {
     echo "ERROR: $1"
@@ -74,10 +75,13 @@ DB_CONFIG_FILENAME="pbase_postgres.json"
 
 
 #echo "Nextcloud config:       ${MODULE_CONFIG_DIR}/pbase_nextcloud.json"
-#/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_lets_encrypt.json  ${MODULE_CONFIG_DIR}/
 #/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_nextcloud.json  ${MODULE_CONFIG_DIR}/
-/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_postgres.json  ${MODULE_CONFIG_DIR}/
 
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_lets_encrypt.json  ${MODULE_CONFIG_DIR}/
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_apache.json  ${MODULE_CONFIG_DIR}/
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_postgres.json  ${MODULE_CONFIG_DIR}/
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_s3storage.json  ${MODULE_CONFIG_DIR}/
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_smtp.json  ${MODULE_CONFIG_DIR}/
 
 ## use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars
 RAND_PW_USER="u$(date +%s | sha256sum | base64 | head -c 8)"
@@ -89,12 +93,13 @@ sed -i "s/shomeddata/${RAND_PW_USER}/" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAM
 echo ""
 echo "Postgres module config file for Nextcloud:"
 echo "Next step - change the default Postgres DB application-database, "
-echo "            user, password and other config by "
-echo "            pbase_postgres.json. For example:"
+echo "            user, password and other config. For example:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
 echo "  vi pbase_postgres.json"
-
+echo "  vi pbase_apache.json"
+echo "  vi pbase_lets_encrypt.json"
+echo ""
 
 echo "Next step - install postgres and nextcloud service with:"
 echo "  yum install pbase-postgres"
@@ -103,5 +108,8 @@ echo ""
 
 %files
 %defattr(600,root,root,700)
-/usr/local/pbase-data/admin-only/module-config.d/
+/usr/local/pbase-data/pbase-preconfig-postgres-nextcloud/module-config-samples/pbase_apache.json
+/usr/local/pbase-data/pbase-preconfig-postgres-nextcloud/module-config-samples/pbase_lets_encrypt.json
 /usr/local/pbase-data/pbase-preconfig-postgres-nextcloud/module-config-samples/pbase_postgres.json
+/usr/local/pbase-data/pbase-preconfig-postgres-nextcloud/module-config-samples/pbase_s3storage.json
+/usr/local/pbase-data/pbase-preconfig-postgres-nextcloud/module-config-samples/pbase_smtp.json

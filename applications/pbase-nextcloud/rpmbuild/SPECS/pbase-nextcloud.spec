@@ -5,11 +5,12 @@ Summary: PBase NextCloud service rpm
 Group: System Environment/Base
 License: Apache-2.0
 URL: https://pbase-foundation.com
+Source0: pbase-nextcloud-1.0.tar.gz
 BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-nextcloud
-Requires: pbase-phpmysql-transitive-dep,unzip,wget
+Requires: pbase-phpmysql-transitive-dep, pbase-apache, unzip, wget
 
 ## pbase-phpmysql-transitive-dep - has requires for:
 ## php,php-cli,php-json,php-gd,php-mbstring,php-pdo,php-xml,php-pecl-zip,httpd-tools,wget
@@ -21,10 +22,14 @@ Requires: pbase-phpmysql-transitive-dep,unzip,wget
 PBase Nextcloud service
 
 %prep
+%setup -q
 
 %install
+mkdir -p "$RPM_BUILD_ROOT"
+cp -R * "$RPM_BUILD_ROOT"
 
 %clean
+rm -rf "$RPM_BUILD_ROOT"
 
 %pre
 
@@ -175,8 +180,8 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 parseConfig "HTTP_PORT" ".pbase_nextcloud.httpPort" "3000"
 parseConfig "ADD_APACHE_PROXY" ".pbase_nextcloud.addApacheProxy" "true"
 
-echo "HTTP_PORT:               $HTTP_PORT"
-echo "ADD_APACHE_PROXY:        $ADD_APACHE_PROXY"
+#echo "HTTP_PORT:               $HTTP_PORT"
+#echo "ADD_APACHE_PROXY:        $ADD_APACHE_PROXY"
 
 
 THISHOSTNAME="$(hostname)"
@@ -218,11 +223,17 @@ echo "Downloaded file from download.nextcloud.com:"
 
 ls -lh latest.zip
 
-echo "Unzipping to:            $WWW_ROOT"
-unzip -q latest.zip -d "$WWW_ROOT"
+VAR_WWW_ROOT="/var/www"
 
-mkdir $WWW_ROOT/nextcloud/data
-chown -R apache:apache $WWW_ROOT/nextcloud/*
+echo "Unzipping to:            $VAR_WWW_ROOT"
+unzip -q latest.zip -d "$VAR_WWW_ROOT"
+
+mkdir $VAR_WWW_ROOT/nextcloud/data
+chown -R apache:apache $VAR_WWW_ROOT/nextcloud/*
+
+echo "Apache alias config:     /etc/httpd/conf.d/nextcloud.conf"
+/bin/cp --no-clobber /usr/local/pbase-data/pbase-nextcloud/etc-httpd-confd/nextcloud.conf /etc/httpd/conf.d/
+
 
 ## adjust php-fpm owners list
 PHP_FPM_CONF="/etc/php-fpm-7.2.d/www.conf"
@@ -278,3 +289,6 @@ echo ""
 
 
 %files
+%defattr(-,root,root,-)
+/usr/local/pbase-data/pbase-nextcloud/etc-httpd-confd/nextcloud.conf
+/usr/local/pbase-data/pbase-nextcloud/etc-httpd-confd/nextcloud-vhost.conf

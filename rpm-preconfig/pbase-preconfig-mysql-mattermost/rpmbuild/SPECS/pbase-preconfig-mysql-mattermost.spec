@@ -10,6 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-preconfig-mysql-mattermost
+Requires: pbase-epel
 
 %description
 Configure MySQL preset user and DB name for use by pbase-mattermost
@@ -75,6 +76,7 @@ MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
 MODULE_SAMPLES_DIR="/usr/local/pbase-data/pbase-preconfig-mysql-mattermost/module-config-samples"
 DB_CONFIG_FILENAME="pbase_mysql80community.json"
 
+mkdir -p ${MODULE_CONFIG_DIR}
 
 if [[ "${REDHAT_RELEASE_DIGIT}" == "7" ]]; then
   DB_CONFIG_FILENAME="pbase_mysql80community.json"
@@ -87,7 +89,9 @@ else
 fi
 
 echo "Mattermost config:       ${MODULE_CONFIG_DIR}/pbase_mattermost.json"
-/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_mattermost.json  ${MODULE_CONFIG_DIR}/pbase_mattermost.json
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_apache.json  ${MODULE_CONFIG_DIR}/
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_lets_encrypt.json  ${MODULE_CONFIG_DIR}/
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_mattermost.json  ${MODULE_CONFIG_DIR}/
 
 
 ## use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars
@@ -115,9 +119,11 @@ echo "  vi pbase_mattermost.json"
 echo "  vi ${DB_CONFIG_FILENAME}"
 
 echo ""
-echo "Next step - install mysqld service with:"
-echo ""
-echo "                         yum -y install pbase-mysql"
+
+
+echo "Next step - install mysql service with:"
+echo "  yum -y install pbase-mysql"
+echo "  yum -y install pbase-mattermost"
 echo ""
 
 %files
@@ -126,6 +132,7 @@ echo ""
 /usr/local/pbase-data/pbase-preconfig-mysql-mattermost/etc-yum-repos-d/el6/mysql-community.repo
 /usr/local/pbase-data/pbase-preconfig-mysql-mattermost/etc-yum-repos-d/el7/mysql-community.repo
 /usr/local/pbase-data/pbase-preconfig-mysql-mattermost/etc-yum-repos-d/fedora/mysql-community.repo
+/usr/local/pbase-data/pbase-preconfig-mysql-mattermost/module-config-samples/pbase_apache.json
 /usr/local/pbase-data/pbase-preconfig-mysql-mattermost/module-config-samples/pbase_lets_encrypt.json
 /usr/local/pbase-data/pbase-preconfig-mysql-mattermost/module-config-samples/pbase_mattermost.json
 /usr/local/pbase-data/pbase-preconfig-mysql-mattermost/module-config-samples/pbase_mysql.json

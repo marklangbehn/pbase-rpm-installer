@@ -236,7 +236,7 @@ if [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]]; then
   fi
 
   ## get SSL cert, may add file in /etc/httpd/conf...
-  ## for example:   /usr/local/bin/certbot-auto --apache --agree-tos --email myrealemail@nowhere.nyet  -d pbase-foundation.com -d www.pbase-foundation.com -n
+  ## for example:   /usr/local/bin/certbot-auto --apache --agree-tos --email yoursysadmin@yourrealmail.com  -d pbase-foundation.com -d www.pbase-foundation.com -n
 
   echo "Invoke certbot:          /usr/local/bin/certbot-auto --apache --agree-tos --email ${EMAIL_ADDR} -d ${THISDOMAINNAME} -d www.${THISDOMAINNAME} -n"
   echo ""

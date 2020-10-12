@@ -12,7 +12,6 @@ BuildRoot: %{_tmppath}/%{name}-buildroot
 Provides: pbase-preconfig-mysql-nextcloud
 Requires: pbase-php-transitive-dep, pbase-preconfig-mysql80community
 
-
 %description
 Configure MySQL preset user and DB name for use by pbase-nextcloud
 
@@ -29,7 +28,7 @@ rm -rf "$RPM_BUILD_ROOT"
 %pre
 
 %post
-echo "rpm postinstall $1"
+#echo "rpm postinstall $1"
 
 fail() {
     echo "ERROR: $1"
@@ -68,15 +67,21 @@ check_linux_version() {
 }
 
 
-## echo "PBase MySQL create config preset user and DB name for use by pbase-nextcloud"
 echo "PBase MySQL 8.0 community create config preset user and DB name for use by pbase-nextcloud"
 
 MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
 MODULE_SAMPLES_DIR="/usr/local/pbase-data/pbase-preconfig-mysql-nextcloud/module-config-samples"
 DB_CONFIG_FILENAME="pbase_mysql80community.json"
 
-echo "MySQL 8.0 config:        ${MODULE_CONFIG_DIR}/pbase_mysql80community.json"
+
+#echo "Nextcloud config:       ${MODULE_CONFIG_DIR}/pbase_nextcloud.json"
+#/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_nextcloud.json  ${MODULE_CONFIG_DIR}/
+
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_lets_encrypt.json  ${MODULE_CONFIG_DIR}/
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_apache.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_mysql80community.json  ${MODULE_CONFIG_DIR}/pbase_mysql80community.json
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_s3storage.json  ${MODULE_CONFIG_DIR}/
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_smtp.json  ${MODULE_CONFIG_DIR}/
 
 ## use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars
 RAND_PW_USER="u$(date +%s | sha256sum | base64 | head -c 8)"
@@ -97,15 +102,20 @@ echo "            config by editing ${DB_CONFIG_FILENAME}. For example:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
 echo "  vi ${DB_CONFIG_FILENAME}"
+echo "  vi pbase_apache.json"
+echo "  vi pbase_lets_encrypt.json"
 echo ""
 
-echo "Next step - install mysqld service with:"
+echo "Next step - install mysqld and nextcloud service with:"
 echo ""
-## echo "  yum -y install pbase-mysql"
 echo "  yum -y install pbase-mysql80community"
+echo "  yum install pbase-nextcloud"
 echo ""
 
 %files
 %defattr(600,root,root,700)
-/usr/local/pbase-data/admin-only/module-config.d/
+/usr/local/pbase-data/pbase-preconfig-mysql-nextcloud/module-config-samples/pbase_apache.json
+/usr/local/pbase-data/pbase-preconfig-mysql-nextcloud/module-config-samples/pbase_lets_encrypt.json
+/usr/local/pbase-data/pbase-preconfig-mysql-nextcloud/module-config-samples/pbase_s3storage.json
 /usr/local/pbase-data/pbase-preconfig-mysql-nextcloud/module-config-samples/pbase_mysql80community.json
+/usr/local/pbase-data/pbase-preconfig-mysql-nextcloud/module-config-samples/pbase_smtp.json

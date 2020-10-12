@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-mattermost
-Requires: wget,tar,jq
+Requires: pbase-apache, wget, tar, jq
 
 %description
 PBase Mattermost service
@@ -243,9 +243,16 @@ chmod -R g+w /opt/mattermost
 ##     "DataSource": "mmuser:shomeddata@tcp(localhost:3306)/mattermost?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s",
 
 echo "Updating config:         /opt/mattermost/config/config.json"
+echo "Enabling service:        /etc/systemd/system/mattermost"
+
+/bin/cp --no-clobber /usr/local/pbase-data/pbase-mattermost/etc-systemd-system/mattermost.service /etc/systemd/system/
+chmod 664 /etc/systemd/system/mattermost.service
+
 
 if [[ $PBASE_CONFIG_NAME == "pbase_postgres" ]] ; then
   echo "Setting Postgres connection"
+  sed -i -e "s/mysqld.service/postgresql.service/" /etc/systemd/system/mattermost.service
+
   sed -i -e "s/mysql/postgres/" /opt/mattermost/config/config.json
   sed -i -e "s/mmuser\:mostest/postgres:\/\/mmuser:mostest/" /opt/mattermost/config/config.json
   sed -i -e "s/charset\=utf8mb4\,utf8/sslmode=disable\&connect_timeout=10/" /opt/mattermost/config/config.json
@@ -265,11 +272,6 @@ else
   ## sed -i -e "s/utf8mb4/utf8/" /opt/mattermost/config/config.json
 fi
 
-
-echo "Enabling service:        /etc/systemd/system/mattermost"
-
-/bin/cp --no-clobber /usr/local/pbase-data/pbase-mattermost/etc-systemd-system/mattermost.service /etc/systemd/system/
-chmod 664 /etc/systemd/system/mattermost.service
 
 systemctl daemon-reload
 systemctl enable mattermost

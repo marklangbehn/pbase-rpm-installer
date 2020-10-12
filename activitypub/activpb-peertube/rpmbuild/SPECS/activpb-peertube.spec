@@ -421,7 +421,7 @@ grep "User" /usr/local/pbase-data/admin-only/activpb-peertube/journalctl-output.
 echo ""
 
 echo "Next Step - required - login to your PeerTube instance URL with the"
-echo "                         user and password from journalctl -u peertube"
+echo "                         user and password from 'journalctl -u peertube | grep User | cut -d: -f8-'"
 echo "                         then follow the setup dialog."
 echo ""
 

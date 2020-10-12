@@ -18,7 +18,7 @@ yum -y install pbase-lets-encrypt
 
 Additionally, you may want to lock down SSH access and enable the firewall.
 ```jsx
-yum -y install pbase-fail2ban
+yum -y install pbase-ssh-fail2ban
 yum -y install pbase-firewall-enable
 ```
 
@@ -294,40 +294,32 @@ tailelastic
 #### Nextcloud
   
 Install the Nextcloud PHP based application.
-Either PostgreSQL or MySQL can be used.  
+Either PostgreSQL or MySQL 8.0 community can be used.  
 
-Install with a Postgres database for storage  
+To install Nextcloud with a Postgres database for storage  
 Use these steps:  
 ```
 yum -y install https://pbase-foundation.com/pbase-preconfig.rpm
-yum -y install pbase-preconfig-apache
-yum -y install pbase-apache
 yum -y install pbase-preconfig-postgres-nextcloud
 yum -y install pbase-postgres
 yum -y install pbase-nextcloud
 ```
 
-Install with a MySQL 8.0 community database for storage  
-
-EL/CentOS 8  
+To install Nextcloud with a MySQL 8.0 community database for storage  
+on EL/CentOS 8  
 Use these steps:
-
 ```
 yum -y install https://pbase-foundation.com/pbase-preconfig.rpm
-yum -y install pbase-preconfig-apache
-yum -y install pbase-apache
 yum -y install pbase-preconfig-mysql-nextcloud
 yum -y --disablerepo=AppStream install mysql-community-server
 yum -y install pbase-mysql80community
 yum -y install pbase-nextcloud
 ```
   
-EL/CentOS 6 and 7  
+on EL/CentOS 6 and 7  
 Use these steps:  
 ```
 yum -y install https://pbase-foundation.com/pbase-preconfig.rpm
-yum -y install pbase-preconfig-apache
-yum -y install pbase-apache
 yum -y install pbase-preconfig-mysql-nextcloud
 yum -y install pbase-mysql80community
 yum -y install pbase-nextcloud
@@ -336,31 +328,29 @@ yum -y install pbase-nextcloud
 
 #### Mattermost
 
-Install the Mattermost messaging platform with a MySQL database for storage  
+Install the Mattermost messaging platform with a Postgres database for storage  
 on CentOS8/EL8
 ```
 yum -y install https://pbase-foundation.com/pbase-preconfig.rpm
-yum -y install pbase-apache
-yum -y install vrl-preconfig
-yum -y install vrl-website-content
-  
-yum -y install pbase-preconfig-mysql-mattermost
-yum -y install pbase-mysql
-## OR
 yum -y install pbase-preconfig-postgres-mattermost
 yum -y install pbase-postgres
-
 yum -y install pbase-mattermost
 yum -y install pbase-lets-encrypt
 ```
 
-on CentOS7/EL7  - must use MySQL 8.0 Community release
+Install the Mattermost messaging platform with a MySQL database for storage  
+on CentOS8/EL8
+```
+yum -y install https://pbase-foundation.com/pbase-preconfig.rpm 
+yum -y install pbase-preconfig-mysql-mattermost
+yum -y install pbase-mysql
+yum -y install pbase-mattermost
+yum -y install pbase-lets-encrypt
+```
+
+on CentOS7/EL7  - must use MySQL 8.0 Community release 
 ```
 yum -y install https://pbase-foundation.com/pbase-preconfig.rpm
-yum -y install pbase-apache
-yum -y install vrl-preconfig-next
-yum -y install vrl-website-content
-
 yum -y install pbase-preconfig-mysql80community
 yum -y install pbase-preconfig-mysql-mattermost
 yum -y install pbase-mysql80community
@@ -448,7 +438,8 @@ yum -y install google-chrome-stable
 #### Other component RPMs are available
   
 ```
-yum -y install pbase-ntp-timesync
+yum -y install pbase-preconfig-timesync-enable
+yum -y install pbase-timesync-enable
 ```
 
 #### VirtualBox dependencies
@@ -484,6 +475,7 @@ yum -y install obs-studio
 #### ActivityPub application stacks
 
 Here's how to install Mastodon:
+(Note: On RHEL 8 you must enable CodeReadyBuilder with:  subscription-manager repos --enable codeready-builder-for-rhel-8-x86_64-rpms)
 ```
 yum -y install https://pbase-foundation.com/pbase-preconfig.rpm
 yum -y install pbase-preconfig-postgres-mastodon

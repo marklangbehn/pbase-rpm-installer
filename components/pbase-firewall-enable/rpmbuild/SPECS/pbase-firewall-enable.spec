@@ -23,7 +23,7 @@ Configure firewalld for basic ports
 %pre
 
 %post
-echo "rpm postinstall $1"
+# echo "rpm postinstall $1"
 
 fail() {
     echo "ERROR: $1"

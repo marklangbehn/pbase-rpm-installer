@@ -5,6 +5,6 @@
     "restrictHttpMethods": true,
     "useSitesEnabledConf": false,
     "enableIndexPhp": false,
-    "serverAdmin": "myrealemail@nowhere.nyet"
+    "serverAdmin": "yoursysadmin@yourrealmail.com"
   }
 }

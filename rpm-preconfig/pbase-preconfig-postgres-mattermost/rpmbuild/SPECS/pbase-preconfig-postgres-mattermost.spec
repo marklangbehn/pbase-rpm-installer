@@ -10,6 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-preconfig-postgres-mattermost
+Requires: pbase-epel
 
 %description
 Configure Postgres preset user and DB name for use by pbase-mattermost
@@ -74,10 +75,12 @@ DB_CONFIG_FILENAME="pbase_postgres.json"
 
 mkdir -p ${MODULE_CONFIG_DIR}
 
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_postgres.json  ${MODULE_CONFIG_DIR}/
+
 echo "Mattermost config:       ${MODULE_CONFIG_DIR}/pbase_mattermost.json"
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_apache.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_lets_encrypt.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_mattermost.json  ${MODULE_CONFIG_DIR}/
-/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_postgres.json  ${MODULE_CONFIG_DIR}/
 
 
 ## use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars
@@ -97,17 +100,19 @@ echo "               user, password and other config by "
 echo "               pbase_postgres.json. For example:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
-## echo "  cp pbase_mattermost.json pbase_mattermost.json"
 echo "  vi pbase_mattermost.json"
 echo "  vi pbase_postgres.json"
+echo ""
 
 
 echo "Next step - install postgres service with:"
-echo "  yum install pbase-postgres"
+echo "  yum -y install pbase-postgres"
+echo "  yum -y install pbase-mattermost"
 echo ""
 
 %files
 %defattr(600,root,root,700)
+/usr/local/pbase-data/pbase-preconfig-postgres-mattermost/module-config-samples/pbase_apache.json
 /usr/local/pbase-data/pbase-preconfig-postgres-mattermost/module-config-samples/pbase_lets_encrypt.json
 /usr/local/pbase-data/pbase-preconfig-postgres-mattermost/module-config-samples/pbase_mattermost.json
 /usr/local/pbase-data/pbase-preconfig-postgres-mattermost/module-config-samples/pbase_postgres.json

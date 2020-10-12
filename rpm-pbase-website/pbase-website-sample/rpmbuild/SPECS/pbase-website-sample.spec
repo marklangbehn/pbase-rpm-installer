@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-website-sample
-Requires: pbase-apache,git,perl,rpm-build,curl,wget,zip,unzip
+Requires: pbase-apache
 
 %description
 Provides sample website content

@@ -3,7 +3,7 @@
     "port": 8065,
     "addApacheProxy": true,
     "useSubDomain": true,
-    "subDomainName": "",
+    "subDomainName": "mattermost",
     "subDomainServerAdmin": "yoursysadmin@yourrealmail.com"
   }
 }

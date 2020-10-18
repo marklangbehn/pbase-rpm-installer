@@ -277,6 +277,9 @@ else
   /bin/systemctl restart httpd || fail "failed to restart httpd service"
 fi
 
+echo "Default PBase module configuration directory:"
+echo "                        /usr/local/pbase-data/admin-only/module-config.d/"
+
 echo "NextCloud web application is running."
 echo "Next step - Open this URL to complete the install:"
 echo "if locally installed"

@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-preconfig-postgres-mastodon
-Requires: pbase-preconfig-yarn, pbase-epel
+Requires: pbase-preconfig-yarn, pbase-epel, jq
 
 %description
 Configure Postgres preset user and DB name for use by pbase-mastodon
@@ -28,12 +28,71 @@ rm -rf "$RPM_BUILD_ROOT"
 %pre
 
 %post
-echo "rpm postinstall $1"
+#echo "rpm postinstall $1"
 
 fail() {
     echo "ERROR: $1"
     exit 1
 }
+## config is stored in json file with root-only permissions
+## it can be one of two places:
+##     /usr/local/pbase-data/admin-only/pbase_module_config.json
+## or
+##     /usr/local/pbase-data/admin-only/module-config.d/pbase_apache.json
+
+
+locateConfigFile() {
+  ## name of config file is passed in param $1 - for example "pbase_apache.json"
+  PBASE_CONFIG_FILENAME="$1"
+
+  PBASE_CONFIG_BASE="/usr/local/pbase-data/admin-only"
+  PBASE_ALL_IN_ONE_CONFIG_FILENAME="pbase_module_config.json"
+  PBASE_CONFIG_DIR="${PBASE_CONFIG_BASE}/module-config.d"
+
+  ## Look for config .json file in one of two places.
+  ##     /usr/local/pbase-data/admin-only/pbase_module_config.json
+  ## or
+  ##     /usr/local/pbase-data/admin-only/module-config.d/pbase_apache.json
+
+  PBASE_CONFIG_SEPARATE="${PBASE_CONFIG_DIR}/${PBASE_CONFIG_FILENAME}"
+  PBASE_CONFIG_ALLINONE="${PBASE_CONFIG_BASE}/${PBASE_ALL_IN_ONE_CONFIG_FILENAME}"
+
+  #echo "PBASE_CONFIG_SEPARATE:   $PBASE_CONFIG_SEPARATE"
+  #echo "PBASE_CONFIG_ALLINONE:   $PBASE_CONFIG_ALLINONE"
+
+  ## check if either file exists, assume SEPARATE as default
+  PBASE_CONFIG="$PBASE_CONFIG_SEPARATE"
+
+  if [[ -f "$PBASE_CONFIG_ALLINONE" ]] ; then
+    PBASE_CONFIG="$PBASE_CONFIG_ALLINONE"
+  fi
+
+  if [[ -f "$PBASE_CONFIG" ]] ; then
+    echo "Config file found:       $PBASE_CONFIG"
+  else
+    echo "Custom config not found: $PBASE_CONFIG"
+  fi
+}
+
+
+parseConfig() {
+  ## fallback when jq is not installed, use the default in the third param
+  HAS_JQ_INSTALLED="$(which jq)"
+  #echo "HAS_JQ_INSTALLED:   $HAS_JQ_INSTALLED"
+
+  if [[ -z "$HAS_JQ_INSTALLED" ]] || [[ ! -f "$PBASE_CONFIG" ]] ; then
+    ## echo "fallback to default: $3"
+    eval "$1"="$3"
+    return 1
+  fi
+
+  ## use jq to extract a json field named in the second param
+  PARSED_VALUE="$(cat $PBASE_CONFIG  |  jq $2)"
+
+  ## use eval to assign that to the variable named in the first param
+  eval "$1"="$PARSED_VALUE"
+}
+
 
 check_linux_version() {
   AMAZON1_RELEASE=""
@@ -77,6 +136,17 @@ echo "Domainname:              $THISDOMAINNAME"
 
 MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
 MODULE_SAMPLES_DIR="/usr/local/pbase-data/pbase-preconfig-postgres-mastodon/module-config-samples"
+
+PBASE_DEFAULTS_FILENAME="pbase_preconfig.json"
+
+## look for either separate config file like "pbase_preconfig.json" or all-in-one file: "pbase_module_config.json"
+PBASE_CONFIG_FILENAME="$PBASE_DEFAULTS_FILENAME"
+
+locateConfigFile "$PBASE_CONFIG_FILENAME"
+
+## fetch config values from JSON file
+parseConfig "DEFAULT_EMAIL_ADDRESS" ".pbase_preconfig.defaultEmailAddress" ""
+
 DB_CONFIG_FILENAME="pbase_postgres.json"
 
 
@@ -97,6 +167,14 @@ sed -i "s/shomeddata/${RAND_PW_USER}/" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAM
 ## provide domainname in smtp config file
 sed -i "s/example.com/${THISDOMAINNAME}/" "${MODULE_CONFIG_DIR}/pbase_smtp.json"
 
+## when defined in pbase_preconfig.json use that to provide the Let's Encrypt email address
+if [[ $DEFAULT_EMAIL_ADDRESS != "" ]]; then
+  echo "Setting 'defaultEmailAddress' in pbase_apache.json and pbase_lets_encrypt.json"
+  echo "                         ${DEFAULT_EMAIL_ADDRESS}"
+  sed -i "s/yoursysadmin@yourrealmail.com/${DEFAULT_EMAIL_ADDRESS}/" "${MODULE_CONFIG_DIR}/pbase_lets_encrypt.json"
+  sed -i "s/yoursysadmin@yourrealmail.com/${DEFAULT_EMAIL_ADDRESS}/" "${MODULE_CONFIG_DIR}/pbase_apache.json"
+fi
+
 
 echo ""
 echo "Postgres, SMTP and Let's Encrypt module config files for Mastodon added."
@@ -110,7 +188,7 @@ echo "  vi pbase_smtp.json"
 echo ""
 
 echo "Next step - optional install local postgres service with:"
-echo "  yum install pbase-postgres"
+echo "  yum -y install pbase-postgres"
 echo ""
 
 %files

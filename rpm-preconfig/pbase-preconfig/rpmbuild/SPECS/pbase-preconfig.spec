@@ -192,6 +192,17 @@ PBASE_CONFIG_FILENAME="pbase_preconfig.json"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
+MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
+MODULE_SAMPLES_DIR="/usr/local/pbase-data/pbase-preconfig/module-config-samples"
+PBASE_DEFAULTS_FILENAME="pbase_preconfig.json"
+
+mkdir -p  ${MODULE_CONFIG_DIR}/
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${PBASE_CONFIG_FILENAME}  ${MODULE_CONFIG_DIR}/
+
+echo "PBase config directory:  ${MODULE_SAMPLES_DIR}"
+chmod 0600 ${MODULE_CONFIG_DIR}/
+chmod 0600 ${MODULE_SAMPLES_DIR}/${PBASE_CONFIG_FILENAME}
+
 
 ## modify grub2 config file
 export GRUB2_CONFIG_FILE="/etc/default/grub"
@@ -301,6 +312,10 @@ echo "    ...  or samples to be copied to 'module-config.d' in:"
 echo "       /usr/local/pbase-data/admin-only/module-config-samples/"
 echo "    Modify these default configurations if needed."
 echo ""
+echo "Next step - optional - set the defaultEmailAddress in pbase_preconfig.json"
+echo ""
+echo "  vi /usr/local/pbase-data/admin-only/module-config.d/pbase_preconfig.json"
+echo ""
 
 
 %preun
@@ -329,5 +344,4 @@ echo "rpm preuninstall"
 /usr/local/pbase-data/pbase-preconfig/etc-pki-rpm-gpg/RPM-GPG-KEY-EPEL-6
 /usr/local/pbase-data/pbase-preconfig/etc-pki-rpm-gpg/RPM-GPG-KEY-EPEL-7
 /usr/local/pbase-data/pbase-preconfig/etc-pki-rpm-gpg/RPM-GPG-KEY-EPEL-8
-/usr/local/pbase-data/admin-only/module-config.d/
-/usr/local/pbase-data/admin-only/module-config-samples/pbase_preconfig.json
+/usr/local/pbase-data/pbase-preconfig/module-config-samples/pbase_preconfig.json

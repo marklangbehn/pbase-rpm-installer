@@ -3,7 +3,7 @@
     "server": "smtp.mailgun.org",
     "port": 587,
     "login": "postmaster@mail.example.com",
-    "password": "mysmtppassword",
+    "password": "",
     "authMethod": "plain",
     "openSSLVerifyMode": "none"
   }

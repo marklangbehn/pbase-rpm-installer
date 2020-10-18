@@ -83,7 +83,7 @@ GITEA_CONFIG_FILENAME="pbase_gitea.json"
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${DB_CONFIG_FILENAME}  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${GITEA_CONFIG_FILENAME}  ${MODULE_CONFIG_DIR}/
 
-## use a hash of the date amysqls a random-ish string. use head to grab first 8 chars, and next 8 chars
+## use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars
 RAND_PW_USER="u$(date +%s | sha256sum | base64 | head -c 8)"
 RAND_PW_ROOT="r$(date +%s | sha256sum | base64 | head -c 16 | tail -c 8)"
 
@@ -127,6 +127,5 @@ echo ""
 
 %files
 %defattr(600,root,root,700)
-/usr/local/pbase-data/admin-only/module-config.d/
 /usr/local/pbase-data/pbase-preconfig-mysql-gitea/module-config-samples/pbase_gitea.json
 /usr/local/pbase-data/pbase-preconfig-mysql-gitea/module-config-samples/pbase_mysql.json

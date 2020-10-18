@@ -214,13 +214,14 @@ if [[ -d "/opt/mattermost" ]]; then
 fi
 
 echo "Downloading Mattermost server binary from releases.mattermost.com"
+VERSION="$(curl -s https://api.github.com/repos/mattermost/mattermost-server/releases/latest | grep tag_name | cut -d '"' -f 4 | sed s/^v//)"
+echo "Latest version:          $VERSION"
 
-## https://releases.mattermost.com/5.27.0/mattermost-5.27.0-linux-amd64.tar.gz
-##TODO how to find latest version dynamically?
-VER="5.27.0"
+## for example: https://releases.mattermost.com/5.27.0/mattermost-5.27.0-linux-amd64.tar.gz
+echo "    wget -q -O mattermost.tar.gz https://releases.mattermost.com/${VERSION}/mattermost-${VERSION}-linux-amd64.tar.gz"
 
 cd /usr/local/pbase-data/pbase-mattermost
-wget -q -O mattermost.tar.gz https://releases.mattermost.com/${VER}/mattermost-${VER}-linux-amd64.tar.gz
+wget -q -O mattermost.tar.gz https://releases.mattermost.com/${VERSION}/mattermost-${VERSION}-linux-amd64.tar.gz
 
 echo "Downloaded file:"
 ls -lh mattermost.tar.gz
@@ -277,7 +278,6 @@ systemctl daemon-reload
 systemctl enable mattermost
 
 echo "Starting service:        /etc/systemd/system/mattermost"
-
 systemctl start mattermost
 systemctl status mattermost
 
@@ -291,42 +291,29 @@ echo "Mattermost service running. Open this URL to complete install."
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
 
-
 if [[ "$USE_SUB_DOMAIN" == "true" ]] && [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
   PROXY_CONF="/etc/httpd/conf.d/mattermost-proxy-subdomain.conf"
   echo "Adding ${SUB_DOMAIN_NAME} subdomain proxy to mattermost application"
   /bin/cp --no-clobber /usr/local/pbase-data/pbase-mattermost/root-uri/etc-httpd-confd/mattermost-proxy-subdomain.conf /etc/httpd/conf.d/
-
   echo "Updating config file:    ${PROXY_CONF}"
-
   sed -i "s/mysubdomain.mydomain.com/${SUB_DOMAIN_NAME}.${THISDOMAINNAME}/" $PROXY_CONF
-
   systemctl daemon-reload
   systemctl restart httpd
-
   echo "                         http://${SUB_DOMAIN_NAME}.${THISDOMAINNAME}/install"
   echo "or"
   echo "                         http://localhost/install"
-
 elif [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
-
   echo "Adding / proxy to mattermost"
   /bin/cp --no-clobber /usr/local/pbase-data/pbase-mattermost/root-uri/etc-httpd-confd/mattermost-proxy.conf /etc/httpd/conf.d/
-
   PROXY_CONF="/etc/httpd/conf.d/mattermost-proxy.conf"
   echo "Updating config file:    ${PROXY_CONF}"
-
   sed -i "s/mydomain.com/${THISDOMAINNAME}/" $PROXY_CONF
-
   systemctl daemon-reload
   systemctl restart httpd
-
   echo "                         http://${THISDOMAINNAME}/install"
   echo "or"
   echo "                         http://localhost/install"
-
 else
-
   echo "                         http://${THISDOMAINNAME}:8065/install"
   echo "or"
   echo "                         http://localhost:8065/install"

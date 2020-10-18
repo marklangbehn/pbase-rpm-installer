@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-preconfig-mysql-nextcloud
-Requires: pbase-php-transitive-dep, pbase-preconfig-mysql80community
+Requires: pbase-php-transitive-dep, pbase-preconfig-mysql80community, jq
 
 %description
 Configure MySQL preset user and DB name for use by pbase-nextcloud
@@ -34,6 +34,65 @@ fail() {
     echo "ERROR: $1"
     exit 1
 }
+## config is stored in json file with root-only permissions
+## it can be one of two places:
+##     /usr/local/pbase-data/admin-only/pbase_module_config.json
+## or
+##     /usr/local/pbase-data/admin-only/module-config.d/pbase_apache.json
+
+
+locateConfigFile() {
+  ## name of config file is passed in param $1 - for example "pbase_apache.json"
+  PBASE_CONFIG_FILENAME="$1"
+
+  PBASE_CONFIG_BASE="/usr/local/pbase-data/admin-only"
+  PBASE_ALL_IN_ONE_CONFIG_FILENAME="pbase_module_config.json"
+  PBASE_CONFIG_DIR="${PBASE_CONFIG_BASE}/module-config.d"
+
+  ## Look for config .json file in one of two places.
+  ##     /usr/local/pbase-data/admin-only/pbase_module_config.json
+  ## or
+  ##     /usr/local/pbase-data/admin-only/module-config.d/pbase_apache.json
+
+  PBASE_CONFIG_SEPARATE="${PBASE_CONFIG_DIR}/${PBASE_CONFIG_FILENAME}"
+  PBASE_CONFIG_ALLINONE="${PBASE_CONFIG_BASE}/${PBASE_ALL_IN_ONE_CONFIG_FILENAME}"
+
+  #echo "PBASE_CONFIG_SEPARATE:   $PBASE_CONFIG_SEPARATE"
+  #echo "PBASE_CONFIG_ALLINONE:   $PBASE_CONFIG_ALLINONE"
+
+  ## check if either file exists, assume SEPARATE as default
+  PBASE_CONFIG="$PBASE_CONFIG_SEPARATE"
+
+  if [[ -f "$PBASE_CONFIG_ALLINONE" ]] ; then
+    PBASE_CONFIG="$PBASE_CONFIG_ALLINONE"
+  fi
+
+  if [[ -f "$PBASE_CONFIG" ]] ; then
+    echo "Config file found:       $PBASE_CONFIG"
+  else
+    echo "Custom config not found: $PBASE_CONFIG"
+  fi
+}
+
+
+parseConfig() {
+  ## fallback when jq is not installed, use the default in the third param
+  HAS_JQ_INSTALLED="$(which jq)"
+  #echo "HAS_JQ_INSTALLED:   $HAS_JQ_INSTALLED"
+
+  if [[ -z "$HAS_JQ_INSTALLED" ]] || [[ ! -f "$PBASE_CONFIG" ]] ; then
+    ## echo "fallback to default: $3"
+    eval "$1"="$3"
+    return 1
+  fi
+
+  ## use jq to extract a json field named in the second param
+  PARSED_VALUE="$(cat $PBASE_CONFIG  |  jq $2)"
+
+  ## use eval to assign that to the variable named in the first param
+  eval "$1"="$PARSED_VALUE"
+}
+
 
 check_linux_version() {
   AMAZON1_RELEASE=""
@@ -67,11 +126,24 @@ check_linux_version() {
 }
 
 
+THISHOSTNAME="$(hostname)"
+THISDOMAINNAME="$(hostname -d)"
+
 echo "PBase MySQL 8.0 community create config preset user and DB name for use by pbase-nextcloud"
 
 MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
 MODULE_SAMPLES_DIR="/usr/local/pbase-data/pbase-preconfig-mysql-nextcloud/module-config-samples"
 DB_CONFIG_FILENAME="pbase_mysql80community.json"
+
+PBASE_DEFAULTS_FILENAME="pbase_preconfig.json"
+
+## look for either separate config file like "pbase_preconfig.json" or all-in-one file: "pbase_module_config.json"
+PBASE_CONFIG_FILENAME="$PBASE_DEFAULTS_FILENAME"
+
+locateConfigFile "$PBASE_CONFIG_FILENAME"
+
+## fetch config values from JSON file
+parseConfig "DEFAULT_EMAIL_ADDRESS" ".pbase_preconfig.defaultEmailAddress" ""
 
 
 #echo "Nextcloud config:       ${MODULE_CONFIG_DIR}/pbase_nextcloud.json"
@@ -79,7 +151,7 @@ DB_CONFIG_FILENAME="pbase_mysql80community.json"
 
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_lets_encrypt.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_apache.json  ${MODULE_CONFIG_DIR}/
-/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_mysql80community.json  ${MODULE_CONFIG_DIR}/pbase_mysql80community.json
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_mysql80community.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_s3storage.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_smtp.json  ${MODULE_CONFIG_DIR}/
 
@@ -87,35 +159,59 @@ DB_CONFIG_FILENAME="pbase_mysql80community.json"
 RAND_PW_USER="u$(date +%s | sha256sum | base64 | head -c 8)"
 RAND_PW_ROOT="r$(date +%s | sha256sum | base64 | head -c 16 | tail -c 8)"
 
-echo "RAND_PW_USER:            $RAND_PW_USER"
-echo "RAND_PW_ROOT:            $RAND_PW_ROOT"
+echo "MySQL user and DB name for use by pbase-nextcloud rpm"
+echo "Setting database 'rootPassword' and 'password' in ${DB_CONFIG_FILENAME}"
+echo "       for MySQL root:   $RAND_PW_ROOT"
+echo "       for wordpress DB: $RAND_PW_USER"
 
-## provide random password in JSON config file
+## provide random password in database config file
 sed -i "s/shomeddata/${RAND_PW_USER}/" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}"
 sed -i "s/SHOmeddata/${RAND_PW_ROOT}/" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}"
 
+## provide domain name in smtp config file
+if [[ -e "${MODULE_CONFIG_DIR}/pbase_smtp.json" ]]; then
+  sed -i "s/example.com/${THISDOMAINNAME}/" "${MODULE_CONFIG_DIR}/pbase_smtp.json"
+fi
+
+## when defined in pbase_preconfig.json use that to provide the Let's Encrypt email address
+if [[ $DEFAULT_EMAIL_ADDRESS != "" ]]; then
+  echo "Setting 'defaultEmailAddress' field in pbase_apache.json"
+  sed -i "s/yoursysadmin@yourrealmail.com/${DEFAULT_EMAIL_ADDRESS}/" "${MODULE_CONFIG_DIR}/pbase_apache.json"
+
+  echo "Setting 'defaultEmailAddress' field in pbase_lets_encrypt.json"
+  echo "                         ${DEFAULT_EMAIL_ADDRESS}"
+  sed -i "s/yoursysadmin@yourrealmail.com/${DEFAULT_EMAIL_ADDRESS}/" "${MODULE_CONFIG_DIR}/pbase_lets_encrypt.json"
+fi
+
+
 echo ""
-echo "MySQL module config file for Nextcloud:"
-echo "Next step - change the default MySQL DB root password and application-db"
-## echo "            config by editing pbase_mysql.json. For example:"
-echo "            config by editing ${DB_CONFIG_FILENAME}. For example:"
+echo "Default configuration files for Nextcloud:"
+echo "Next step - optional - customize your configuration"
+echo "            change the Let's Encrypt admin email if needed "
+echo "              by editing pbase_lets_encrypt.json"
+echo "            change the Apache admin email if needed "
+echo "              by editing pbase_apache.json"
+echo "            change the default MySQL DB password and application database"
+echo "              config if needed by editing ${DB_CONFIG_FILENAME}"
+echo "            For example:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
 echo "  vi ${DB_CONFIG_FILENAME}"
 echo "  vi pbase_apache.json"
 echo "  vi pbase_lets_encrypt.json"
+echo "  vi pbase_apache.json"
 echo ""
 
-echo "Next step - install mysqld and nextcloud service with:"
+echo "Next step - install MySQL and Nextcloud application with:"
 echo ""
 echo "  yum -y install pbase-mysql80community"
-echo "  yum install pbase-nextcloud"
+echo "  yum -y install pbase-nextcloud"
 echo ""
 
 %files
 %defattr(600,root,root,700)
 /usr/local/pbase-data/pbase-preconfig-mysql-nextcloud/module-config-samples/pbase_apache.json
 /usr/local/pbase-data/pbase-preconfig-mysql-nextcloud/module-config-samples/pbase_lets_encrypt.json
-/usr/local/pbase-data/pbase-preconfig-mysql-nextcloud/module-config-samples/pbase_s3storage.json
 /usr/local/pbase-data/pbase-preconfig-mysql-nextcloud/module-config-samples/pbase_mysql80community.json
+/usr/local/pbase-data/pbase-preconfig-mysql-nextcloud/module-config-samples/pbase_s3storage.json
 /usr/local/pbase-data/pbase-preconfig-mysql-nextcloud/module-config-samples/pbase_smtp.json

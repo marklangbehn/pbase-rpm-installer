@@ -137,6 +137,10 @@ PBASE_CONFIG_FILENAME="pbase_gitea.json"
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config value from JSON file
+
+## version to download
+parseConfig "GITEA_VER_CONFIG" ".pbase_gitea.giteaVersion" ""
+
 parseConfig "HTTP_PORT" ".pbase_gitea.httpPort" "3000"
 parseConfig "ADD_APACHE_PROXY" ".pbase_gitea.addApacheProxy" "false"
 parseConfig "DATABASE" ".pbase_gitea.database" "mysql"
@@ -154,10 +158,15 @@ fi
 
 echo "Downloading Gitea server binary from gitea.io"
 
-##TODO how to find latest version dynamically?
-VER="1.12.4"
+if [[ ${GITEA_VER_CONFIG} != "" ]]; then
+  VERSION="${GITEA_VER_CONFIG}"
+  echo "Configured version:      $GITEA_VER_CONFIG"
+else
+  VERSION="$(curl -s https://api.github.com/repos/go-gitea/gitea/releases/latest | grep tag_name | cut -d '"' -f 4 | sed s/^v//)"
+  echo "Latest version:          $VERSION"
+fi
 
-DOWNLOAD_URL="https://github.com/go-gitea/gitea/releases/download/v${VER}/gitea-${VER}-linux-amd64.xz"
+DOWNLOAD_URL="https://github.com/go-gitea/gitea/releases/download/v${VERSION}/gitea-${VERSION}-linux-amd64.xz"
 
 echo "Github DOWNLOAD_URL:     $DOWNLOAD_URL"
 

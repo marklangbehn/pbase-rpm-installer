@@ -265,7 +265,7 @@ tar zxf latest.tar.gz
 ls -lh
 
 if [[ $WORDPRESS_URI_BASE == "" ]] ; then
-  echo "URI Base is empty, moving to web root"
+  echo "URI Base is empty, Wordpress will be website root"
   /bin/cp -rp "${WWW_ROOT}" "${WWW_ROOT}-$(date +"%Y-%m-%d_%H-%M-%S")"
 
   cd wordpress

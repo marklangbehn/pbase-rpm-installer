@@ -127,6 +127,5 @@ echo ""
 
 %files
 %defattr(600,root,root,700)
-/usr/local/pbase-data/admin-only/module-config.d/
 /usr/local/pbase-data/pbase-preconfig-postgres-gitea/module-config-samples/pbase_gitea.json
 /usr/local/pbase-data/pbase-preconfig-postgres-gitea/module-config-samples/pbase_postgres.json

@@ -1,7 +1,7 @@
 Name: pbase-wordpress
 Version: 1.0
 Release: 0
-Summary: PBase WordPress service rpm
+Summary: PBase WordPress web application rpm
 Group: System Environment/Base
 License: Apache-2.0
 URL: https://pbase-foundation.com
@@ -9,7 +9,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-wordpress
-Requires: pbase-phpmysql-transitive-dep,httpd-tools,wget
+Requires: pbase-phpmysql-transitive-dep, httpd-tools, wget
 
 ## pbase-phpmysql-transitive-dep - has requires for:
 ## php,php-cli,php-json,php-gd,php-mbstring,php-pdo,php-xml,php-pecl-zip,httpd-tools,wget
@@ -265,7 +265,7 @@ tar zxf latest.tar.gz
 ls -lh
 
 if [[ $WORDPRESS_URI_BASE == "" ]] ; then
-  echo "URI Base is empty, moving to web root"
+  echo "URI Base is empty, Wordpress will be website root"
   /bin/cp -rp "${WWW_ROOT}" "${WWW_ROOT}-$(date +"%Y-%m-%d_%H-%M-%S")"
 
   cd wordpress

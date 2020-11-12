@@ -280,7 +280,7 @@ elif [[ "${REDHAT_RELEASE_DIGIT}" == "8" ]] ; then
   echo "EL8 Dependency repo:     pbase-el8-dep.repo"
   /bin/cp -f /usr/local/pbase-data/pbase-preconfig/etc-yum-repos-d/el8/pbase-el8-dep.repo /etc/yum.repos.d/
 elif [[ "${FEDORA_RELEASE}" != "" ]] ; then
-  echo "Fedora Dependency repo:     pbase-fedora-dep.repo"
+  echo "Fedora Dependency repo:  pbase-fedora-dep.repo"
   /bin/cp -f /usr/local/pbase-data/pbase-preconfig/etc-yum-repos-d/fedora/pbase-fedora-dep.repo /etc/yum.repos.d/
 else
   ## assume EL7 otherwise

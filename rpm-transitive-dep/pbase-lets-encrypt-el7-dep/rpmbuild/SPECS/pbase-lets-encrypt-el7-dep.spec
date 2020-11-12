@@ -9,7 +9,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot 
 
 Provides: pbase-lets-encrypt-transitive-dep
-Requires: pbase-apache,httpd,mod_ssl,certbot,certbot-apache,python-acme
+Requires: httpd,mod_ssl,certbot,certbot-apache,python-acme
 
 
 %description

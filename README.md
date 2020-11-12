@@ -19,6 +19,8 @@ yum -y install pbase-lets-encrypt
 Additionally, you may want to lock down SSH access and enable the firewall.
 ```jsx
 yum -y install pbase-ssh-fail2ban
+## or the 'crowdsec' tool
+yum -y install pbase-crowdsec
 yum -y install pbase-firewall-enable
 ```
 
@@ -194,6 +196,20 @@ yum -y --disablerepo=AppStream install postgresql12-server postgresql12-contrib
 yum -y install pbase-postgres12
 ```
 
+
+
+Postgres 13 - using the postgresql.org repo
+```
+yum -y install pbase-preconfig-postgres13
+yum -y install pbase-postgres13
+```
+
+Postgres 13 - using the postgresql.org repo - on CentOS 8 only  
+```
+yum -y install pbase-preconfig-postgres13
+yum -y --disablerepo=AppStream install postgresql13-server postgresql13-contrib
+yum -y install pbase-postgres13
+```
 
 
 ## MySQL
@@ -467,7 +483,7 @@ yum -y install pbase-realtime-kernel
 A wide variety of media components in the rpm-fusion repository.  
 Here's how to install obs-studio:
 ```
-yum -y install pbase-preconfig-rpmfusion
+yum -y install pbase-rpmfusion
 yum -y install obs-studio
 ```
 
@@ -484,6 +500,9 @@ yum -y install activpb-mastodon
 ```
 
 Here's how to install Peertube:
+Default install is to assume your domain is registered in DNS with a 'peertube' subdomain.  
+For example: peertube.mydomainname.com  
+If you want to change this edit the `activpb_peertube.json` preconfig file.
 ```
 yum -y install https://pbase-foundation.com/pbase-preconfig.rpm
 yum -y install pbase-preconfig-postgres-peertube

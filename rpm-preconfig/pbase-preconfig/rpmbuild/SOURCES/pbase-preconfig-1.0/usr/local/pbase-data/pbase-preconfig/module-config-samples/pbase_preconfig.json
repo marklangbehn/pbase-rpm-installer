@@ -1,7 +1,5 @@
 {
   "pbase_preconfig": {
-    "defaultEmailAddress": "",
-    "setSetSelinuxDisabled": true,
-    "setSetGrubTimeout1": true
+    "defaultEmailAddress": ""
   }
 }

@@ -1,21 +1,21 @@
-Name: pbase-postgres12
+Name: pbase-postgres13
 Version: 1.0
 Release: 0
-Summary: PBase Postgres 12 server rpm
+Summary: PBase Postgres 13 server rpm
 Group: System Environment/Base
 License: Apache-2.0
 URL: https://pbase-foundation.com
-Source0: pbase-postgres12-1.0.tar.gz
+Source0: pbase-postgres13-1.0.tar.gz
 BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
-Provides: pbase-postgres12
-Requires: postgresql12 postgresql12-server postgresql12-contrib postgresql12-libs
+Provides: pbase-postgres13
+Requires: postgresql13 postgresql13-server postgresql13-contrib postgresql13-libs
 
-## omitted:  postgresql12-devel
+## omitted:  postgresql13-devel
 
 %description
-Install PostgreSQL 12 server
+Install PostgreSQL 13 server
 
 %prep
 %setup -q
@@ -84,7 +84,7 @@ check_linux_version() {
 }
 
 
-echo "PBase Postgres 12 server"
+echo "PBase Postgres 13 server"
 
 ## config is stored in json file with root-only permissions
 ## it can be one of two places:
@@ -146,21 +146,21 @@ RAND_PW_USER="u$(date +%s | sha256sum | base64 | head -c 8)"
 #echo "RAND_PW_USER:            $RAND_PW_USER"
 
 ## look for either separate config file "pbase_postgres.json" or all-in-one file: "pbase_module_config.json"
-PBASE_CONFIG_FILENAME="pbase_postgres12.json"
+PBASE_CONFIG_FILENAME="pbase_postgres13.json"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config values from JSON file
 
-parseConfig "CONFIG_DB_HOSTNAME" ".pbase_postgres12[0].default.hostName" "localhost"
-parseConfig "CONFIG_DB_PORT"     ".pbase_postgres12[0].default.port" "5432"
+parseConfig "CONFIG_DB_HOSTNAME" ".pbase_postgres13[0].default.hostName" "localhost"
+parseConfig "CONFIG_DB_PORT"     ".pbase_postgres13[0].default.port" "5432"
 
-parseConfig "CONFIG_DB_STARTSVC" ".pbase_postgres12[0].default.startService" "true"
-parseConfig "CONFIG_DB_INSTALL"  ".pbase_postgres12[0].default.install" "true"
+parseConfig "CONFIG_DB_STARTSVC" ".pbase_postgres13[0].default.startService" "true"
+parseConfig "CONFIG_DB_INSTALL"  ".pbase_postgres13[0].default.install" "true"
 
-parseConfig "CONFIG_DB_NAME"     ".pbase_postgres12[0].default.database[0].name" "app_db"
-parseConfig "CONFIG_DB_USER"     ".pbase_postgres12[0].default.database[0].user" "dbappuser"
-parseConfig "CONFIG_DB_PSWD"     ".pbase_postgres12[0].default.database[0].password" $RAND_PW_USER
+parseConfig "CONFIG_DB_NAME"     ".pbase_postgres13[0].default.database[0].name" "app_db"
+parseConfig "CONFIG_DB_USER"     ".pbase_postgres13[0].default.database[0].user" "dbappuser"
+parseConfig "CONFIG_DB_PSWD"     ".pbase_postgres13[0].default.database[0].password" $RAND_PW_USER
 
 echo "CONFIG_DB_HOSTNAME:      $CONFIG_DB_HOSTNAME"
 echo "CONFIG_DB_PORT:          $CONFIG_DB_PORT"
@@ -191,24 +191,24 @@ check_linux_version
 
 
 if [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]]; then
-  echo "Calling:                 service postgresql-12 initdb"
-  /sbin/service postgresql-12 initdb
+  echo "Calling:                 service postgresql-13 initdb"
+  /sbin/service postgresql-13 initdb
 else
-  echo "Calling:                 postgresql-12-setup initdb"
-  /usr/pgsql-12/bin/postgresql-12-setup initdb
+  echo "Calling:                 postgresql-13-setup initdb"
+  /usr/pgsql-13/bin/postgresql-13-setup initdb
 fi
 
 
 ## configure pg_hba.conf
 ## make backup copy of file
-/bin/cp "/var/lib/pgsql/12/data/pg_hba.conf" "/var/lib/pgsql/12/data/pg_hba.conf-PREV"
+/bin/cp "/var/lib/pgsql/13/data/pg_hba.conf" "/var/lib/pgsql/13/data/pg_hba.conf-PREV"
 
 
-PG_HBA_CONF="/var/lib/pgsql/12/data/pg_hba.conf"
+PG_HBA_CONF="/var/lib/pgsql/13/data/pg_hba.conf"
 TRUST_ALL_LINE="host    all             all             0.0.0.0/0               md5"
 #TRUST_ALL_LINE="host    all             all             0.0.0.0/0               trust"
 
-echo "Adding login config to:  /var/lib/pgsql/12/data/pg_hba.conf"
+echo "Adding login config to:  /var/lib/pgsql/13/data/pg_hba.conf"
 echo "                         ${TRUST_ALL_LINE}"
 
 echo ""                   >> ${PG_HBA_CONF}
@@ -226,7 +226,7 @@ MAX_CONNECTIONS_LINE_DFT="max_connections = 100"
 SEARCH_MAX_CONNECTIONS_LINE="^max_connections = 100"
 REPLACE_MAX_CONNECTIONS_LINE="max_connections = 500"
 
-POSTGRES_CONF_FILE="/var/lib/pgsql/12/data/postgresql.conf"
+POSTGRES_CONF_FILE="/var/lib/pgsql/13/data/postgresql.conf"
 
 if [[ -e ${POSTGRES_CONF_FILE} ]]; then
   echo "Configuring:             ${POSTGRES_CONF_FILE}"
@@ -276,7 +276,7 @@ if [[ "${PORT_NUM_SUFFIX}" != "" ]]; then
   else
     ## on EL7+ add systemd include file
     echo "Custom systemd config:   /etc/systemd/system/postgresql.service"
-    /bin/cp --no-clobber /usr/local/pbase-data/pbase-postgres12/etc-systemd-system/postgresql.service  /etc/systemd/system/
+    /bin/cp --no-clobber /usr/local/pbase-data/pbase-postgres13/etc-systemd-system/postgresql.service  /etc/systemd/system/
     sed -i "s/5432/${CONFIG_DB_PORT}/" "/etc/systemd/system/postgresql.service"
 
     ## modify port number in postgresql.conf
@@ -297,22 +297,22 @@ if [[ "${PORT_NUM_SUFFIX}" != "" ]]; then
 fi
 
 
-# Start and enable postgresql-12 service at boot-time
-echo "Starting Service:        postgresql-12"
+# Start and enable postgresql-13 service at boot-time
+echo "Starting Service:        postgresql-13"
 
 
 if [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]]; then
-  /sbin/chkconfig postgresql-12 --level 345 on || fail "chkconfig failed to enable postgresql-12 service"
-  /sbin/service postgresql-12 start || fail "failed to start postgresql-12 service"
+  /sbin/chkconfig postgresql-13 --level 345 on || fail "chkconfig failed to enable postgresql-13 service"
+  /sbin/service postgresql-13 start || fail "failed to start postgresql-13 service"
 else
   /bin/systemctl daemon-reload
-  /bin/systemctl enable postgresql-12.service || fail "systemctl failed to enable postgresql-12 service"
-  /bin/systemctl start postgresql-12 || fail "failed to restart postgresql-12 service"
+  /bin/systemctl enable postgresql-13.service || fail "systemctl failed to enable postgresql-13 service"
+  /bin/systemctl start postgresql-13 || fail "failed to restart postgresql-13 service"
 fi
 
 
 ## make a copy of the create-user script
-SRC_SCRIPT_DIR="/usr/local/pbase-data/pbase-postgres12/postgres-init"
+SRC_SCRIPT_DIR="/usr/local/pbase-data/pbase-postgres13/postgres-init"
 SCRIPT_DIR="/usr/local/pbase-data/admin-only/postgres-init"
 
 echo "Script:                  $SCRIPT_DIR"
@@ -351,23 +351,23 @@ echo ""
 
 ## Add aliases helpful for admin tasks to .bashrc
 
-append_bashrc_alias editpostgreshba "vi /var/lib/pgsql/12/data/pg_hba.conf"
-append_bashrc_alias editpostgresconf "vi /var/lib/pgsql/12/data/postgresql.conf"
+append_bashrc_alias editpostgreshba "vi /var/lib/pgsql/13/data/pg_hba.conf"
+append_bashrc_alias editpostgresconf "vi /var/lib/pgsql/13/data/postgresql.conf"
 
 if [[ "$REDHAT_RELEASE_DIGIT" == "6" ]]; then
-  append_bashrc_alias stoppostgres "service postgresql-12 stop"
-  append_bashrc_alias startpostgres "service postgresql-12 start"
-  append_bashrc_alias statuspostgres "service postgresql-12 status"
-  append_bashrc_alias restartpostgres "service postgresql-12 restart"
+  append_bashrc_alias stoppostgres "service postgresql-13 stop"
+  append_bashrc_alias startpostgres "service postgresql-13 start"
+  append_bashrc_alias statuspostgres "service postgresql-13 status"
+  append_bashrc_alias restartpostgres "service postgresql-13 restart"
 else
-  append_bashrc_alias stoppostgres "/bin/systemctl stop postgresql-12"
-  append_bashrc_alias startpostgres "/bin/systemctl start postgresql-12"
-  append_bashrc_alias statuspostgres "/bin/systemctl status postgresql-12"
-  append_bashrc_alias restartpostgres "/bin/systemctl restart postgresql-12"
+  append_bashrc_alias stoppostgres "/bin/systemctl stop postgresql-13"
+  append_bashrc_alias startpostgres "/bin/systemctl start postgresql-13"
+  append_bashrc_alias statuspostgres "/bin/systemctl status postgresql-13"
+  append_bashrc_alias restartpostgres "/bin/systemctl restart postgresql-13"
 fi
 
 
 %files
 %defattr(-,root,root,-)
-/usr/local/pbase-data/pbase-postgres12/postgres-init/create-dbappuser.sql
-/usr/local/pbase-data/pbase-postgres12/etc-systemd-system/postgresql.service
+/usr/local/pbase-data/pbase-postgres13/postgres-init/create-dbappuser.sql
+/usr/local/pbase-data/pbase-postgres13/etc-systemd-system/postgresql.service

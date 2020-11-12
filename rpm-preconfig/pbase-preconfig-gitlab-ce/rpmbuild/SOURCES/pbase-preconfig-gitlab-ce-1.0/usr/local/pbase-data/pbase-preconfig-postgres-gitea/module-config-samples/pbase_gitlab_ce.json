@@ -1,6 +1,6 @@
 {
   "pbase_gitlab_ce": {
-      "externalUrlSubdomain": "gitlab",
+      "externalUrlSubdomain": "git",
       "externalUrlIsHttps": true,
       "letsEncryptEnable": true,
       "letsEncryptEmailAddress": "yoursysadmin@yourrealmail.com",

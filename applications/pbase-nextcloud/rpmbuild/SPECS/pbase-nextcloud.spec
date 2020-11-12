@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-nextcloud
-Requires: pbase-phpmysql-transitive-dep, pbase-apache, unzip, wget
+Requires: pbase-phpmysql-transitive-dep, pbase-apache, unzip, wget, ImageMagick, ImageMagick-devel, php-devel, php-pear, gcc, make
 
 ## pbase-phpmysql-transitive-dep - has requires for:
 ## php,php-cli,php-json,php-gd,php-mbstring,php-pdo,php-xml,php-pecl-zip,httpd-tools,wget
@@ -177,40 +177,36 @@ PBASE_CONFIG_FILENAME="pbase_nextcloud.json"
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config value from JSON file
-parseConfig "HTTP_PORT" ".pbase_nextcloud.httpPort" "3000"
-parseConfig "ADD_APACHE_PROXY" ".pbase_nextcloud.addApacheProxy" "true"
+parseConfig "CONFIG_DATABASE" ".pbase_nextcloud.database" ""
+parseConfig "CONFIG_URLSUBPATH" ".pbase_nextcloud.urlSubPath" ""
+parseConfig "CONFIG_USE_SUBDOMAIN" ".pbase_nextcloud.useSubDomain" "true"
+parseConfig "CONFIG_SUBDOMAIN_NAME" ".pbase_nextcloud.subDomainName" "nextcloud"
 
-#echo "HTTP_PORT:               $HTTP_PORT"
-#echo "ADD_APACHE_PROXY:        $ADD_APACHE_PROXY"
+echo "CONFIG_DATABASE:         $CONFIG_DATABASE"
+echo "CONFIG_URLSUBPATH:       $CONFIG_URLSUBPATH"
+echo "CONFIG_USE_SUBDOMAIN:    $CONFIG_USE_SUBDOMAIN"
+echo "CONFIG_SUBDOMAIN_NAME:   $CONFIG_SUBDOMAIN_NAME"
+
+SLASH_NEXTCLOUD_URLSUBPATH=""
+
+if [[ "${CONFIG_URLSUBPATH}" != "" ]]; then
+  SLASH_NEXTCLOUD_URLSUBPATH="/${CONFIG_URLSUBPATH}"
+fi
+
+echo "SLASH_NEXTCLOUD_URLSUBPATH: ${SLASH_NEXTCLOUD_URLSUBPATH}"
 
 
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
 
-## check for htdocs location
-WWW_ROOT="/var/www/html"
+## FULLDOMAINNAME is the subdomain if declared plus the domain
+FULLDOMAINNAME="${THISDOMAINNAME}"
 
-if [[ -d "/var/www/html/${THISDOMAINNAME}/public" ]]; then
-  WWW_ROOT="/var/www/html/${THISDOMAINNAME}/public"
-elif [[ -d "/var/www/${THISDOMAINNAME}/html" ]]; then
-  WWW_ROOT="/var/www/${THISDOMAINNAME}/html"
-elif [[ -d "/var/www/html" ]]; then
-  WWW_ROOT="/var/www/html"
+if [[ "$CONFIG_USE_SUBDOMAIN" == "true" ]] && [[ "$CONFIG_SUBDOMAIN_NAME" != "" ]] ; then
+  FULLDOMAINNAME="${CONFIG_SUBDOMAIN_NAME}.${THISDOMAINNAME}"
+  echo "Using subdomain:         ${FULLDOMAINNAME}"
 fi
 
-## check if already installed
-if [[ -d "$WWW_ROOT/nextcloud/" ]]; then
-  echo "$WWW_ROOT/nextcloud/ directory already exists - exiting"
-  exit 0
-fi
-
-## prevent .htaccess file from causing problems for wordpress - if found rename it to DOT.htaccess
-if [[ -e "${WWW_ROOT}/.htaccess" ]] ; then
-  echo "Found .htaccess:         ${WWW_ROOT}/.htaccess"
-  echo "Renaming to:             DOT.htaccess"
-
-  mv "${WWW_ROOT}/.htaccess" "${WWW_ROOT}/DOT.htaccess"
-fi
 
 echo "Downloading NextCloud server binary from download.nextcloud.com"
 
@@ -231,8 +227,16 @@ unzip -q latest.zip -d "$VAR_WWW_ROOT"
 mkdir $VAR_WWW_ROOT/nextcloud/data
 chown -R apache:apache $VAR_WWW_ROOT/nextcloud/*
 
-echo "Apache alias config:     /etc/httpd/conf.d/nextcloud.conf"
-/bin/cp --no-clobber /usr/local/pbase-data/pbase-nextcloud/etc-httpd-confd/nextcloud.conf /etc/httpd/conf.d/
+echo "Nextcloud base:          ${VAR_WWW_ROOT}/nextcloud"
+#echo "Apache alias config:     /etc/httpd/conf.d/nextcloud.conf"
+#/bin/cp --no-clobber /usr/local/pbase-data/pbase-nextcloud/etc-httpd-confd/nextcloud.conf /etc/httpd/conf.d/
+
+echo "Apache vhost config:     /etc/httpd/conf.d/nextcloud-vhost.conf"
+echo "FULLDOMAINNAME:          $FULLDOMAINNAME"
+/bin/cp --no-clobber /usr/local/pbase-data/pbase-nextcloud/etc-httpd-confd/nextcloud-vhost.conf /etc/httpd/conf.d/
+
+## replace your.server.com in template conf
+sed -i "s/your.server.com/${FULLDOMAINNAME}/" "/etc/httpd/conf.d/nextcloud-vhost.conf"
 
 
 ## adjust php-fpm owners list
@@ -260,6 +264,19 @@ if [[ -e "/etc/yum.repos.d/amzn2extra-php72.repo" ]]; then
   fi
 fi
 
+IMAGEMAGIK_PHP_INI="/etc/php.d/20-imagick.ini"
+## add imagemagik php extension
+if [[ -e "${IMAGEMAGIK_PHP_INI}" ]]; then
+  echo "Already exists:          ${IMAGEMAGIK_PHP_INI}"
+else
+  echo "Invoking:                pecl install imagick"
+  pecl install imagick
+
+  echo ""
+  echo "Adding PHP extension:    ${IMAGEMAGIK_PHP_INI}"
+  echo "extension=imagick.so" > ${IMAGEMAGIK_PHP_INI}
+fi
+
 
 echo "Restarting php-fpm and httpd"
 
@@ -280,14 +297,21 @@ fi
 echo "Default PBase module configuration directory:"
 echo "                        /usr/local/pbase-data/admin-only/module-config.d/"
 
+INSTALLED_DOMAIN_URI="${THISDOMAINNAME}${SLASH_NEXTCLOUD_URLSUBPATH}"
+
+if [[ "$CONFIG_USE_SUBDOMAIN" == "true" ]] && [[ "$CONFIG_SUBDOMAIN_NAME" != "" ]] ; then
+  INSTALLED_DOMAIN_URI="${FULLDOMAINNAME}"
+fi
+
+echo ""
 echo "NextCloud web application is running."
 echo "Next step - Open this URL to complete the install:"
 echo "if locally installed"
-echo "                         http://localhost/nextcloud"
+echo "                         http://localhost${SLASH_NEXTCLOUD_URLSUBPATH}"
 echo "if hostname is accessible"
-echo "                         http://${THISHOSTNAME}/nextcloud"
-echo "or if your domain is registered in DNS"
-echo "                         http://${THISDOMAINNAME}/nextcloud"
+echo "                         http://${INSTALLED_DOMAIN_URI}"
+echo "or if your domain is registered in DNS and has HTTPS enabled"
+echo "                         https://${INSTALLED_DOMAIN_URI}"
 echo ""
 
 

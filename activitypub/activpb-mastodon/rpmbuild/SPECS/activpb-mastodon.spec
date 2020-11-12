@@ -101,15 +101,15 @@ parseConfig() {
 
 echo "PBase Mastodon server install"
 
-## check if prerequisite base config rpm has been installed
-if [[ ! -d "/home/mastodon" ]]; then
-  echo "/home/mastodon directory not found - exiting"
-  exit 0
-fi
-
 ## check if already installed
 if [[ -e "/home/mastodon/live/.env.production" ]]; then
   echo "/home/mastodon/live/.env.production already exists - exiting"
+  exit 0
+fi
+
+## check if prerequisite base config rpm has been installed
+if [[ ! -d "/home/mastodon" ]]; then
+  echo "/home/mastodon directory not found - exiting"
   exit 0
 fi
 
@@ -130,7 +130,8 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 ## fetch config value from JSON file
 parseConfig "HTTP_PORT" ".activpb_mastodon.httpPort" "8065"
 parseConfig "ADD_NGINX_PROXY" ".activpb_mastodon.addNgnixProxy" "true"
-parseConfig "SUB_DOMAIN_NAME" ".activpb_mastodon.subDomainName" ""
+parseConfig "USE_SUB_DOMAIN" ".activpb_mastodon.useSubDomain" "true"
+parseConfig "SUB_DOMAIN_NAME" ".activpb_mastodon.subDomainName" "mastodon"
 parseConfig "WEB_DOMAIN_NAME" ".activpb_mastodon.webDomainName" ""
 parseConfig "ALTERNATE_DOMAINS" ".activpb_mastodon.alternateDomains" ""
 parseConfig "SINGLE_USER_MODE" ".activpb_mastodon.singleUserMode" "false"
@@ -139,7 +140,8 @@ parseConfig "LIMITED_FEDERATION_MODE" ".activpb_mastodon.limitedFederationMode" 
 
 
 echo "HTTP_PORT:               $HTTP_PORT"
-echo "ADD_NGINX_PROXY:         $ADD_NGINX_PROXY"
+##echo "ADD_NGINX_PROXY:         $ADD_NGINX_PROXY"
+echo "USE_SUB_DOMAIN:          $USE_SUB_DOMAIN"
 echo "SUB_DOMAIN_NAME:         $SUB_DOMAIN_NAME"
 echo "WEB_DOMAIN_NAME:         $WEB_DOMAIN_NAME"
 echo "ALTERNATE_DOMAINS:       $ALTERNATE_DOMAINS"
@@ -182,6 +184,7 @@ echo "CONFIG_DB_CHARSET:       $CONFIG_DB_CHARSET"
 
 echo "CONFIG_DB_STARTSVC:      $CONFIG_DB_STARTSVC"
 echo "CONFIG_DB_INSTALL:       $CONFIG_DB_INSTALL"
+echo ""
 echo "CONFIG_DB_NAME:          $CONFIG_DB_NAME"
 echo "CONFIG_DB_USER:          $CONFIG_DB_USER"
 echo "CONFIG_DB_PSWD:          $CONFIG_DB_PSWD"
@@ -249,14 +252,25 @@ systemctl start redis
 systemctl status redis
 
 
+## FULLDOMAINNAME is the subdomain if declared plus the domain
+FULLDOMAINNAME="${THISDOMAINNAME}"
+
+if [[ "$USE_SUB_DOMAIN" == "true" ]] && [[ "$SUB_DOMAIN_NAME" != "" ]] ; then
+  FULLDOMAINNAME="${SUB_DOMAIN_NAME}.${THISDOMAINNAME}"
+  echo "Using subdomain:         ${FULLDOMAINNAME}"
+fi
+
 ## LETS ENCRYPT - HTTPS CERTIFICATE
 
 if [[ $EXECUTE_CERTBOT_CMD == "true" ]] ; then
-  echo "Executing:               certbot certonly --standalone -d ${THISDOMAINNAME} -m ${EMAIL_ADDR} --agree-tos -n"
-  certbot certonly --standalone -d ${THISDOMAINNAME} -m ${EMAIL_ADDR} --agree-tos -n
+  echo "Executing:               certbot certonly --standalone -d ${FULLDOMAINNAME} -m ${EMAIL_ADDR} --agree-tos -n"
+  certbot certonly --standalone -d ${FULLDOMAINNAME} -m ${EMAIL_ADDR} --agree-tos -n
 
   echo "Enabling ssl_certificate in nginx.conf"
   sed -i -e "s/# ssl_certificate/ssl_certificate/g" /home/mastodon/live/dist/nginx.conf
+else
+  echo "Not executing:           certbot certonly --standalone -d ${FULLDOMAINNAME} -m ${EMAIL_ADDR} --agree-tos -n"
+  echo "Skipping certbot:        EXECUTE_CERTBOT_CMD=false"
 fi
 
 echo "Copy systemctl files:    /etc/systemd/system/"
@@ -267,8 +281,8 @@ ls -l /etc/systemd/system/mastodon-*.service
 if [[ -e /etc/nginx/conf.d/mastodon.conf ]]; then
   echo "Already configured:      /etc/nginx/conf.d/mastodon.conf"
 else
-  echo "Setting domain name:     $THISDOMAINNAME"
-  sed -i -e "s/example.com/$THISDOMAINNAME/g" /home/mastodon/live/dist/nginx.conf
+  echo "Setting domain name:     ${FULLDOMAINNAME}"
+  sed -i -e "s/example.com/${FULLDOMAINNAME}/g" /home/mastodon/live/dist/nginx.conf
 
   echo "NGINX Configuration:     /etc/nginx/conf.d/mastodon.conf"
   cp /home/mastodon/live/dist/nginx.conf /etc/nginx/conf.d/mastodon.conf
@@ -320,7 +334,7 @@ sed -i -e "s/^DB_NAME=.*/DB_NAME=$CONFIG_DB_NAME/"  $ENV_PRODUCTION_FILENAME
 sed -i -e "s/^DB_PASS=.*/DB_PASS=$CONFIG_DB_PSWD/"  $ENV_PRODUCTION_FILENAME
 sed -i -e "s/^DB_PORT=.*/DB_PORT=$CONFIG_DB_PORT/"  $ENV_PRODUCTION_FILENAME
 
-sed -i -e "s/^LOCAL_DOMAIN=.*/LOCAL_DOMAIN=$THISDOMAINNAME/"  $ENV_PRODUCTION_FILENAME
+sed -i -e "s/^LOCAL_DOMAIN=.*/LOCAL_DOMAIN=$FULLDOMAINNAME/"  $ENV_PRODUCTION_FILENAME
 sed -i -e "s/^SECRET_KEY_BASE=.*/SECRET_KEY_BASE=$SECRET_KEY_BASE/"  $ENV_PRODUCTION_FILENAME
 sed -i -e "s/^OTP_SECRET=.*/OTP_SECRET=$OTP_SECRET/"  $ENV_PRODUCTION_FILENAME
 
@@ -382,9 +396,7 @@ fi
 ## set SAFETY_ASSURED flag in env file to enable DB setup
 echo "SAFETY_ASSURED=1"  >>  $ENV_PRODUCTION_FILENAME
 
-
 chown mastodon:mastodon /home/mastodon/live/$ENV_PRODUCTION_FILENAME
-
 
 ## CRON
 echo "Adding cron jobs:        /etc/crontab"
@@ -448,7 +460,7 @@ systemctl status mastodon-web
 
 echo "Mastodon configuration:  /home/mastodon/live/.env.production"
 
-EXTERNALURL="https://$THISDOMAINNAME"
+EXTERNALURL="https://${FULLDOMAINNAME}"
 echo ""
 echo "Next Step - required - login to your Mastodon instance now to create your admin account"
 echo ""

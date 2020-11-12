@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-gitea
-Requires: git,wget,xz
+Requires: git, curl, xz
 
 %description
 PBase Gitea service
@@ -143,12 +143,26 @@ parseConfig "GITEA_VER_CONFIG" ".pbase_gitea.giteaVersion" ""
 
 parseConfig "HTTP_PORT" ".pbase_gitea.httpPort" "3000"
 parseConfig "ADD_APACHE_PROXY" ".pbase_gitea.addApacheProxy" "false"
-parseConfig "DATABASE" ".pbase_gitea.database" "mysql"
+parseConfig "DATABASE" ".pbase_gitea.database" "postgres"
+parseConfig "URL_SUBPATH" ".pbase_gitea.urlSubPath" ""
+
 
 echo "HTTP_PORT:               $HTTP_PORT"
 echo "ADD_APACHE_PROXY:        $ADD_APACHE_PROXY"
 echo "DATABASE:                $DATABASE"
+echo "URL_SUBPATH:             $URL_SUBPATH"
 
+## Let's Encrypt config
+PBASE_CONFIG_FILENAME="pbase_lets_encrypt.json"
+locateConfigFile "$PBASE_CONFIG_FILENAME"
+URL_SUBDOMAIN=""
+
+if [[ -e "/usr/local/pbase-data/admin-only/module-config.d/pbase_lets_encrypt.json" ]] ; then
+  parseConfig "URL_SUBDOMAIN" ".pbase_lets_encrypt.urlSubDomain" ""
+  echo "URL_SUBDOMAIN:           ${URL_SUBDOMAIN}"
+else
+  echo "No subdomain config:     pbase_lets_encrypt.json"
+fi
 
 ## check if already installed
 if [[ -d "/var/lib/gitea" ]]; then
@@ -233,41 +247,70 @@ systemctl start gitea
 systemctl status gitea
 
 
+THISHOSTNAME="$(hostname)"
+THISDOMAINNAME="$(hostname -d)"
+FULLDOMAINNAME="$THISDOMAINNAME"
+
+PROXY_CONF_FILE="gitea-proxy-subpath.conf"
+if [[ ${URL_SUBDOMAIN} != "" ]] ; then
+  PROXY_CONF_FILE="gitea-proxy-subdomain.conf"
+  FULLDOMAINNAME="${URL_SUBDOMAIN}.${THISDOMAINNAME}"
+fi
+
+SUBPATH_URI=""
+if [[ ${URL_SUBPATH} != "" ]] ; then
+  SUBPATH_URI="/${URL_SUBPATH}/"
+fi
+
+echo "FULLDOMAINNAME           $FULLDOMAINNAME"
+echo "SUBPATH_URI              $SUBPATH_URI"
+echo "PROXY_CONF_FILE          $PROXY_CONF_FILE"
+
+if [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
+  ## must install apache first
+  if [[ ! -d "/etc/httpd/conf.d/" ]] ; then
+    echo "Apache not found:        /etc/httpd/conf.d/"
+    exit 0
+  fi
+
+  /bin/cp --no-clobber /usr/local/pbase-data/pbase-gitea/etc-httpd-confd/${PROXY_CONF_FILE} /etc/httpd/conf.d/
+  CONF_FILE="/etc/httpd/conf.d/${PROXY_CONF_FILE}"
+
+  if [[ ${URL_SUBDOMAIN} != "" ]] ; then
+    echo "Setting subdomain:       ${CONF_FILE}"
+    sed -i -e "s/git.example.com/${FULLDOMAINNAME}/" "${CONF_FILE}"
+  else
+    if [[ ${URL_SUBPATH} != "git" ]] ; then
+      echo "Setting subpath:       ${CONF_FILE}"
+      sed -i -e "s|/git|/${URL_SUBPATH}|" "${CONF_FILE}"
+    fi
+  fi
+
+  echo "Gitea config:            /etc/gitea/app.ini"
+  echo "" >> "/etc/gitea/app.ini"
+  echo "[server]" >> "/etc/gitea/app.ini"
+  echo "ROOT_URL = http://${FULLDOMAINNAME}${SUBPATH_URI}" >> "/etc/gitea/app.ini"
+  chown git:git /etc/gitea/app.ini
+
+  systemctl restart gitea
+  systemctl restart httpd
+
+  echo "Gitea service running. Open this URL to complete install."
+  echo "                         http://${FULLDOMAINNAME}${SUBPATH_URI}/install"
+else
+  echo "Gitea service running. Open this URL to complete install."
+  echo "                         http://localhost:3000/install"
+fi
+
 ## add shell aliases
 append_bashrc_alias tailgitea "tail -f /var/lib/gitea/log/gitea.log"
 append_bashrc_alias editgiteaconf "vi /etc/gitea/app.ini"
 
-echo "Gitea service running. Open this URL to complete install."
-
-THISHOSTNAME="$(hostname)"
-THISDOMAINNAME="$(hostname -d)"
-
-if [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
-
-  /bin/cp --no-clobber /usr/local/pbase-data/pbase-gitea/etc-httpd-confd/gitea-proxy.conf /etc/httpd/conf.d/gitea-proxy.conf
-
-  echo "Adding /git proxy:       /etc/gitea/app.ini"
-
-  echo "" >> "/etc/gitea/app.ini"
-  echo "[server]" >> "/etc/gitea/app.ini"
-  echo "ROOT_URL = http://${THISDOMAINNAME}/git/" >> "/etc/gitea/app.ini"
-  chown git:git /etc/gitea/app.ini
-
-  systemctl restart gitea
-
-  ##systemctl daemon-reload
-  systemctl restart httpd
-
-  echo "                         http://${THISDOMAINNAME}/git/install"
-  echo "or"
-fi
-
-echo "                         http://localhost:3000/install"
 echo ""
-
 
 %files
 %defattr(-,root,root,-)
-/usr/local/pbase-data/pbase-gitea/etc-httpd-confd/gitea-proxy.conf
+/usr/local/pbase-data/pbase-gitea/etc-httpd-confd/gitea-proxy-subdomain.conf
+/usr/local/pbase-data/pbase-gitea/etc-httpd-confd/gitea-proxy-subpath.conf
 /usr/local/pbase-data/pbase-gitea/etc-systemd-system/mysql/gitea.service
 /usr/local/pbase-data/pbase-gitea/etc-systemd-system/postgres/gitea.service

@@ -74,8 +74,6 @@ copy_if_not_exists() {
 }
 
 
-echo "PBase Mattermost service"
-
 ## config is stored in json file with root-only permissions
 ## it can be one of two places:
 ##     /usr/local/pbase-data/admin-only/pbase_module_config.json
@@ -130,6 +128,13 @@ parseConfig() {
   eval "$1"="$PARSED_VALUE"
 }
 
+echo "PBase Mattermost server install"
+
+## check if already installed
+if [[ -d "/opt/mattermost" ]]; then
+  echo "/opt/mattermost directory already exists - exiting"
+  exit 0
+fi
 
 ## Mattermost config
 ## look for either separate config file "pbase_mattermost.json" or all-in-one file: "pbase_module_config.json"
@@ -140,14 +145,34 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 ## fetch config value from JSON file
 parseConfig "HTTP_PORT" ".pbase_mattermost.httpPort" "8065"
 parseConfig "ADD_APACHE_PROXY" ".pbase_mattermost.addApacheProxy" "false"
-parseConfig "USE_SUB_DOMAIN" ".pbase_mattermost.useSubDomain" "false"
-parseConfig "SUB_DOMAIN_NAME" ".pbase_mattermost.subDomainName" "mattermost"
 
 echo "HTTP_PORT:               $HTTP_PORT"
 echo "ADD_APACHE_PROXY:        $ADD_APACHE_PROXY"
-echo "USE_SUB_DOMAIN:          $USE_SUB_DOMAIN"
-echo "SUB_DOMAIN_NAME:         $SUB_DOMAIN_NAME"
 
+
+## Apache config
+PBASE_CONFIG_FILENAME="pbase_apache.json"
+locateConfigFile "$PBASE_CONFIG_FILENAME"
+
+if [[ -e "/usr/local/pbase-data/admin-only/module-config.d/pbase_apache.json" ]] ; then
+  parseConfig "APACHE_SERVER_ADMIN" ".pbase_apache.serverAdmin" ""
+  echo "APACHE_SERVER_ADMIN:     ${APACHE_SERVER_ADMIN}"
+else
+  echo "No apache config:        pbase_apache.json"
+fi
+
+
+## Let's Encrypt config
+PBASE_CONFIG_FILENAME="pbase_lets_encrypt.json"
+locateConfigFile "$PBASE_CONFIG_FILENAME"
+URL_SUBDOMAIN=""
+
+if [[ -e "/usr/local/pbase-data/admin-only/module-config.d/pbase_lets_encrypt.json" ]] ; then
+  parseConfig "URL_SUBDOMAIN" ".pbase_lets_encrypt.urlSubDomain" ""
+  echo "URL_SUBDOMAIN:           ${URL_SUBDOMAIN}"
+else
+  echo "No subdomain config:     pbase_lets_encrypt.json"
+fi
 
 ## use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars
 RAND_PW_USER="u$(date +%s | sha256sum | base64 | head -c 8)"
@@ -178,7 +203,6 @@ fi
 echo "PBASE_CONFIG_FILENAME:   $PBASE_CONFIG_FILENAME"
 echo "PBASE_CONFIG_NAME:       $PBASE_CONFIG_NAME"
 
-
 locateConfigFile "${PBASE_CONFIG_FILENAME}"
 
 ## fetch config value from JSON file
@@ -206,13 +230,6 @@ echo "CONFIG_DB_USER:          $CONFIG_DB_USER"
 echo "CONFIG_DB_PSWD:          $CONFIG_DB_PSWD"
 
 
-
-## check if already installed
-if [[ -d "/opt/mattermost" ]]; then
-  echo "/opt/mattermost directory already exists - exiting"
-  exit 0
-fi
-
 echo "Downloading Mattermost server binary from releases.mattermost.com"
 VERSION="$(curl -s https://api.github.com/repos/mattermost/mattermost-server/releases/latest | grep tag_name | cut -d '"' -f 4 | sed s/^v//)"
 echo "Latest version:          $VERSION"
@@ -227,7 +244,7 @@ echo "Downloaded file:"
 ls -lh mattermost.tar.gz
 chown root:root mattermost.tar.gz
 
-echo "Installed in directory:  /opt/mattermost"
+echo "Installing in directory: /opt/mattermost"
 tar zxf mattermost.tar.gz -C /opt
 
 mkdir /opt/mattermost/data
@@ -270,7 +287,6 @@ else
   sed -i -e "s/mmuser/$CONFIG_DB_USER/" /opt/mattermost/config/config.json
   sed -i -e "s/mostest/$CONFIG_DB_PSWD/" /opt/mattermost/config/config.json
   sed -i -e "s/mattermost_test/$CONFIG_DB_NAME/" /opt/mattermost/config/config.json
-  ## sed -i -e "s/utf8mb4/utf8/" /opt/mattermost/config/config.json
 fi
 
 
@@ -291,15 +307,18 @@ echo "Mattermost service running. Open this URL to complete install."
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
 
-if [[ "$USE_SUB_DOMAIN" == "true" ]] && [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
+if [[ "$URL_SUBDOMAIN" != "" ]] && [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
   PROXY_CONF="/etc/httpd/conf.d/mattermost-proxy-subdomain.conf"
-  echo "Adding ${SUB_DOMAIN_NAME} subdomain proxy to mattermost application"
+  echo "Adding ${URL_SUBDOMAIN} subdomain proxy to mattermost application"
+
   /bin/cp --no-clobber /usr/local/pbase-data/pbase-mattermost/root-uri/etc-httpd-confd/mattermost-proxy-subdomain.conf /etc/httpd/conf.d/
   echo "Updating config file:    ${PROXY_CONF}"
-  sed -i "s/mysubdomain.mydomain.com/${SUB_DOMAIN_NAME}.${THISDOMAINNAME}/" $PROXY_CONF
+  sed -i "s/mysubdomain.mydomain.com/${URL_SUBDOMAIN}.${THISDOMAINNAME}/" $PROXY_CONF
+  sed -i "s/hostmaster@mydomain.com/${APACHE_SERVER_ADMIN}/" $PROXY_CONF
+
   systemctl daemon-reload
   systemctl restart httpd
-  echo "                         http://${SUB_DOMAIN_NAME}.${THISDOMAINNAME}/install"
+  echo "                         http://${URL_SUBDOMAIN}.${THISDOMAINNAME}/install"
   echo "or"
   echo "                         http://localhost/install"
 elif [[ "$ADD_APACHE_PROXY" == "true" ]] ; then

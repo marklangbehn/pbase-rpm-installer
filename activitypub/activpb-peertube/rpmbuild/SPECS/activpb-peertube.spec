@@ -123,12 +123,12 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config value from JSON file
 parseConfig "HTTP_PORT" ".activpb_peertube.port" "9000"
-parseConfig "ADD_APACHE_PROXY" ".activpb_peertube.addNgnixProxy" "false"
-parseConfig "USE_SUB_DOMAIN" ".activpb_peertube.useSubDomain" "false"
-parseConfig "SUB_DOMAIN_NAME" ".activpb_peertube.subDomainName" ""
+parseConfig "ADD_NGINX_PROXY" ".activpb_peertube.addNgnixProxy" "true"
+parseConfig "USE_SUB_DOMAIN" ".activpb_peertube.useSubDomain" "true"
+parseConfig "SUB_DOMAIN_NAME" ".activpb_peertube.subDomainName" "peertube"
 
 echo "HTTP_PORT:               $HTTP_PORT"
-echo "ADD_NGINX_PROXY:         $ADD_NGINX_PROXY"
+##echo "ADD_NGINX_PROXY:         $ADD_NGINX_PROXY"
 echo "USE_SUB_DOMAIN:          $USE_SUB_DOMAIN"
 echo "SUB_DOMAIN_NAME:         $SUB_DOMAIN_NAME"
 
@@ -340,8 +340,8 @@ ls -l /etc/nginx/conf.d/
 echo ""
 
 if [[ $EXECUTE_CERTBOT_CMD == "true" ]] ; then
-  echo "Executing:               certbot certonly --standalone -d ${THISDOMAINNAME} -m ${EMAIL_ADDR} --agree-tos -n"
-  certbot certonly --standalone -d ${THISDOMAINNAME} -m ${EMAIL_ADDR} --agree-tos -n
+  echo "Executing:               certbot certonly --standalone --post-hook "systemctl start nginx" -d ${THISDOMAINNAME} -m ${EMAIL_ADDR} --agree-tos -n"
+  certbot certonly --standalone --post-hook "systemctl start nginx" -d ${THISDOMAINNAME} -m ${EMAIL_ADDR} --agree-tos -n
 else
   echo "Skipping certbot:      EXECUTE_CERTBOT_CMD=false"
 fi

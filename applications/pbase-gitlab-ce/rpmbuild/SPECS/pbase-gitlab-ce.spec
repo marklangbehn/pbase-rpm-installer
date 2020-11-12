@@ -131,19 +131,19 @@ parseConfig() {
 }
 
 
-## look for either separate config file "pbase_gitlab.json" or all-in-one file: "pbase_module_config.json"
-PBASE_CONFIG_FILENAME="pbase_gitlab.json"
+## look for either separate config file "pbase_gitlab_ce.json" or all-in-one file: "pbase_module_config.json"
+PBASE_CONFIG_FILENAME="pbase_gitlab_ce.json"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config value from JSON file
-parseConfig "EXTERN_URL_SUBDOMAIN" ".pbase_gitlab.externalUrlSubdomain" "gitlab"
-parseConfig "EXTERN_URL_IS_HTTPS" ".pbase_gitlab.externalUrlIsHttps" "true"
-parseConfig "LETS_ENCRYPT_ENABLE" ".pbase_gitlab.letsEncryptEnable" "true"
+parseConfig "EXTERN_URL_SUBDOMAIN" ".pbase_gitlab_ce.externalUrlSubdomain" "git"
+parseConfig "EXTERN_URL_IS_HTTPS" ".pbase_gitlab_ce.externalUrlIsHttps" "true"
+parseConfig "LETS_ENCRYPT_ENABLE" ".pbase_gitlab_ce.letsEncryptEnable" "true"
 
-parseConfig "LETS_ENCRYPT_EMAILADDR" ".pbase_gitlab.letsEncryptEmailAddress" "nobody@nowhere.net"
-parseConfig "CRONTAB_BACKUP_ENABLE" ".pbase_gitlab.crontabBackupEnable" "true"
-parseConfig "CRONTAB_BACKUP_HOUR" ".pbase_gitlab.crontabBackupHour" "2"
+parseConfig "LETS_ENCRYPT_EMAILADDR" ".pbase_gitlab_ce.letsEncryptEmailAddress" "nobody@nowhere.net"
+parseConfig "CRONTAB_BACKUP_ENABLE" ".pbase_gitlab_ce.crontabBackupEnable" "true"
+parseConfig "CRONTAB_BACKUP_HOUR" ".pbase_gitlab_ce.crontabBackupHour" "2"
 
 echo "EXTERN_URL_SUBDOMAIN:    $EXTERN_URL_SUBDOMAIN"
 echo "EXTERN_URL_IS_HTTPS:     $EXTERN_URL_IS_HTTPS"
@@ -192,14 +192,14 @@ fi
 
 
 if [[ $LETS_ENCRYPT_EMAILADDR != "" ]]; then
-  echo "LE_EMAILADDRQUOTED:  $LE_EMAILADDRQUOTED"
+  echo "LE_EMAILADDRQUOTED:      $LE_EMAILADDRQUOTED"
   sed -i "s/^# letsencrypt\['contact_emails'] = \[]/letsencrypt['contact_emails'] = [ $LE_EMAILADDRQUOTED ] /" /etc/gitlab/gitlab.rb
 fi
 
 
 if [[ $CRONTAB_BACKUP_ENABLE == "true" ]]; then
-  echo "CRONTAB_BACKUP_ENABLE:       $CRONTAB_BACKUP_ENABLE"
-  echo "CRONTAB_BACKUP_HOUR:         $CRONTAB_BACKUP_HOUR"
+  echo "CRONTAB_BACKUP_ENABLE:   $CRONTAB_BACKUP_ENABLE"
+  echo "CRONTAB_BACKUP_HOUR:     $CRONTAB_BACKUP_HOUR"
 
   ##sed -i "s/^external_url \'http:\/\/gitlab\.example\.com\'/external_url $EXTERNALURLQUOTED/" /etc/gitlab/gitlab.rb
 fi

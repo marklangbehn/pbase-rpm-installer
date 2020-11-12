@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-postgres11
-Requires: postgresql11 postgresql11-server postgresql11-contrib postgresql11-libs
+Requires: jq, postgresql11 postgresql11-server postgresql11-contrib postgresql11-libs
 
 ## omitted:  postgresql11-devel
 
@@ -355,15 +355,15 @@ append_bashrc_alias editpostgreshba "vi /var/lib/pgsql/11/data/pg_hba.conf"
 append_bashrc_alias editpostgresconf "vi /var/lib/pgsql/11/data/postgresql.conf"
 
 if [[ "$REDHAT_RELEASE_DIGIT" == "6" ]]; then
-  append_bashrc_alias stoppostgres "service postgres stop"
-  append_bashrc_alias startpostgres "service postgres start"
-  append_bashrc_alias statuspostgres "service postgres status"
-  append_bashrc_alias restartpostgres "service postgres restart"
+  append_bashrc_alias stoppostgres "service postgresql-11 stop"
+  append_bashrc_alias startpostgres "service postgresql-11 start"
+  append_bashrc_alias statuspostgres "service postgresql-11 status"
+  append_bashrc_alias restartpostgres "service postgresql-11 restart"
 else
-  append_bashrc_alias stoppostgres "/bin/systemctl stop postgresql"
-  append_bashrc_alias startpostgres "/bin/systemctl start postgresql"
-  append_bashrc_alias statuspostgres "/bin/systemctl status postgresql"
-  append_bashrc_alias restartpostgres "/bin/systemctl restart postgresql"
+  append_bashrc_alias stoppostgres "/bin/systemctl stop postgresql-11"
+  append_bashrc_alias startpostgres "/bin/systemctl start postgresql-11"
+  append_bashrc_alias statuspostgres "/bin/systemctl status postgresql-11"
+  append_bashrc_alias restartpostgres "/bin/systemctl restart postgresql-11"
 fi
 
 

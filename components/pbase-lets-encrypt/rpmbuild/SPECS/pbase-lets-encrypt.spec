@@ -9,7 +9,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-lets-encrypt
-Requires: pbase-lets-encrypt-transitive-dep, pbase-epel, jq
+Requires: pbase-lets-encrypt-transitive-dep, jq
 
 %description
 Configure Let's Encrypt
@@ -149,23 +149,34 @@ parseConfig "CONFIG_ENABLE_AUTORENEW" ".pbase_lets_encrypt.enableAutoRenew" "tru
 parseConfig "EXECUTE_CERTBOT_CMD" ".pbase_lets_encrypt.executeCertbotCmd" "true"
 
 parseConfig "EMAIL_ADDR" ".pbase_lets_encrypt.emailAddress" "yoursysadmin@yourrealmail.com"
+parseConfig "URL_SUBDOMAIN" ".pbase_lets_encrypt.urlSubDomain" ""
 parseConfig "ADDITIONAL_SUBDOMAIN" ".pbase_lets_encrypt.additionalSubDomain" ""
 
 echo "CONFIG_ENABLE_AUTORENEW: $CONFIG_ENABLE_AUTORENEW"
 echo "EXECUTE_CERTBOT_CMD:     $EXECUTE_CERTBOT_CMD"
 echo "EMAIL_ADDR:              $EMAIL_ADDR"
+echo "URL_SUBDOMAIN:           $URL_SUBDOMAIN"
 echo "ADDITIONAL_SUBDOMAIN:    $ADDITIONAL_SUBDOMAIN"
-
-DASH_D_ADDITIONAL_SUBDOMAIN=""
-
-if [[ $ADDITIONAL_SUBDOMAIN != "" ]] ; then
-  DASH_D_ADDITIONAL_SUBDOMAIN="-d $ADDITIONAL_SUBDOMAIN.$THISDOMAINNAME"
-fi
 
 
 echo ""
 echo "hostname:                $THISHOSTNAME"
 echo "domainname:              $THISDOMAINNAME"
+
+## when doing additonal domain like www.example.com
+DASH_D_ADDITIONAL_SUBDOMAIN=""
+if [[ $ADDITIONAL_SUBDOMAIN != "" ]] ; then
+  DASH_D_ADDITIONAL_SUBDOMAIN="-d $ADDITIONAL_SUBDOMAIN.$THISDOMAINNAME"
+  echo "additional subdomain:    $DASH_D_ADDITIONAL_SUBDOMAIN"
+fi
+
+## when doing subdomain only like mattermost.example.com
+FULLDOMAINNAME="$THISDOMAINNAME"
+if [[ $URL_SUBDOMAIN != "" ]] ; then
+  FULLDOMAINNAME="$URL_SUBDOMAIN.$THISDOMAINNAME"
+  echo "exclusive subdomain:     $FULLDOMAINNAME"
+fi
+
 
 ## Add CRON job to run monitorItemImport.pl
 PREEXISTING_CRONJOB=`grep certbot /etc/crontab`
@@ -238,9 +249,9 @@ if [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]]; then
   ## get SSL cert, may add file in /etc/httpd/conf...
   ## for example:   /usr/local/bin/certbot-auto --apache --agree-tos --email yoursysadmin@yourrealmail.com  -d pbase-foundation.com -d www.pbase-foundation.com -n
 
-  echo "Invoke certbot:          /usr/local/bin/certbot-auto --apache --agree-tos --email ${EMAIL_ADDR} -d ${THISDOMAINNAME} -d www.${THISDOMAINNAME} -n"
+  echo "Invoke certbot:          /usr/local/bin/certbot-auto --apache --agree-tos --email ${EMAIL_ADDR} -d ${FULLDOMAINNAME} $DASH_D_ADDITIONAL_SUBDOMAIN -n"
   echo ""
-  /usr/local/bin/certbot-auto --apache --agree-tos --email ${EMAIL_ADDR}  -d ${THISDOMAINNAME} -d www.${THISDOMAINNAME} $DASH_D_ADDITIONAL_SUBDOMAIN -n
+  /usr/local/bin/certbot-auto --apache --agree-tos --email ${EMAIL_ADDR} -d ${FULLDOMAINNAME} $DASH_D_ADDITIONAL_SUBDOMAIN -n
 
   echo "Restarting service:      httpd"
   /sbin/chkconfig httpd --level 345 on || fail "chkconfig failed to enable httpd service"
@@ -252,11 +263,11 @@ elif [[ "${REDHAT_RELEASE_DIGIT}" == "7" ]]; then
   /bin/systemctl restart httpd || fail "failed to restart httpd service"
 
   ## get SSL cert, may add file in /etc/httpd/conf...
-  echo "Invoke certbot:          certbot --apache -d ${THISDOMAINNAME} -d www.${THISDOMAINNAME} $DASH_D_ADDITIONAL_SUBDOMAIN -m ${EMAIL_ADDR} --agree-tos -n"
+  echo "Invoke certbot:          certbot --apache -d ${FULLDOMAINNAME} $DASH_D_ADDITIONAL_SUBDOMAIN -m ${EMAIL_ADDR} --agree-tos -n"
   echo ""
 
   if [[ $EXECUTE_CERTBOT_CMD == "true" ]] ; then
-     certbot --apache -d ${THISDOMAINNAME} -d www.${THISDOMAINNAME} $DASH_D_ADDITIONAL_SUBDOMAIN -m ${EMAIL_ADDR} --agree-tos -n
+     certbot --apache -d ${FULLDOMAINNAME} $DASH_D_ADDITIONAL_SUBDOMAIN -m ${EMAIL_ADDR} --agree-tos -n
 
      echo "Restarting service:      httpd"
      /bin/systemctl daemon-reload
@@ -276,23 +287,21 @@ elif [[ "${REDHAT_RELEASE_DIGIT}" == "8" ]]; then
     wget -P /usr/local/bin https://dl.eff.org/certbot-auto
     chown root:root /usr/local/bin/certbot-auto
     chmod 0755 /usr/local/bin/certbot-auto
-
-    mkdir /var/lib/letsencrypt
   fi
 
-  echo "Invoke certbot:          /usr/local/bin/certbot-auto --no-bootstrap --apache --agree-tos --email ${EMAIL_ADDR}  -d ${THISDOMAINNAME} -d www.${THISDOMAINNAME} $DASH_D_ADDITIONAL_SUBDOMAIN -n"
+  echo "Invoke certbot:          /usr/local/bin/certbot-auto --no-bootstrap --apache --agree-tos --email ${EMAIL_ADDR}  -d ${FULLDOMAINNAME} $DASH_D_ADDITIONAL_SUBDOMAIN -n"
   echo ""
 
-   if [[ $EXECUTE_CERTBOT_CMD == "true" ]] ; then
-     /usr/local/bin/certbot-auto --no-bootstrap --apache --agree-tos --email ${EMAIL_ADDR}  -d ${THISDOMAINNAME} -d www.${THISDOMAINNAME} $DASH_D_ADDITIONAL_SUBDOMAIN -n
+  if [[ $EXECUTE_CERTBOT_CMD == "true" ]] ; then
+    /usr/local/bin/certbot-auto --no-bootstrap --apache --agree-tos --email ${EMAIL_ADDR}  -d ${FULLDOMAINNAME} $DASH_D_ADDITIONAL_SUBDOMAIN -n
 
-     echo "Restarting service:      httpd"
-     /bin/systemctl daemon-reload
-     /bin/systemctl enable httpd.service || fail "systemctl failed to enable httpd service"
-     /bin/systemctl restart httpd || fail "failed to stop httpd service"
-   else
-     echo "EXECUTE_CERTBOT_CMD override: $EXECUTE_CERTBOT_CMD"
-   fi
+    echo "Restarting service:      httpd"
+    /bin/systemctl daemon-reload
+    /bin/systemctl enable httpd.service || fail "systemctl failed to enable httpd service"
+    /bin/systemctl restart httpd || fail "failed to stop httpd service"
+  else
+    echo "EXECUTE_CERTBOT_CMD override: $EXECUTE_CERTBOT_CMD"
+  fi
 else
   echo "Not supported REDHAT_RELEASE_DIGIT: ${REDHAT_RELEASE_DIGIT}"
 fi

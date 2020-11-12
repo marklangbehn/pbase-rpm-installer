@@ -9,7 +9,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-phpmysql-transitive-dep
-Requires: php,php-mbstring,php-gd,php-zip,php-pecl-zip,php-bz2,php-curl,php-xml,php-json,php-intl,php-fpm,php-opcache,php-mysql,php-pdo
+Requires: php,php-mbstring,php-gd,php-zip,php-pecl-zip,php-bz2,php-curl,php-xml,php-json,php-intl,php-fpm,php-opcache,php-mysqlnd,php-pdo
 
 %description
 PBase PHP application libraries and php-mysql transitive dependencies for EL6

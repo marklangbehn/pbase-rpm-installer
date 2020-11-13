@@ -25,6 +25,13 @@ PBase RPMFusion repository enable
 %post
 # echo "rpm postinstall $1"
 
-echo "PBase RPMFusion repository enable"
+echo ""
+echo "RPMFusion repository enabled"
+
+echo "To enable additional packages and media codecs run these commands:"
+echo ""
+echo "  yum -y install rpmfusion-free-release-tainted"
+echo "  yum -y install rpmfusion-nonfree-release-tainted"
+echo ""
 
 %files

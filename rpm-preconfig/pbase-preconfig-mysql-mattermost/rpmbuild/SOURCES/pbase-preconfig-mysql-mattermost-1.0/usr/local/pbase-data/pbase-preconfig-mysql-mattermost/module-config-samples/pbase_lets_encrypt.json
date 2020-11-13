@@ -2,7 +2,8 @@
   "pbase_lets_encrypt" :  {
     "enableAutoRenew": true,
     "executeCertbotCmd": true,
-    "additionalSubDomain": "mattermost",
+    "urlSubDomain": "mattermost",
+    "additionalSubDomain": "",
     "emailAddress": "yoursysadmin@yourrealmail.com"
   }
 }

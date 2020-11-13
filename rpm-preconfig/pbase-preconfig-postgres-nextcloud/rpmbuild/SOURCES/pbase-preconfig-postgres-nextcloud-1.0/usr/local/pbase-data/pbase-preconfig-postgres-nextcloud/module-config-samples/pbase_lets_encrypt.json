@@ -2,6 +2,7 @@
   "pbase_lets_encrypt" :  {
     "enableAutoRenew": true,
     "executeCertbotCmd": true,
+    "urlSubDomain": "nextcloud",
     "additionalSubDomain": "",
     "emailAddress": "yoursysadmin@yourrealmail.com"
   }

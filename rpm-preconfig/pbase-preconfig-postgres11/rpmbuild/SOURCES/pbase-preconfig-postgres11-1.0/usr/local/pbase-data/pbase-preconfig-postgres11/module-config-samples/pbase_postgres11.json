@@ -1,5 +1,5 @@
 {
-  "pbase_postgres12": [
+  "pbase_postgres11": [
     {
       "default": {
         "hostName": "localhost",
@@ -11,7 +11,9 @@
           {
             "name": "app_db",
             "user": "appuser",
-            "password": "shomeddata"
+            "password": "shomeddata",
+            "encoding": "UTF8",
+            "grantCreateDatabase": true
           }
         ]
       }

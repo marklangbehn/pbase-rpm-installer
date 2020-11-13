@@ -307,9 +307,17 @@ echo ""
 echo "Peertube config:         /var/www/peertube/config/production.yaml"
 su - peertube -c "cp /var/www/peertube/peertube-latest/config/production.yaml.example /var/www/peertube/config/production.yaml"
 
+## FULLDOMAINNAME is the subdomain if declared plus the domain
+FULLDOMAINNAME="${THISDOMAINNAME}"
+
+if [[ "$USE_SUB_DOMAIN" == "true" ]] && [[ "$SUB_DOMAIN_NAME" != "" ]] ; then
+  FULLDOMAINNAME="${SUB_DOMAIN_NAME}.${THISDOMAINNAME}"
+  echo "Using subdomain:         ${FULLDOMAINNAME}"
+fi
+
 echo "Updating config in production.yaml"
 
-/usr/local/bin/yq w -i /var/www/peertube/config/production.yaml webserver.hostname "${THISDOMAINNAME}"
+/usr/local/bin/yq w -i /var/www/peertube/config/production.yaml webserver.hostname "${FULLDOMAINNAME}"
 /usr/local/bin/yq w -i /var/www/peertube/config/production.yaml listen.port "${HTTP_PORT}"
 
 /usr/local/bin/yq w -i /var/www/peertube/config/production.yaml database.username "${CONFIG_DB_USER}"
@@ -329,7 +337,7 @@ chmod 0600 /var/www/peertube/config/production.yaml
 
 /bin/cp -f --no-clobber /var/www/peertube/peertube-latest/support/nginx/peertube /etc/nginx/conf.d/peertube.conf
 
-sed -i "s/peertube.example.com/$THISDOMAINNAME/g" /etc/nginx/conf.d/peertube.conf
+sed -i "s/peertube.example.com/${FULLDOMAINNAME}/g" /etc/nginx/conf.d/peertube.conf
 echo "Configuration updated:   /etc/nginx/conf.d/peertube.conf"
 
 echo "Nginx configuration:     /etc/nginx/conf.d/"
@@ -340,10 +348,11 @@ ls -l /etc/nginx/conf.d/
 echo ""
 
 if [[ $EXECUTE_CERTBOT_CMD == "true" ]] ; then
-  echo "Executing:               certbot certonly --standalone --post-hook "systemctl start nginx" -d ${THISDOMAINNAME} -m ${EMAIL_ADDR} --agree-tos -n"
-  certbot certonly --standalone --post-hook "systemctl start nginx" -d ${THISDOMAINNAME} -m ${EMAIL_ADDR} --agree-tos -n
+  echo "Executing:               certbot certonly --standalone --post-hook "systemctl start nginx" -d ${FULLDOMAINNAME} -m ${EMAIL_ADDR} --agree-tos -n"
+  certbot certonly --standalone --post-hook "systemctl start nginx" -d ${FULLDOMAINNAME} -m ${EMAIL_ADDR} --agree-tos -n
 else
-  echo "Skipping certbot:      EXECUTE_CERTBOT_CMD=false"
+  echo "Not executing:           certbot certonly --standalone --post-hook "systemctl start nginx" -d ${FULLDOMAINNAME} -m ${EMAIL_ADDR} --agree-tos -n"
+  echo "Skipping certbot:        EXECUTE_CERTBOT_CMD=false"
 fi
 
 
@@ -388,8 +397,18 @@ sysctl -p /etc/sysctl.d/30-peertube-tcp.conf
 
 ## add peertube service file
 /bin/cp -f --no-clobber /var/www/peertube/peertube-latest/support/systemd/peertube.service /etc/systemd/system/
-
 echo ""
+
+if [[ $EXECUTE_CERTBOT_CMD == "false" ]] ; then
+  echo "Skipping certbot:      EXECUTE_CERTBOT_CMD=false"
+  echo "Not starting nginx or peertube service - enabling only"
+  systemctl daemon-reload
+  systemctl enable nginx
+  systemctl enable peertube
+  echo "exiting"
+  exit 0
+fi
+
 echo "Starting nginx service"
 systemctl daemon-reload
 systemctl enable nginx
@@ -425,11 +444,11 @@ echo "                         user and password from 'journalctl -u peertube | 
 echo "                         then follow the setup dialog."
 echo ""
 
-## show Username and password that were written to log
+## show username and password that were written to log
 grep "User" /usr/local/pbase-data/admin-only/activpb-peertube/journalctl-output.txt | cut -d: -f8-
 echo ""
 
-EXTERNALURL="https://$THISDOMAINNAME"
+EXTERNALURL="https://$FULLDOMAINNAME"
 echo "PeerTube Ready:          $EXTERNALURL"
 echo ""
 

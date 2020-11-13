@@ -11,7 +11,9 @@
           {
             "name": "gitea",
             "user": "gitea",
-            "password": "shomeddata"
+            "password": "shomeddata",
+            "encoding": "UTF8",
+            "grantCreateDatabase": false
           }
         ]
       }

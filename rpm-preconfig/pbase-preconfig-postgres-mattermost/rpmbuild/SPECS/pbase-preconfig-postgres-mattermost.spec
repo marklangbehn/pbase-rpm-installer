@@ -131,6 +131,9 @@ echo "PBase Postgres create config preset user and DB name for use by pbase-matt
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
 
+echo "Hostname:                $THISHOSTNAME"
+echo "Domainname:              $THISDOMAINNAME"
+
 MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
 MODULE_SAMPLES_DIR="/usr/local/pbase-data/pbase-preconfig-postgres-mattermost/module-config-samples"
 
@@ -148,12 +151,11 @@ DB_CONFIG_FILENAME="pbase_postgres.json"
 
 mkdir -p ${MODULE_CONFIG_DIR}
 
-/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_postgres.json  ${MODULE_CONFIG_DIR}/
-
 echo "Mattermost config:       ${MODULE_CONFIG_DIR}/pbase_mattermost.json"
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_apache.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_lets_encrypt.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_mattermost.json  ${MODULE_CONFIG_DIR}/
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_postgres.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_smtp.json  ${MODULE_CONFIG_DIR}/
 
 
@@ -161,7 +163,7 @@ echo "Mattermost config:       ${MODULE_CONFIG_DIR}/pbase_mattermost.json"
 RAND_PW_USER="u$(date +%s | sha256sum | base64 | head -c 8)"
 echo "RAND_PW_USER:            $RAND_PW_USER"
 
-## provide random password in JSON config file
+## provide random password in database config file
 sed -i "s/shomeddata/${RAND_PW_USER}/" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}"
 
 ## provide domainname in smtp config file
@@ -173,21 +175,23 @@ fi
 if [[ $DEFAULT_EMAIL_ADDRESS != "" ]]; then
   echo "Setting 'defaultEmailAddress' in pbase_lets_encrypt.json"
   echo "                         ${DEFAULT_EMAIL_ADDRESS}"
+  sed -i "s/yoursysadmin@yourrealmail.com/${DEFAULT_EMAIL_ADDRESS}/" "${MODULE_CONFIG_DIR}/pbase_mattermost.json"
   sed -i "s/yoursysadmin@yourrealmail.com/${DEFAULT_EMAIL_ADDRESS}/" "${MODULE_CONFIG_DIR}/pbase_lets_encrypt.json"
   sed -i "s/yoursysadmin@yourrealmail.com/${DEFAULT_EMAIL_ADDRESS}/" "${MODULE_CONFIG_DIR}/pbase_apache.json"
 fi
 
 
 echo ""
-echo "Postgres module config file for Mattermost:"
-echo "Next step - a) change the default Mattermost port, or select an "
-echo "               Apache proxy for a subdomain or the base domain by "
+echo "Postgres and Let's Encrypt module config files for Mattermost added:"
+echo "Next step - a) change the default Mattermost port, or select an"
+echo "               Apache proxy for a subdomain or the base domain by"
 echo "               editing pbase_mattermost.json"
-echo "            b) change the default Postgres DB application-database, "
-echo "               user, password and other config by "
+echo "            b) change the default Postgres DB application-database,"
+echo "               user, password and other config by editing"
 echo "               pbase_postgres.json. For example:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
+echo "  vi pbase_lets_encrypt.json"
 echo "  vi pbase_mattermost.json"
 echo "  vi pbase_postgres.json"
 echo ""

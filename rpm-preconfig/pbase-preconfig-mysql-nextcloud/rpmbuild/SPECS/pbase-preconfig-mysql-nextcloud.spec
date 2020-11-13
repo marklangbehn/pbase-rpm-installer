@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-preconfig-mysql-nextcloud
-Requires: pbase-php-transitive-dep, pbase-preconfig-mysql80community, jq
+Requires: pbase-php-transitive-dep, pbase-epel, pbase-preconfig-mysql80community, jq
 
 %description
 Configure MySQL preset user and DB name for use by pbase-nextcloud
@@ -147,11 +147,11 @@ parseConfig "DEFAULT_EMAIL_ADDRESS" ".pbase_preconfig.defaultEmailAddress" ""
 
 
 #echo "Nextcloud config:       ${MODULE_CONFIG_DIR}/pbase_nextcloud.json"
-#/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_nextcloud.json  ${MODULE_CONFIG_DIR}/
 
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_nextcloud.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_lets_encrypt.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_apache.json  ${MODULE_CONFIG_DIR}/
-/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_mysql80community.json  ${MODULE_CONFIG_DIR}/
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${DB_CONFIG_FILENAME}  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_s3storage.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_smtp.json  ${MODULE_CONFIG_DIR}/
 
@@ -162,7 +162,7 @@ RAND_PW_ROOT="r$(date +%s | sha256sum | base64 | head -c 16 | tail -c 8)"
 echo "MySQL user and DB name for use by pbase-nextcloud rpm"
 echo "Setting database 'rootPassword' and 'password' in ${DB_CONFIG_FILENAME}"
 echo "       for MySQL root:   $RAND_PW_ROOT"
-echo "       for wordpress DB: $RAND_PW_USER"
+echo "       for nextcloud DB: $RAND_PW_USER"
 
 ## provide random password in database config file
 sed -i "s/shomeddata/${RAND_PW_USER}/" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}"
@@ -187,23 +187,31 @@ fi
 echo ""
 echo "Default configuration files for Nextcloud:"
 echo "Next step - optional - customize your configuration"
+echo "            change the subdomain for Let's Encrypt and Nextcloud"
+echo "              by editing pbase_lets_encrypt.json"
+echo "              by editing pbase_nextcloud.json"
 echo "            change the Let's Encrypt admin email if needed "
 echo "              by editing pbase_lets_encrypt.json"
 echo "            change the Apache admin email if needed "
 echo "              by editing pbase_apache.json"
 echo "            change the default MySQL DB password and application database"
-echo "              config if needed by editing ${DB_CONFIG_FILENAME}"
+echo "              if needed by editing ${DB_CONFIG_FILENAME}"
 echo "            For example:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
 echo "  vi ${DB_CONFIG_FILENAME}"
 echo "  vi pbase_apache.json"
 echo "  vi pbase_lets_encrypt.json"
-echo "  vi pbase_apache.json"
+echo "  vi pbase_nextcloud.json"
 echo ""
 
 echo "Next step - install MySQL and Nextcloud application with:"
 echo ""
+
+if [[ "${REDHAT_RELEASE_DIGIT}" == "8" ]] ; then
+  echo "  yum -y --disablerepo=AppStream install mysql-community-server"
+fi
+
 echo "  yum -y install pbase-mysql80community"
 echo "  yum -y install pbase-nextcloud"
 echo ""
@@ -213,5 +221,6 @@ echo ""
 /usr/local/pbase-data/pbase-preconfig-mysql-nextcloud/module-config-samples/pbase_apache.json
 /usr/local/pbase-data/pbase-preconfig-mysql-nextcloud/module-config-samples/pbase_lets_encrypt.json
 /usr/local/pbase-data/pbase-preconfig-mysql-nextcloud/module-config-samples/pbase_mysql80community.json
+/usr/local/pbase-data/pbase-preconfig-mysql-nextcloud/module-config-samples/pbase_nextcloud.json
 /usr/local/pbase-data/pbase-preconfig-mysql-nextcloud/module-config-samples/pbase_s3storage.json
 /usr/local/pbase-data/pbase-preconfig-mysql-nextcloud/module-config-samples/pbase_smtp.json

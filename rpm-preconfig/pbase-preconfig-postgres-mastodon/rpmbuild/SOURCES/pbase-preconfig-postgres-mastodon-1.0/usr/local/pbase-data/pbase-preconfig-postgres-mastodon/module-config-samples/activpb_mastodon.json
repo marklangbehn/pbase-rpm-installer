@@ -2,7 +2,8 @@
   "activpb_mastodon" : {
     "port": 3000,
     "addNgnixProxy": true,
-    "subDomainName": "",
+    "useSubDomain": true,
+    "subDomainName": "mastodon",
     "webDomainName": "",
     "alternateDomains": "",
     "singleUserMode": false,

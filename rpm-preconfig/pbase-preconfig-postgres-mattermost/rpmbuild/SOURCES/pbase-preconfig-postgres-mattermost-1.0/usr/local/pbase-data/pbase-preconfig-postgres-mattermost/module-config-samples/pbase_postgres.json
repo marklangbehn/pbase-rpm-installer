@@ -11,7 +11,9 @@
           {
             "name": "mattermost",
             "user": "mmuser",
-            "password": "shomeddata"
+            "password": "shomeddata",
+            "encoding": "UTF8",
+            "grantCreateDatabase": false
           }
         ]
       }

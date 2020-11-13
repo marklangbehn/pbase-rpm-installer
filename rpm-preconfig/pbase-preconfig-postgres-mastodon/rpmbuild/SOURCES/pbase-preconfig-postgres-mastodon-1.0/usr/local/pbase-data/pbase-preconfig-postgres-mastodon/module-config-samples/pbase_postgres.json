@@ -12,6 +12,7 @@
             "name": "mastodon_production",
             "user": "mastodon",
             "password": "shomeddata",
+            "encoding": "UTF8",
             "grantCreateDatabase": true
           }
         ]

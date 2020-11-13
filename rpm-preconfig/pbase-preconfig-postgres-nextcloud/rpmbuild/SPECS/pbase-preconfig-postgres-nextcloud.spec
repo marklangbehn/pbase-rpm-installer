@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-preconfig-postgres-nextcloud
-Requires: php-pgsql, php-pdo_pgsql, pbase-epel, jq
+Requires: pbase-php-transitive-dep, pbase-epel, php-pgsql, php-pdo_pgsql, pbase-epel, jq
 
 %description
 Configure Postgres preset user and DB name for use by pbase-nextcloud, add Postgres PHP dependencies
@@ -147,8 +147,8 @@ parseConfig "DEFAULT_EMAIL_ADDRESS" ".pbase_preconfig.defaultEmailAddress" ""
 
 
 #echo "Nextcloud config:       ${MODULE_CONFIG_DIR}/pbase_nextcloud.json"
-#/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_nextcloud.json  ${MODULE_CONFIG_DIR}/
 
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_nextcloud.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_lets_encrypt.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_apache.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_postgres.json  ${MODULE_CONFIG_DIR}/
@@ -185,19 +185,22 @@ fi
 echo ""
 echo "Default configuration files for Nextcloud:"
 echo "Next step - optional - customize your configuration"
+echo "            change the subdomain for Let's Encrypt and Nextcloud"
+echo "              by editing pbase_lets_encrypt.json"
+echo "              by editing pbase_nextcloud.json"
 echo "            change the Let's Encrypt admin email if needed "
 echo "              by editing pbase_lets_encrypt.json"
 echo "            change the Apache admin email if needed "
 echo "              by editing pbase_apache.json"
 echo "            change the default Postgres DB password and application database"
-echo "              config if needed by editing ${DB_CONFIG_FILENAME}"
+echo "              if needed by editing ${DB_CONFIG_FILENAME}"
 echo "            For example:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
 echo "  vi ${DB_CONFIG_FILENAME}"
 echo "  vi pbase_apache.json"
 echo "  vi pbase_lets_encrypt.json"
-echo "  vi pbase_apache.json"
+echo "  vi pbase_nextcloud.json"
 echo ""
 
 echo "Next step - install Postgres and Nextcloud application with:"
@@ -210,6 +213,7 @@ echo ""
 %defattr(600,root,root,700)
 /usr/local/pbase-data/pbase-preconfig-postgres-nextcloud/module-config-samples/pbase_apache.json
 /usr/local/pbase-data/pbase-preconfig-postgres-nextcloud/module-config-samples/pbase_lets_encrypt.json
+/usr/local/pbase-data/pbase-preconfig-postgres-nextcloud/module-config-samples/pbase_nextcloud.json
 /usr/local/pbase-data/pbase-preconfig-postgres-nextcloud/module-config-samples/pbase_postgres.json
 /usr/local/pbase-data/pbase-preconfig-postgres-nextcloud/module-config-samples/pbase_s3storage.json
 /usr/local/pbase-data/pbase-preconfig-postgres-nextcloud/module-config-samples/pbase_smtp.json

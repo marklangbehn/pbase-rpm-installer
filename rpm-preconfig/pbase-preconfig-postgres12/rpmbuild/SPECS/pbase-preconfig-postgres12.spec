@@ -10,7 +10,6 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-preconfig-postgres12
-Requires: jq
 
 %description
 Configure yum repo for PostgreSQL 11/12
@@ -72,6 +71,21 @@ echo ""
 ## check which version of Linux is installed
 check_linux_version
 
+MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
+MODULE_SAMPLES_DIR="/usr/local/pbase-data/pbase-preconfig-postgres12/module-config-samples"
+
+DB_CONFIG_FILENAME="pbase_postgres12.json"
+
+echo "Postgres config:         ${MODULE_CONFIG_DIR}/pbase_postgres12.json"
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_postgres12.json  ${MODULE_CONFIG_DIR}/
+
+## use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars
+RAND_PW_USER="u$(date +%s | sha256sum | base64 | head -c 8)"
+echo "RAND_PW_USER:            $RAND_PW_USER"
+
+## provide random password in database config file
+sed -i "s/shomeddata/${RAND_PW_USER}/" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}"
+
 /bin/cp -f --no-clobber /usr/local/pbase-data/pbase-preconfig-postgres12/etc-pki-rpm-gpg/RPM-GPG-KEY-PGDG /etc/pki/rpm-gpg
 
 if [[ "$FEDORA_RELEASE" != "" ]] ; then
@@ -108,18 +122,18 @@ echo ""
 echo "Postgres repo configured."
 
 echo ""
-echo "Next step - optional - change the default Postges DB password,"
-echo "     application-database and user to be created by making a copy "
-echo "     of the sample config file and editing it. For example:"
+echo "Next step - optional - customize your Postgres application-database name,"
+echo "     user and password to be created by editing"
+echo "     the sample config file. For example:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
-echo "  cp ../module-config-samples/pbase_postgres12.json ."
 echo "  vi pbase_postgres12.json"
 
 echo ""
-echo "Next step - install postgres now with:"
+echo "Next step - install postgres service with:"
 echo ""
-echo "  yum -y install postgresql12-server"
+echo "  yum -y install pbase-postgres12"
+echo ""
 
 %preun
 echo "rpm preuninstall"
@@ -134,4 +148,4 @@ echo "rpm preuninstall"
 /usr/local/pbase-data/pbase-preconfig-postgres12/etc-yum-repos-d/pgdg-redhat-amzn2.repo
 /usr/local/pbase-data/pbase-preconfig-postgres12/etc-yum-repos-d/el7/pgdg-redhat-all.repo
 /usr/local/pbase-data/pbase-preconfig-postgres12/etc-yum-repos-d/fedora/pgdg-fedora-all.repo
-/usr/local/pbase-data/admin-only/module-config-samples/pbase_postgres12.json
+/usr/local/pbase-data/pbase-preconfig-postgres12/module-config-samples/pbase_postgres12.json

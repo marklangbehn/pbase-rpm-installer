@@ -2,7 +2,8 @@
   "activpb_peertube" : {
     "port": 9000,
     "addNgnixProxy": true,
-    "useSubDomain": false,
-    "subDomainName": ""
+    "useSubDomain": true,
+    "subDomainName": "peertube",
+    "subDomainServerAdmin": ""
   }
 }

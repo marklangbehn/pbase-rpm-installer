@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-preconfig-postgres-peertube
-Requires: pbase-preconfig-yarn, pbase-epel, pbase-preconfig-rpmfusion, jq
+Requires: pbase-preconfig-yarn, pbase-epel, pbase-rpmfusion, jq
 
 %description
 Configure Postgres preset user and DB name for use by activpb-peertube

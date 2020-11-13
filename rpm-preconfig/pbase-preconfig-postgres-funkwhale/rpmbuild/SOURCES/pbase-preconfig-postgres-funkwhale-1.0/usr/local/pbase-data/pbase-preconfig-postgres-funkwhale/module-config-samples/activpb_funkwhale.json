@@ -3,7 +3,8 @@
     "funkwhaleVersion": "1.0",
     "port": 5000,
     "addNgnixProxy": true,
-    "useSubDomain": false,
-    "subDomainName": ""
+    "useSubDomain": true,
+    "subDomainName": "funkwhale",
+    "subDomainServerAdmin": "yoursysadmin@yourrealmail.com"
   }
 }

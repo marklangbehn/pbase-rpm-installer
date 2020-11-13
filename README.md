@@ -479,11 +479,20 @@ yum -y install pbase-realtime-kernel
 
 #### RPMFusion
 
-
-A wide variety of media components in the rpm-fusion repository.  
-Here's how to install obs-studio:
+A wide variety of media applications and components are available in the rpm-fusion repository.  
+First install the main pbase-rpmfusion package. Once that is installed you can enable 
+additional packages that include more codecs as shown below.
 ```
 yum -y install pbase-rpmfusion
+yum -y install rpmfusion-free-release-tainted rpmfusion-nonfree-release-tainted
+yum -y groupinstall multimedia
+```
+
+Once those codecs and dependencies are enabled you
+can install a DVD player and obs-studio:
+```
+yum -y install libdvdcss
+yum -y install vlc
 yum -y install obs-studio
 ```
 

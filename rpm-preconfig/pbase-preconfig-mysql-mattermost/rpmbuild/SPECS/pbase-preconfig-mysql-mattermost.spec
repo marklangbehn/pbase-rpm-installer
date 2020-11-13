@@ -131,6 +131,9 @@ echo "PBase MySQL create config preset user and DB name for use by pbase-matterm
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
 
+echo "Hostname:                $THISHOSTNAME"
+echo "Domainname:              $THISDOMAINNAME"
+
 check_linux_version
 
 MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
@@ -176,20 +179,24 @@ fi
 if [[ $DEFAULT_EMAIL_ADDRESS != "" ]]; then
   echo "Setting 'defaultEmailAddress' in pbase_lets_encrypt.json"
   echo "                         ${DEFAULT_EMAIL_ADDRESS}"
+  sed -i "s/yoursysadmin@yourrealmail.com/${DEFAULT_EMAIL_ADDRESS}/" "${MODULE_CONFIG_DIR}/pbase_mattermost.json"
   sed -i "s/yoursysadmin@yourrealmail.com/${DEFAULT_EMAIL_ADDRESS}/" "${MODULE_CONFIG_DIR}/pbase_lets_encrypt.json"
   sed -i "s/yoursysadmin@yourrealmail.com/${DEFAULT_EMAIL_ADDRESS}/" "${MODULE_CONFIG_DIR}/pbase_apache.json"
 fi
 
 
 echo ""
-echo "MySQL module config file for Mattermost:"
-echo "Next step - a) change the default Mattermost port, or select an Apache proxy"
-echo "               for a subdomain or the base domain in pbase_mattermost.json"
-echo "            b) change the default MySQL DB root password and application-db"
-echo "                and user and other config in pbase_mysql.json. For example:"
+echo "MySQL and Let's Encrypt module config files for Mattermost added:"
+echo "Next step - optional"
+echo "            a) change the default Mattermost port, or change the"
+echo "               Apache proxy for a subdomain or the base domain by"
+echo "               editing pbase_mattermost.json"
+echo "            b) change the default MySQL root password and application-database,"
+echo "               user, password and other config by editing"
+echo "               pbase_mysql.json. For example:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
-## echo "  cp pbase_mattermost.json-SAMPLE pbase_mattermost.json"  ##MySQL config
+echo "  vi pbase_lets_encrypt.json"
 echo "  vi pbase_mattermost.json"
 echo "  vi ${DB_CONFIG_FILENAME}"
 

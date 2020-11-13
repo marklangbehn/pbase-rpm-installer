@@ -1,7 +1,7 @@
 Name: pbase-preconfig-mysql
 Version: 1.0
 Release: 0
-Summary: PBase MySQL repo preconfigure rpm
+Summary: PBase MySQL repo preconfigure
 Group: System Environment/Base
 License: Apache-2.0
 URL: https://pbase-foundation.com
@@ -67,24 +67,45 @@ check_linux_version() {
 
 
 echo "PBase MySQL create default module config"
+echo ""
+
+## check which version of Linux is installed
+check_linux_version
+
+MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
+MODULE_SAMPLES_DIR="/usr/local/pbase-data/pbase-preconfig-mysql/module-config-samples"
+DB_CONFIG_FILENAME="pbase_mysql.json"
+
+echo "MySQL config:            ${MODULE_CONFIG_DIR}/pbase_mysql.json"
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_mysql.json  ${MODULE_CONFIG_DIR}/
+
+## use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars
+RAND_PW_USER="u$(date +%s | sha256sum | base64 | head -c 8)"
+RAND_PW_ROOT="r$(date +%s | sha256sum | base64 | head -c 16 | tail -c 8)"
+
+echo "RAND_PW_USER:            $RAND_PW_USER"
+echo "RAND_PW_ROOT:            $RAND_PW_ROOT"
+
+## provide random password in database config file
+sed -i "s/shomeddata/${RAND_PW_USER}/" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}"
+sed -i "s/SHOmeddata/${RAND_PW_ROOT}/" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}"
 
 echo ""
 echo "MySQL module config file:"
-echo "Next step - optional change the default MySQL DB root password and "
-echo "    application-db and user and other default config by making a copy"
-echo "    of the sample file and editing it. For example:"
+echo "Next step - optional - change the default MySQL application-database name,"
+echo "     user and password to be created by editing"
+echo "     the sample config file. For example:"
 echo ""
 
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
-echo "  cp ../module-config-samples/pbase_mysql.json ."
 echo "  vi pbase_mysql.json"
 
 echo ""
-echo "Next step - install mysqld service with:"
+echo "Next step - install MySQL with:"
 echo ""
 echo "  yum -y install pbase-mysql"
 echo ""
 
 %files
 %defattr(600,root,root,700)
-/usr/local/pbase-data/admin-only/module-config-samples/pbase_mysql.json
+/usr/local/pbase-data/pbase-preconfig-mysql/module-config-samples/pbase_mysql.json

@@ -1,0 +1,18 @@
+{
+  "root": "./data",
+  "port": "8444",
+  "serverUri": "https://yourhost.example.org",
+  "webid": false,
+  "mount": "/",
+  "configPath": "./config",
+  "configFile": "./config.json",
+  "dbPath": "./.db",
+  "sslKey": "/etc/letsencrypt/live/yourhost.example.org/privkey.pem",
+  "sslCert": "/etc/letsencrypt/live/yourhost.example.org/fullchain.pem",
+  "multiuser": false,
+  "server": {
+    "name": "yourhost.example.org",
+    "description": "Solid Server",
+    "logo": ""
+  }
+}

@@ -484,7 +484,8 @@ First install the main pbase-rpmfusion package. Once that is installed you can e
 additional packages that include more codecs as shown below.
 ```
 yum -y install pbase-rpmfusion
-yum -y install rpmfusion-free-release-tainted rpmfusion-nonfree-release-tainted
+yum -y install rpmfusion-free-release-tainted
+yum -y install rpmfusion-nonfree-release-tainted
 yum -y groupinstall multimedia
 ```
 
@@ -518,3 +519,18 @@ yum -y install pbase-preconfig-postgres-peertube
 yum -y install pbase-postgres
 yum -y install activpb-peertube
 ```
+
+
+#### SOLID NSS: Node Solid Server
+
+```
+yum -y install https://pbase-foundation.com/pbase-preconfig.rpm
+yum -y install pbase-preconfig-node-solid-server
+yum -y install --enablerepo=AppStream python3
+yum -y install --disablerepo=AppStream nodejs
+yum -y install pbase-apache
+yum -y install pbase-lets-encrypt
+yum -y install pbase-node-solid-server
+```
+
+

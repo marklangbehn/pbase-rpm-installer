@@ -140,6 +140,7 @@ PBASE_CONFIG_FILENAME="pbase_firewall_enable.json"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
+ADDITIONAL_PORT="28800"
 
 ## check which version of Linux is installed
 check_linux_version
@@ -154,14 +155,18 @@ if [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]]; then
   echo "Setting iptables rules"
 
   iptables -F
-  iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+  iptables -A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
+  iptables -A INPUT -p tcp -m tcp --dport 80 -j ACCEPT
+  iptables -A INPUT -p tcp -m tcp --dport 443 -j ACCEPT
+  iptables -A INPUT -p tcp -m tcp --dport ${ADDITIONAL_PORT} -j ACCEPT
+
   iptables -P INPUT DROP
   iptables -P FORWARD DROP
   iptables -P OUTPUT ACCEPT
   iptables -A INPUT -i lo -j ACCEPT
   iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 
-  /sbin/service iptables save
+  service iptables save
   iptables -L -v
 
 else
@@ -172,20 +177,20 @@ else
   /bin/systemctl enable firewalld
   /bin/systemctl restart firewalld
 
+  DEFAULT_ZONE=$(/bin/firewall-cmd --get-default-zone)
+  echo "Default zone:          ${DEFAULT_ZONE}"
+
   echo "Open http port 80"
-  /bin/firewall-cmd --zone=public --add-service=http --permanent
+  /bin/firewall-cmd --zone=${DEFAULT_ZONE} --add-service=http --permanent
 
   echo "Open https port 443"
-  /bin/firewall-cmd --zone=public --add-service=https --permanent
-
-  ## echo "Open ntpd port 123"
-  ## /bin/firewall-cmd --zone=public --add-service=ntp --permanent
+  /bin/firewall-cmd --zone=${DEFAULT_ZONE} --add-service=https --permanent
 
   echo "Open ssh port 22"
-  /bin/firewall-cmd --zone=public --add-service=ssh --permanent
+  /bin/firewall-cmd --zone=${DEFAULT_ZONE} --add-service=ssh --permanent
 
-  echo "Open additional port 28800"
-  /bin/firewall-cmd --zone=public --add-port=28800/tcp --permanent
+  echo "Open additional port ${ADDITIONAL_PORT}"
+  /bin/firewall-cmd --zone=${DEFAULT_ZONE} --add-port=${ADDITIONAL_PORT}/tcp --permanent
 
   /bin/firewall-cmd --reload
 fi
@@ -193,7 +198,7 @@ fi
 
 echo "        allow HTTP"
 echo "        allow HTTPS"
-## echo "        allow NTP"
 echo "        allow SSH"
+echo "        allow ${ADDITIONAL_PORT}"
 
 %files

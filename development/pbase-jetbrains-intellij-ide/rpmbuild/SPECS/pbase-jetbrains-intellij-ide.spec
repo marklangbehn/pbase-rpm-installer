@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-jetbrains-intellij-ide
-Requires: git,curl
+Requires: git, curl, jq
 
 %description
 Jetbrains IntelliJ Community Edition download
@@ -33,6 +33,65 @@ rm -rf "$RPM_BUILD_ROOT"
 fail() {
     echo "ERROR: $1"
     exit 1
+}
+
+## config is stored in json file with root-only permissions
+## it can be one of two places:
+##     /usr/local/pbase-data/admin-only/pbase_module_config.json
+## or
+##     /usr/local/pbase-data/admin-only/module-config.d/pbase_apache.json
+
+
+locateConfigFile() {
+  ## name of config file is passed in param $1 - for example "pbase_apache.json"
+  PBASE_CONFIG_FILENAME="$1"
+
+  PBASE_CONFIG_BASE="/usr/local/pbase-data/admin-only"
+  PBASE_ALL_IN_ONE_CONFIG_FILENAME="pbase_module_config.json"
+  PBASE_CONFIG_DIR="${PBASE_CONFIG_BASE}/module-config.d"
+
+  ## Look for config .json file in one of two places.
+  ##     /usr/local/pbase-data/admin-only/pbase_module_config.json
+  ## or
+  ##     /usr/local/pbase-data/admin-only/module-config.d/pbase_apache.json
+
+  PBASE_CONFIG_SEPARATE="${PBASE_CONFIG_DIR}/${PBASE_CONFIG_FILENAME}"
+  PBASE_CONFIG_ALLINONE="${PBASE_CONFIG_BASE}/${PBASE_ALL_IN_ONE_CONFIG_FILENAME}"
+
+  #echo "PBASE_CONFIG_SEPARATE:   $PBASE_CONFIG_SEPARATE"
+  #echo "PBASE_CONFIG_ALLINONE:   $PBASE_CONFIG_ALLINONE"
+
+  ## check if either file exists, assume SEPARATE as default
+  PBASE_CONFIG="$PBASE_CONFIG_SEPARATE"
+
+  if [[ -f "$PBASE_CONFIG_ALLINONE" ]] ; then
+    PBASE_CONFIG="$PBASE_CONFIG_ALLINONE"
+  fi
+
+  if [[ -f "$PBASE_CONFIG" ]] ; then
+    echo "Config file found:       $PBASE_CONFIG"
+  else
+    echo "Custom config not found: $PBASE_CONFIG"
+  fi
+}
+
+
+parseConfig() {
+  ## fallback when jq is not installed, use the default in the third param
+  HAS_JQ_INSTALLED="$(which jq)"
+  #echo "HAS_JQ_INSTALLED:   $HAS_JQ_INSTALLED"
+
+  if [[ -z "$HAS_JQ_INSTALLED" ]] || [[ ! -f "$PBASE_CONFIG" ]] ; then
+    ## echo "fallback to default: $3"
+    eval "$1"="$3"
+    return 1
+  fi
+
+  ## use jq to extract a json field named in the second param
+  PARSED_VALUE="$(cat $PBASE_CONFIG  |  jq $2)"
+
+  ## use eval to assign that to the variable named in the first param
+  eval "$1"="$PARSED_VALUE"
 }
 
 copy_if_not_exists() {
@@ -62,6 +121,23 @@ copy_if_not_exists() {
 echo "PBase JetBrains IntelliJ IDE download"
 echo ""
 
+MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
+PBASE_DEFAULTS_FILENAME="pbase_preconfig.json"
+
+## look for either separate config file like "pbase_preconfig.json" or all-in-one file: "pbase_module_config.json"
+PBASE_CONFIG_FILENAME="$PBASE_DEFAULTS_FILENAME"
+
+locateConfigFile "$PBASE_CONFIG_FILENAME"
+
+## fetch config values from JSON file
+parseConfig "DEFAULT_DESKTOP_USER_NAME" ".pbase_preconfig.defaultDesktopUsername" ""
+
+DESKTOP_USER_NAME="mydesktopusername"
+if [[ "$DEFAULT_DESKTOP_USER_NAME" != "" ]]; then
+  echo "defaultDesktopUsername:  $DEFAULT_DESKTOP_USER_NAME"
+  DESKTOP_USER_NAME="$DEFAULT_DESKTOP_USER_NAME"
+fi
+
 ## check if already installed
 if [[ -d "/opt/idea-IC" ]]; then
   echo "/opt/idea-IC directory already exists"
@@ -88,7 +164,7 @@ echo "Downloading IntelliJ from jetbrains.com"
 
 cd /usr/local/pbase-data/pbase-jetbrains-intellij-ide
 
-wget -q https://download.jetbrains.com/idea/ideaIC-2020.2.2.tar.gz
+wget -q https://download.jetbrains.com/idea/ideaIC-2020.2.3.tar.gz
 
 echo "Downloaded file from jetbrains.com:"
 ls -lh /usr/local/pbase-data/pbase-jetbrains-intellij-ide/*.gz
@@ -99,15 +175,21 @@ echo "Unzipped into /opt"
 cd /opt
 mv /opt/idea-IC-* /opt/idea-IC
 
+## set permission for desktop user
+if [[ "$DEFAULT_DESKTOP_USER_NAME" != "" ]]; then
+  echo "chown -R $DEFAULT_DESKTOP_USER_NAME:$DEFAULT_DESKTOP_USER_NAME /opt/idea-IC"
+  chown -R $DEFAULT_DESKTOP_USER_NAME:$DEFAULT_DESKTOP_USER_NAME /opt/idea-IC
+fi
+
 #echo "Adding env-variables:    /etc/profile.d/pbase-idea.sh"
 #/bin/cp -rf /usr/local/pbase-data/pbase-jetbrains-intellij-ide/etc-profile-d/*.sh /etc/profile.d
 #echo "To re-load now:          source /etc/profile.d/pbase-idea.sh"
 #echo ""
 
-echo "Next step - as root, change the owner of the IDE directory:"
+echo "Next step - if needed - as root, change the owner of the IDE directory:"
 echo "       '/opt/idea-IC' to the desktop user"
 echo ""
-echo "  chown -R mydesktopusername:mydesktopusername /opt/idea-IC"
+echo "  chown -R $DESKTOP_USER_NAME:$DESKTOP_USER_NAME /opt/idea-IC"
 echo ""
 echo "     Then login as the desktop user and launch the installation wizard"
 echo ""

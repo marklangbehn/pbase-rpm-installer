@@ -18,6 +18,7 @@ yum -y install pbase-lets-encrypt
 
 Additionally, you may want to lock down SSH access and enable the firewall.
 ```jsx
+yum -y install pbase-epel
 yum -y install pbase-ssh-fail2ban
 ## or the 'crowdsec' tool
 yum -y install pbase-crowdsec
@@ -113,19 +114,12 @@ yum -y install pbase-terraform
 ## Node JS
 #### Install the latest Node JS release
 Depending on your OS version.
-To use node version 13, and when using CentOS 8 / EL8
-```
-yum -y install pbase-preconfig-nodejs13
-```
-OR to use node version 10 or 12, and when using CentOS 7 / EL7
+To use node version 12 or 14
 ```
 yum -y install pbase-preconfig-nodejs12
-yum -y install pbase-preconfig-nodejs10
+yum -y install pbase-preconfig-nodejs14
 ```
-OR to use node version 10, and when using CentOS 6 / EL6
-```
-yum -y install pbase-preconfig-nodejs10
-```
+
 now you can install node and npm with
 ```  
 ## CentOS 8
@@ -142,6 +136,7 @@ Here's how to build from the site's resources and code on a Git repository.
 ```
 yum -y install https://pbase-foundation.com/pbase-preconfig.rpm
 yum -y install pbase-preconfig-nodejs12
+yum -y install nodejs  
 yum -y install pbase-gatsby-tools
 
 ```
@@ -249,7 +244,6 @@ yum -y install pbase-docker-ce
 #### KUBERNETES
 #### Install Kuberentes and Minikube
 ```
-yum -y install pbase-epel
 yum -y install pbase-kvm
 yum -y install pbase-kubernetes-tools
 ```
@@ -428,15 +422,15 @@ yum -y install pbase-wordpress
 #### Desktop IDE
 #### VSCode IDE
 To install the Microsoft Visual Studio Code - VSCode integrated development environment.
-Also to support large projects it will increase the Linux fs.inotify.max_user_watches to 524288.
+Also to support large projects it will increase the Linux kernel parameter fs.inotify.max_user_watches to 524288.
 ```
 yum -y install pbase-preconfig-vscode-ide
 yum -y install code
 ```
 
 #### IntelliJ/WebStorm IDE
-To install the IntelliJ or WebStorm integrated development environment.
-Also to support large projects it will increase the Linux fs.inotify.max_user_watches to 524288.
+To install the IntelliJ IDEA Community Edition, or the WebStorm integrated development environment.
+Also to support large projects it will increase the Linux kernel parameter fs.inotify.max_user_watches to 524288.
 ```
 yum -y install pbase-jetbrains-intellij-ide
 yum -y install pbase-jetbrains-webstorm-ide

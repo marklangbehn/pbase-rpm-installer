@@ -57,5 +57,4 @@ echo ""
 
 %files
 %defattr(600,root,root,700)
-/usr/local/pbase-data/admin-only/module-config-samples/pbase_realtime_kernel.json
 /usr/local/pbase-data/pbase-preconfig-realtime-kernel/etc-yum-repos-d/CentOS-Stream-RT.repo

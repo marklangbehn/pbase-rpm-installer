@@ -1,0 +1,5 @@
+{
+  "pbase_docker_ce": {
+      "addUserToDockerGroup": ""
+   }
+}

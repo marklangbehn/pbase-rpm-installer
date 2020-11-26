@@ -142,7 +142,7 @@ parseConfig "UNATTENDED_INSTALL" ".pbase_crowdsec.unattendedInstall" "true"
 
 echo "Downloading binary:      crowdsec-release.tgz"
 cd /opt
-curl -s https://api.github.com/repos/crowdsecurity/crowdsec/releases/latest | grep browser_download_url| cut -d '"' -f 4  | wget -i -
+curl -s https://api.github.com/repos/crowdsecurity/crowdsec/releases/latest | grep browser_download_url| cut -d '"' -f 4  | wget -q -i -
 tar xzf crowdsec-release.tgz
 /bin/rm -f crowdsec-release.tgz
 
@@ -174,9 +174,9 @@ CROWDSEC_CONF_FILE="/etc/crowdsec/config/default.yaml"
 append_bashrc_alias tailcrowdsec "tail -n40 -f $CROWDSEC_LOG_FILE"
 append_bashrc_alias editcrowdsecconf "vi $CROWDSEC_CONF_FILE"
 
-append_bashrc_alias stophttpd "/bin/systemctl stop crowdsec"
-append_bashrc_alias starthttpd "/bin/systemctl start crowdsec"
-append_bashrc_alias statushttpd "/bin/systemctl status crowdsec"
-append_bashrc_alias restarthttpd "/bin/systemctl restart crowdsec"
+append_bashrc_alias stopcrowdsec "/bin/systemctl stop crowdsec"
+append_bashrc_alias startcrowdsec "/bin/systemctl start crowdsec"
+append_bashrc_alias statuscrowdsec "/bin/systemctl status crowdsec"
+append_bashrc_alias restartcrowdsec "/bin/systemctl restart crowdsec"
 
 %files

@@ -10,7 +10,7 @@ of the Red Hat Enterprise Linux and CentOS operating system family.
 
 Here's how to stand up a WordPress instance on an Apache server with a MySQL database.
 ```jsx
-yum -y install https://pbase-foundation.com/pbase-preconfig.rpm
+yum -y install https://pbase-foundation.com/pbase-repo.rpm
 yum -y install pbase-preconfig-mysql-wordpress
 yum -y install pbase-wordpress-allinone
 yum -y install pbase-lets-encrypt
@@ -61,7 +61,7 @@ Do that with the `systemctl stop packagekit` command.
 #### Install preconfig RPM
 The first step is to install the pbase-preconfig RPM. It places YUM repository specs into the target server's /etc/yum.repos.d/ directory.
 ```
-yum -y install https://pbase-foundation.com/pbase-preconfig.rpm
+yum -y install https://pbase-foundation.com/pbase-repo.rpm
 ```
 Once that bootstrapping step is done, all the other application components become available.
 
@@ -92,7 +92,8 @@ yum -y install pbase-ssh-fail2ban
 ``` 
 
 Or to simply configure SSH to listen on a port other than 22 use the pbase-ssh-port package. 
-It also lets you choose to permit remote root logins.
+The preconfig package lets you choose the alternate SSH port number which defaults 28800.
+And whether permit remote root logins, which it disables by default.
 ```
 yum -y install pbase-preconfig-ssh-port
 yum -y install pbase-ssh-port
@@ -134,7 +135,7 @@ yum -y install nodejs
 The static site generator Gatsby JS depends on Node JS and a few image procesing libraries to build websites.
 Here's how to build from the site's resources and code on a Git repository.  
 ```
-yum -y install https://pbase-foundation.com/pbase-preconfig.rpm
+yum -y install https://pbase-foundation.com/pbase-repo.rpm
 yum -y install pbase-preconfig-nodejs12
 yum -y install nodejs  
 yum -y install pbase-gatsby-tools
@@ -289,7 +290,7 @@ yum -y install pbase-tomcat8
 #### ELASTICSEARCH
 To install and start the elasticsearch service. Must have the Java 1.8 JRE already installed before installing the elasticsearch package.
 ```
-yum -y install https://pbase-foundation.com/pbase-preconfig.rpm
+yum -y install https://pbase-foundation.com/pbase-repo.rpm
 yum -y install java-1.8.0-openjdk
 yum -y install pbase-preconfig-elasticsearch
 yum -y install pbase-elasticsearch
@@ -309,7 +310,7 @@ Either PostgreSQL or MySQL 8.0 community can be used.
 To install Nextcloud with a Postgres database for storage  
 Use these steps:  
 ```
-yum -y install https://pbase-foundation.com/pbase-preconfig.rpm
+yum -y install https://pbase-foundation.com/pbase-repo.rpm
 yum -y install pbase-preconfig-postgres-nextcloud
 yum -y install pbase-postgres
 yum -y install pbase-nextcloud
@@ -319,7 +320,7 @@ To install Nextcloud with a MySQL 8.0 community database for storage
 on EL/CentOS 8  
 Use these steps:
 ```
-yum -y install https://pbase-foundation.com/pbase-preconfig.rpm
+yum -y install https://pbase-foundation.com/pbase-repo.rpm
 yum -y install pbase-preconfig-mysql-nextcloud
 yum -y --disablerepo=AppStream install mysql-community-server
 yum -y install pbase-mysql80community
@@ -329,7 +330,7 @@ yum -y install pbase-nextcloud
 on EL/CentOS 6 and 7  
 Use these steps:  
 ```
-yum -y install https://pbase-foundation.com/pbase-preconfig.rpm
+yum -y install https://pbase-foundation.com/pbase-repo.rpm
 yum -y install pbase-preconfig-mysql-nextcloud
 yum -y install pbase-mysql80community
 yum -y install pbase-nextcloud
@@ -341,7 +342,7 @@ yum -y install pbase-nextcloud
 Install the Mattermost messaging platform with a Postgres database for storage  
 on CentOS8/EL8
 ```
-yum -y install https://pbase-foundation.com/pbase-preconfig.rpm
+yum -y install https://pbase-foundation.com/pbase-repo.rpm
 yum -y install pbase-preconfig-postgres-mattermost
 yum -y install pbase-postgres
 yum -y install pbase-mattermost
@@ -351,7 +352,7 @@ yum -y install pbase-lets-encrypt
 Install the Mattermost messaging platform with a MySQL database for storage  
 on CentOS8/EL8
 ```
-yum -y install https://pbase-foundation.com/pbase-preconfig.rpm 
+yum -y install https://pbase-foundation.com/pbase-repo.rpm 
 yum -y install pbase-preconfig-mysql-mattermost
 yum -y install pbase-mysql
 yum -y install pbase-mattermost
@@ -360,7 +361,7 @@ yum -y install pbase-lets-encrypt
 
 on CentOS7/EL7  - must use MySQL 8.0 Community release 
 ```
-yum -y install https://pbase-foundation.com/pbase-preconfig.rpm
+yum -y install https://pbase-foundation.com/pbase-repo.rpm
 yum -y install pbase-preconfig-mysql80community
 yum -y install pbase-preconfig-mysql-mattermost
 yum -y install pbase-mysql80community
@@ -373,7 +374,7 @@ yum -y install pbase-lets-encrypt
 GitLab is resource hungry and needs at least 4GB of RAM. It also requires CentOS 8.
 
 ```
-yum -y install https://pbase-foundation.com/pbase-preconfig.rpm
+yum -y install https://pbase-foundation.com/pbase-repo.rpm
 yum -y install pbase-preconfig-gitlab-ce
 yum -y install pbase-gitlab-ce
 ```
@@ -383,7 +384,7 @@ yum -y install pbase-gitlab-ce
 
 Postgres
 ```
-yum -y install https://pbase-foundation.com/pbase-preconfig.rpm
+yum -y install https://pbase-foundation.com/pbase-repo.rpm
 yum -y install pbase-preconfig-postgres-gitea
 yum -y install pbase-postgres
 yum -y install pbase-apache
@@ -392,7 +393,7 @@ yum -y install pbase-gitea
 
 MySQL
 ```
-yum -y install https://pbase-foundation.com/pbase-preconfig.rpm
+yum -y install https://pbase-foundation.com/pbase-repo.rpm
 yum -y install pbase-preconfig-mysql-gitea
 yum -y install pbase-mysql
 yum -y install pbase-apache
@@ -403,7 +404,7 @@ yum -y install pbase-gitea
 #### Here's how to stand up a WordPress instance on an Apache server with a MySQL database.
 ```
 ## preconfig
-yum -y install https://pbase-foundation.com/pbase-preconfig.rpm
+yum -y install https://pbase-foundation.com/pbase-repo.rpm
 yum -y install pbase-preconfig-mysql-wordpress
 
 ## apache and mysql
@@ -497,7 +498,7 @@ yum -y install obs-studio
 Here's how to install Mastodon:
 (Note: On RHEL 8 you must enable CodeReadyBuilder with:  subscription-manager repos --enable codeready-builder-for-rhel-8-x86_64-rpms)
 ```
-yum -y install https://pbase-foundation.com/pbase-preconfig.rpm
+yum -y install https://pbase-foundation.com/pbase-repo.rpm
 yum -y install pbase-preconfig-postgres-mastodon
 yum -y install pbase-postgres
 yum -y install activpb-mastodon
@@ -508,7 +509,7 @@ Default install is to assume your domain is registered in DNS with a 'peertube' 
 For example: peertube.mydomainname.com  
 If you want to change this edit the `activpb_peertube.json` preconfig file.
 ```
-yum -y install https://pbase-foundation.com/pbase-preconfig.rpm
+yum -y install https://pbase-foundation.com/pbase-repo.rpm
 yum -y install pbase-preconfig-postgres-peertube
 yum -y install pbase-postgres
 yum -y install activpb-peertube

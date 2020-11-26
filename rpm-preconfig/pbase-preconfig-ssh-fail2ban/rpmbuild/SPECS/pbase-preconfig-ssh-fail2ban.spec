@@ -10,6 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-preconfig-ssh-fail2ban
+Requires: pbase-epel
 
 %description
 Configure SSH fail2ban
@@ -66,15 +67,14 @@ check_linux_version() {
 }
 
 
-echo "PBase SSH fail2ban setup"
+echo "PBase SSH fail2ban pre-config file create"
 
 echo ""
-echo "PBase SSH fail2ban module config file:"
 echo "Next step - optional - change the SSH fail2ban defaults by making a copy "
 echo "     of the sample file and editing it. For example:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
-echo "  cp ../module-config-samples/pbase_ssh_fail2ban.json ."
+echo "  cp /usr/local/pbase-data/pbase-preconfig-ssh-fail2ban/module-config-samples/pbase_ssh_fail2ban.json ."
 echo "  vi pbase_ssh_fail2ban.json"
 echo ""
 
@@ -85,4 +85,4 @@ echo ""
 
 %files
 %defattr(600,root,root,700)
-/usr/local/pbase-data/admin-only/module-config-samples/pbase_ssh_fail2ban.json
+/usr/local/pbase-data/pbase-preconfig-ssh-fail2ban/module-config-samples/pbase_ssh_fail2ban.json

@@ -175,7 +175,7 @@ if [[ -e "${MODULE_CONFIG_DIR}/pbase_smtp.json" ]]; then
   sed -i "s/example.com/${THISDOMAINNAME}/" "${MODULE_CONFIG_DIR}/pbase_smtp.json"
 fi
 
-## when defined in pbase_preconfig.json use that to provide the Let's Encrypt email address
+## when defined in pbase_repo.json use that to provide the Let's Encrypt email address
 if [[ $DEFAULT_EMAIL_ADDRESS != "" ]]; then
   echo "Setting 'defaultEmailAddress' in pbase_lets_encrypt.json"
   echo "                         ${DEFAULT_EMAIL_ADDRESS}"

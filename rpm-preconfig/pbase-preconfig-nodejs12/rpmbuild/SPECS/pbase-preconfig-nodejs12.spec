@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-preconfig-nodejs12
-Requires: git,curl
+Requires: git, curl, gcc-c++ make
 
 %description
 Configure yum repo for NodeJS 12.x
@@ -75,19 +75,16 @@ check_linux_version
 
 ## default repo for EL7
 YUM_REPO_PATH="/usr/local/pbase-data/pbase-preconfig-nodejs12/etc-yum-repos-d/el7"
-REPO_NAME="nodesource-el.repo"
+REPO_NAME="nodesource-el7.repo"
 
-if [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]]; then
-  ## switch to repo for EL6
-  YUM_REPO_PATH="/usr/local/pbase-data/pbase-preconfig-nodejs12/etc-yum-repos-d/el6"
-elif [[ "${REDHAT_RELEASE_DIGIT}" == "8" ]]; then
+if [[ "${REDHAT_RELEASE_DIGIT}" == "8" ]]; then
   ## switch to repo for EL8
   YUM_REPO_PATH="/usr/local/pbase-data/pbase-preconfig-nodejs12/etc-yum-repos-d/el8"
   REPO_NAME="nodesource-el8.repo"
-elif [[ "${REDHAT_RELEASE_DIGIT}" == "30" ]]; then
-  ## switch to repo for Fedora 30
-  REPO_NAME="nodesource-fc30.repo"
-  YUM_REPO_PATH="/usr/local/pbase-data/pbase-preconfig-nodejs12/etc-yum-repos-d/fedora30"
+elif [[ "${FEDORA_RELEASE}" != "" ]]; then
+  ## switch to repo for Fedora 3x
+  REPO_NAME="nodesource-fc33.repo"
+  YUM_REPO_PATH="/usr/local/pbase-data/pbase-preconfig-nodejs12/etc-yum-repos-d/fedora"
 fi
 
 if [[ -e "/etc/yum.repos.d/$REPO_NAME" ]]; then
@@ -114,8 +111,7 @@ echo "rpm preuninstall"
 
 %files
 %defattr(600,root,root,700)
-/usr/local/pbase-data/pbase-preconfig-nodejs12/etc-yum-repos-d/el6/nodesource-el.repo
-/usr/local/pbase-data/pbase-preconfig-nodejs12/etc-yum-repos-d/el7/nodesource-el.repo
+/usr/local/pbase-data/pbase-preconfig-nodejs12/etc-yum-repos-d/el7/nodesource-el7.repo
 /usr/local/pbase-data/pbase-preconfig-nodejs12/etc-yum-repos-d/el8/nodesource-el8.repo
-/usr/local/pbase-data/pbase-preconfig-nodejs12/etc-yum-repos-d/fedora30/nodesource-fc30.repo
+/usr/local/pbase-data/pbase-preconfig-nodejs12/etc-yum-repos-d/fedora/nodesource-fc33.repo
 /usr/local/pbase-data/pbase-preconfig-nodejs12/etc-pki-rpm-gpg/NODESOURCE-GPG-SIGNING-KEY-EL

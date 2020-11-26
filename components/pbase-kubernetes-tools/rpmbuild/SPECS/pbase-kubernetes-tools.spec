@@ -93,15 +93,15 @@ echo "PBase Kubernetes Tools Install"
 echo ""
 
 MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
-PBASE_DEFAULTS_FILENAME="pbase_preconfig.json"
+PBASE_DEFAULTS_FILENAME="pbase_repo.json"
 
-## look for either separate config file like "pbase_preconfig.json" or all-in-one file: "pbase_module_config.json"
+## look for either separate config file like "pbase_repo.json" or all-in-one file: "pbase_module_config.json"
 PBASE_CONFIG_FILENAME="$PBASE_DEFAULTS_FILENAME"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config values from JSON file
-parseConfig "DEFAULT_DESKTOP_USER_NAME" ".pbase_preconfig.defaultDesktopUsername" ""
+parseConfig "DEFAULT_DESKTOP_USER_NAME" ".pbase_repo.defaultDesktopUsername" ""
 
 DESKTOP_USER_NAME="mydesktopusername"
 if [[ "$DEFAULT_DESKTOP_USER_NAME" != "" ]]; then

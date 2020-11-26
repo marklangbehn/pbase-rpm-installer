@@ -3,7 +3,6 @@
     "port": 9000,
     "addNgnixProxy": true,
     "useSubDomain": true,
-    "subDomainName": "peertube",
-    "subDomainServerAdmin": ""
+    "subDomainName": "peertube"
   }
 }

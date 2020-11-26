@@ -12,7 +12,7 @@ BuildRoot: %{_tmppath}/%{name}-buildroot
 Provides: pbase-preconfig-ssh-port
 
 %description
-Configure SSH port config file
+Configure SSH port pre-config file
 
 %prep
 %setup -q
@@ -34,47 +34,14 @@ fail() {
     exit 1
 }
 
-check_linux_version() {
-  AMAZON1_RELEASE=""
-  AMAZON2_RELEASE=""
-  if [[ -e "/etc/system-release" ]]; then
-    SYSTEM_RELEASE="$(cat /etc/system-release)"
-    AMAZON1_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux AMI')"
-    AMAZON2_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2')"
-    echo "system-release:          ${SYSTEM_RELEASE}"
-  fi
-
-  FEDORA_RELEASE=""
-  if [[ -e "/etc/fedora-release" ]]; then
-    FEDORA_RELEASE="$(cat /etc/fedora-release)"
-    echo "fedora_release:          ${FEDORA_RELEASE}"
-  fi
-
-  REDHAT_RELEASE_DIGIT=""
-  if [[ -e "/etc/redhat-release" ]]; then
-    REDHAT_RELEASE_DIGIT="$(cat /etc/redhat-release | grep -oE '[0-9]+' | head -n1)"
-    echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
-  elif [[ "$AMAZON1_RELEASE" != "" ]]; then
-    echo "AMAZON1_RELEASE:         $AMAZON1_RELEASE"
-    REDHAT_RELEASE_DIGIT="6"
-    echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
-  elif [[ "$AMAZON2_RELEASE" != "" ]]; then
-    echo "AMAZON2_RELEASE:         $AMAZON2_RELEASE"
-    REDHAT_RELEASE_DIGIT="7"
-    echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
-  fi
-}
-
-
-echo "PBase SSH port config file create"
+echo "PBase SSH port pre-config file create"
 
 echo ""
-echo "PBase SSH module config file:"
 echo "Next step - optional - change the SSH default port by making a copy "
 echo "     of the sample file and editing it. For example:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
-echo "  cp ../module-config-samples/pbase_ssh_port.json ."
+echo "  cp /usr/local/pbase-data/pbase-preconfig-ssh-port/module-config-samples/pbase_ssh_port.json ."
 echo "  vi pbase_ssh_port.json"
 echo ""
 
@@ -85,4 +52,4 @@ echo ""
 
 %files
 %defattr(600,root,root,700)
-/usr/local/pbase-data/admin-only/module-config-samples/pbase_ssh_port.json
+/usr/local/pbase-data/pbase-preconfig-ssh-port/module-config-samples/pbase_ssh_port.json

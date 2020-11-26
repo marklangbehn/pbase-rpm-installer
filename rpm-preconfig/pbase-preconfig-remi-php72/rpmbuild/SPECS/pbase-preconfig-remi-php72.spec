@@ -123,6 +123,11 @@ echo "rpm preuninstall"
 /bin/rm -f /etc/yum.repos.d/remi.repo
 /bin/rm -f /etc/yum.repos.d/remi-*.repo
 
+if [[ -e "/etc/yum.repos.d/amzn2extra-php72.repo" ]]; then
+  echo "Removing yum repo:       amzn2extra-php72.repo"
+  /bin/rm -f /etc/yum.repos.d/amzn2extra-php72.repo
+fi
+
 %files
 %defattr(600,root,root,700)
 /usr/local/pbase-data/pbase-preconfig-remi-php72/etc-yum-repos-d/el6/REMI-REPOS-el6.tar

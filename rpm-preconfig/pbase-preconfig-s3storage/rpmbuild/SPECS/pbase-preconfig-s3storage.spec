@@ -35,15 +35,14 @@ fail() {
     exit 1
 }
 
-echo "PBase S3 Storage dependencies and config file"
+echo "PBase S3 Storage dependencies and pre-config file"
 
 echo ""
-echo "PBase S3 Storage dependencies and config file:"
 echo "Next step - change the default config by making"
 echo "    a copy of the config sample file and editing it. For example:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
-echo "  cp ../module-config-samples/pbase_s3storage.json ."
+echo "  cp /usr/local/pbase-data/pbase-preconfig-s3storage/module-config-samples/pbase_s3storage.json ."
 echo "  vi pbase_s3storage.json"
 echo ""
 echo "Next step - finish S3 configuration with:"
@@ -54,4 +53,4 @@ echo ""
 %files
 ## root only access to pbase configuration directories
 %defattr(600,root,root,700)
-/usr/local/pbase-data/admin-only/module-config-samples/pbase_s3storage.json
+/usr/local/pbase-data/pbase-preconfig-s3storage/module-config-samples/pbase_s3storage.json

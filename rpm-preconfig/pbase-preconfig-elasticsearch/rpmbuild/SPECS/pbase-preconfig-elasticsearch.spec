@@ -93,7 +93,7 @@ echo "     making a copy of the sample file, and editing it. For example:"
 echo ""
 
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
-echo "  cp ../module-config-samples/pbase_elasticsearch.json ."
+echo "  cp /usr/local/pbase-data/pbase-preconfig-elasticsearch/module-config-samples/pbase_elasticsearch.json ."
 echo "  vi pbase_elasticsearch.json"
 
 echo ""
@@ -104,4 +104,4 @@ echo "  yum install pbase-elasticsearch"
 %defattr(600,root,root,700)
 /usr/local/pbase-data/pbase-preconfig-elasticsearch/etc-yum-repos-d/el7/elasticsearch.repo
 /usr/local/pbase-data/pbase-preconfig-elasticsearch/etc-pki-rpm-gpg/GPG-KEY-elasticsearch
-/usr/local/pbase-data/admin-only/module-config-samples/pbase_elasticsearch.json
+/usr/local/pbase-data/pbase-preconfig-elasticsearch/module-config-samples/pbase_elasticsearch.json

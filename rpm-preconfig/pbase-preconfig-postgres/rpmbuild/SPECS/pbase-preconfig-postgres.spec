@@ -134,15 +134,15 @@ check_linux_version
 MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
 MODULE_SAMPLES_DIR="/usr/local/pbase-data/pbase-preconfig-postgres/module-config-samples"
 
-PBASE_DEFAULTS_FILENAME="pbase_preconfig.json"
+PBASE_DEFAULTS_FILENAME="pbase_repo.json"
 
-## look for either separate config file like "pbase_preconfig.json" or all-in-one file: "pbase_module_config.json"
+## look for either separate config file like "pbase_repo.json" or all-in-one file: "pbase_module_config.json"
 PBASE_CONFIG_FILENAME="$PBASE_DEFAULTS_FILENAME"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config values from JSON file
-parseConfig "DEFAULT_EMAIL_ADDRESS" ".pbase_preconfig.defaultEmailAddress" ""
+parseConfig "DEFAULT_EMAIL_ADDRESS" ".pbase_repo.defaultEmailAddress" ""
 
 DB_CONFIG_FILENAME="pbase_postgres.json"
 

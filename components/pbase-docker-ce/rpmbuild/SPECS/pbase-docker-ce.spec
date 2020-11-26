@@ -9,7 +9,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot 
 
 Provides: pbase-docker-ce
-Requires: docker-ce,docker-ce-cli,containerd.io
+Requires: docker-ce, docker-ce-cli, containerd.io, jq
 
 %description
 Docker CE and Docker Compose installation
@@ -28,6 +28,21 @@ echo "rpm postinstall $1"
 fail() {
     echo "ERROR: $1"
     exit 1
+}
+
+append_bashrc_alias() {
+  if [ -z "$1" ]  ||  [ -z "$2" ]; then
+    echo "Both params must be passed to postinstall.append_bashrc_alias()"
+    exit 1
+  fi
+
+  EXISTING_ALIAS=$(grep $1 /root/.bashrc)
+  if [[ "$EXISTING_ALIAS" == "" ]]; then
+    echo "Adding shell alias:  $1"
+    echo "alias $1='$2'"  >>  /root/.bashrc
+  else
+    echo "Already has shell alias '$1' in: /root/.bashrc"
+  fi
 }
 
 echo "PBase Docker CE and Docker Compose installation"
@@ -92,22 +107,31 @@ PBASE_CONFIG_FILENAME="pbase_docker_ce.json"
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config value from JSON file
-parseConfig "ADD_USER_TO_DOCKER_GRP" ".pbase_docker_ce.addUserToDockerGroup" "mark"
+parseConfig "ADD_USER_TO_DOCKER_GRP" ".pbase_docker_ce.addUserToDockerGroup" ""
 
 echo "ADD_USER_TO_DOCKER_GRP:  $ADD_USER_TO_DOCKER_GRP"
 
 REQUESTED_USER_EXISTS=$(grep "^${ADD_USER_TO_DOCKER_GRP}\\:" /etc/passwd)
-echo "REQUESTED_USER_EXISTS:   $REQUESTED_USER_EXISTS"
+##echo "REQUESTED_USER_EXISTS:   $REQUESTED_USER_EXISTS"
 
 if [[ $REQUESTED_USER_EXISTS != "" ]] && [[ $ADD_USER_TO_DOCKER_GRP != "" ]] ; then
 
-  ##TODO check if group already has given user
   echo "Executing:               usermod -aG docker $ADD_USER_TO_DOCKER_GRP"
   usermod -aG docker $ADD_USER_TO_DOCKER_GRP
 fi
 
+## Add aliases helpful for admin tasks to .bashrc
+echo "" >> /root/.bashrc
+
+append_bashrc_alias taildocker "journalctl -fu docker.service"
+
+append_bashrc_alias stopdocker "/bin/systemctl stop docker"
+append_bashrc_alias startdocker "/bin/systemctl start docker"
+append_bashrc_alias statusdocker "/bin/systemctl status docker"
+append_bashrc_alias restartdocker "/bin/systemctl restart docker"
 
 echo "Starting docker service"
+echo ""
 
 /bin/systemctl daemon-reload
 /bin/systemctl enable docker.service || fail "systemctl failed to enable docker service"

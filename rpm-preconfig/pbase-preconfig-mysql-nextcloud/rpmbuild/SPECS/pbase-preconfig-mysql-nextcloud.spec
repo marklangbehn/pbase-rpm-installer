@@ -135,15 +135,15 @@ MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
 MODULE_SAMPLES_DIR="/usr/local/pbase-data/pbase-preconfig-mysql-nextcloud/module-config-samples"
 DB_CONFIG_FILENAME="pbase_mysql80community.json"
 
-PBASE_DEFAULTS_FILENAME="pbase_preconfig.json"
+PBASE_DEFAULTS_FILENAME="pbase_repo.json"
 
-## look for either separate config file like "pbase_preconfig.json" or all-in-one file: "pbase_module_config.json"
+## look for either separate config file like "pbase_repo.json" or all-in-one file: "pbase_module_config.json"
 PBASE_CONFIG_FILENAME="$PBASE_DEFAULTS_FILENAME"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config values from JSON file
-parseConfig "DEFAULT_EMAIL_ADDRESS" ".pbase_preconfig.defaultEmailAddress" ""
+parseConfig "DEFAULT_EMAIL_ADDRESS" ".pbase_repo.defaultEmailAddress" ""
 
 
 #echo "Nextcloud config:       ${MODULE_CONFIG_DIR}/pbase_nextcloud.json"
@@ -173,7 +173,7 @@ if [[ -e "${MODULE_CONFIG_DIR}/pbase_smtp.json" ]]; then
   sed -i "s/example.com/${THISDOMAINNAME}/" "${MODULE_CONFIG_DIR}/pbase_smtp.json"
 fi
 
-## when defined in pbase_preconfig.json use that to provide the Let's Encrypt email address
+## when defined in pbase_repo.json use that to provide the Let's Encrypt email address
 if [[ $DEFAULT_EMAIL_ADDRESS != "" ]]; then
   echo "Setting 'defaultEmailAddress' field in pbase_apache.json"
   sed -i "s/yoursysadmin@yourrealmail.com/${DEFAULT_EMAIL_ADDRESS}/" "${MODULE_CONFIG_DIR}/pbase_apache.json"

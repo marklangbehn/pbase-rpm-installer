@@ -34,6 +34,9 @@ fail() {
     echo "ERROR: $1"
     exit 1
 }
+
+echo "PBase Let's Encrypt config file create"
+
 ## config is stored in json file with root-only permissions
 ## it can be one of two places:
 ##     /usr/local/pbase-data/admin-only/pbase_module_config.json
@@ -125,36 +128,33 @@ check_linux_version() {
   fi
 }
 
-
-echo "PBase Let's Encrypt config file create"
-echo ""
-
 MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
+MODULE_SAMPLES_DIR=/usr/local/pbase-data/pbase-preconfig-lets-encrypt/module-config-samples/"
 
-PBASE_DEFAULTS_FILENAME="pbase_preconfig.json"
+PBASE_DEFAULTS_FILENAME="pbase_repo.json"
 
-## look for either separate config file like "pbase_preconfig.json" or all-in-one file: "pbase_module_config.json"
+## look for either separate config file like "pbase_repo.json" or all-in-one file: "pbase_module_config.json"
 PBASE_CONFIG_FILENAME="$PBASE_DEFAULTS_FILENAME"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config values from JSON file
-parseConfig "DEFAULT_EMAIL_ADDRESS" ".pbase_preconfig.defaultEmailAddress" ""
+parseConfig "DEFAULT_EMAIL_ADDRESS" ".pbase_repo.defaultEmailAddress" ""
 
-## when defined in pbase_preconfig.json use that to provide the Let's Encrypt email address
-if [[ $DEFAULT_EMAIL_ADDRESS != "" ]] && [[ -e "${MODULE_CONFIG_DIR}/pbase_lets_encrypt.json" ]] ; then
+## when defined in pbase_repo.json use that to provide the Let's Encrypt email address
+if [[ $DEFAULT_EMAIL_ADDRESS != "" ]]; then
   echo "Setting 'defaultEmailAddress' in pbase_lets_encrypt.json"
   echo "                         ${DEFAULT_EMAIL_ADDRESS}"
+  /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_lets_encrypt.json  ${MODULE_CONFIG_DIR}/
   sed -i "s/yoursysadmin@yourrealmail.com/${DEFAULT_EMAIL_ADDRESS}/" "${MODULE_CONFIG_DIR}/pbase_lets_encrypt.json"
 fi
 
 
 echo "Next step - recommended - change the Let's Encrypt email address and other"
-echo "  default configuration by making a copy of the config sample file and editing it."
+echo "  default configuration by editing the pbase_lets_encrypt.json file."
 echo "  For example:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
-echo "  cp ../module-config-samples/pbase_lets_encrypt.json ."
 echo "  vi pbase_lets_encrypt.json"
 
 echo ""
@@ -166,4 +166,4 @@ echo ""
 %files
 ## root only access to pbase configuration directories
 %defattr(600,root,root,700)
-/usr/local/pbase-data/admin-only/module-config-samples/pbase_lets_encrypt.json
+/usr/local/pbase-data/pbase-preconfig-lets-encrypt/module-config-samples/pbase_lets_encrypt.json

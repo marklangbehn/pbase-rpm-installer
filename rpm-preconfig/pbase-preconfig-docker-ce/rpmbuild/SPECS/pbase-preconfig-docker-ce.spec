@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-preconfig-docker-ce
-Requires: yum-utils,device-mapper-persistent-data,lvm2,pbase-preconfig-docker-ce-transitive-dep
+Requires: yum-utils,device-mapper-persistent-data,lvm2,pbase-preconfig-docker-ce-transitive-dep, jq
 
 %description
 Configure yum repo and dependencies for current Docker CE version
@@ -33,6 +33,64 @@ echo "rpm postinstall $1"
 fail() {
     echo "ERROR: $1"
     exit 1
+}
+## config is stored in json file with root-only permissions
+## it can be one of two places:
+##     /usr/local/pbase-data/admin-only/pbase_module_config.json
+## or
+##     /usr/local/pbase-data/admin-only/module-config.d/pbase_apache.json
+
+
+locateConfigFile() {
+  ## name of config file is passed in param $1 - for example "pbase_apache.json"
+  PBASE_CONFIG_FILENAME="$1"
+
+  PBASE_CONFIG_BASE="/usr/local/pbase-data/admin-only"
+  PBASE_ALL_IN_ONE_CONFIG_FILENAME="pbase_module_config.json"
+  PBASE_CONFIG_DIR="${PBASE_CONFIG_BASE}/module-config.d"
+
+  ## Look for config .json file in one of two places.
+  ##     /usr/local/pbase-data/admin-only/pbase_module_config.json
+  ## or
+  ##     /usr/local/pbase-data/admin-only/module-config.d/pbase_apache.json
+
+  PBASE_CONFIG_SEPARATE="${PBASE_CONFIG_DIR}/${PBASE_CONFIG_FILENAME}"
+  PBASE_CONFIG_ALLINONE="${PBASE_CONFIG_BASE}/${PBASE_ALL_IN_ONE_CONFIG_FILENAME}"
+
+  #echo "PBASE_CONFIG_SEPARATE:   $PBASE_CONFIG_SEPARATE"
+  #echo "PBASE_CONFIG_ALLINONE:   $PBASE_CONFIG_ALLINONE"
+
+  ## check if either file exists, assume SEPARATE as default
+  PBASE_CONFIG="$PBASE_CONFIG_SEPARATE"
+
+  if [[ -f "$PBASE_CONFIG_ALLINONE" ]] ; then
+    PBASE_CONFIG="$PBASE_CONFIG_ALLINONE"
+  fi
+
+  if [[ -f "$PBASE_CONFIG" ]] ; then
+    echo "Config file found:       $PBASE_CONFIG"
+  else
+    echo "Custom config not found: $PBASE_CONFIG"
+  fi
+}
+
+
+parseConfig() {
+  ## fallback when jq is not installed, use the default in the third param
+  HAS_JQ_INSTALLED="$(which jq)"
+  #echo "HAS_JQ_INSTALLED:   $HAS_JQ_INSTALLED"
+
+  if [[ -z "$HAS_JQ_INSTALLED" ]] || [[ ! -f "$PBASE_CONFIG" ]] ; then
+    ## echo "fallback to default: $3"
+    eval "$1"="$3"
+    return 1
+  fi
+
+  ## use jq to extract a json field named in the second param
+  PARSED_VALUE="$(cat $PBASE_CONFIG  |  jq $2)"
+
+  ## use eval to assign that to the variable named in the first param
+  eval "$1"="$PARSED_VALUE"
 }
 
 check_linux_version() {
@@ -70,6 +128,23 @@ check_linux_version() {
 echo "PBase Docker CE yum repos and dependencies pre-configuration"
 echo ""
 
+MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
+PBASE_DEFAULTS_FILENAME="pbase_repo.json"
+
+## look for either separate config file like "pbase_repo.json" or all-in-one file: "pbase_module_config.json"
+PBASE_CONFIG_FILENAME="$PBASE_DEFAULTS_FILENAME"
+
+locateConfigFile "$PBASE_CONFIG_FILENAME"
+
+## fetch config values from JSON file
+parseConfig "DEFAULT_DESKTOP_USER_NAME" ".pbase_repo.defaultDesktopUsername" ""
+
+DESKTOP_USER_NAME="mydesktopusername"
+if [[ "$DEFAULT_DESKTOP_USER_NAME" != "" ]]; then
+  echo "defaultDesktopUsername:  $DEFAULT_DESKTOP_USER_NAME"
+  DESKTOP_USER_NAME="$DEFAULT_DESKTOP_USER_NAME"
+fi
+
 ## check which version of Linux is installed
 check_linux_version
 
@@ -100,15 +175,28 @@ else
 fi
 
 
-echo ""
-echo "Docker CE repo configured."
-echo "Next step - Enable adding a user to the docker group by making "
-echo "     a copy of the config sample file and editing it. For example:"
-echo ""
+## check if desktop username was specified
+if [[ "$DEFAULT_DESKTOP_USER_NAME" != "" ]]; then
+  echo "Docker username:         $DEFAULT_DESKTOP_USER_NAME"
+  cd /usr/local/pbase-data/admin-only/module-config.d/
+  TEMPLATE_JSON_FILE="/usr/local/pbase-data/pbase-preconfig-docker-ce/module-config-samples/pbase_docker_ce.json"
 
-echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
-echo "  cp ../module-config-samples/pbase_docker_ce.json ."
-echo "  vi pbase_docker_ce.json"
+  ## set a value in the json file
+  PREFIX="jq  '.pbase_docker_ce.addUserToDockerGroup = \""
+  SUFFIX="\"'  "
+  JQ_COMMAND="${PREFIX}${DEFAULT_DESKTOP_USER_NAME}${SUFFIX}${TEMPLATE_JSON_FILE} > ${MODULE_CONFIG_DIR}/pbase_docker_ce.json"
+
+  echo "Executing:  eval $JQ_COMMAND"
+  eval $JQ_COMMAND
+else
+  echo ""
+  echo "Next step - Enable adding a user to the docker group by making "
+  echo "     a copy of the config sample file and editing it. For example:"
+  echo ""
+  echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
+  echo "  cp /usr/local/pbase-data/pbase-preconfig-docker-ce/module-config-samples/pbase_docker_ce.json ."
+  echo "  vi pbase_docker_ce.json"
+fi
 
 echo ""
 echo "Next step - install Docker CE with:"
@@ -129,4 +217,4 @@ echo "rpm preuninstall"
 /usr/local/pbase-data/pbase-preconfig-docker-ce/etc-yum-repos-d/el8/docker-ce.repo
 /usr/local/pbase-data/pbase-preconfig-docker-ce/etc-yum-repos-d/fedora/docker-ce.repo
 /usr/local/pbase-data/pbase-preconfig-docker-ce/etc-pki-rpm-gpg/docker-ce-gpg
-/usr/local/pbase-data/admin-only/module-config-samples/pbase_docker_ce.json
+/usr/local/pbase-data/pbase-preconfig-docker-ce/module-config-samples/pbase_docker_ce.json

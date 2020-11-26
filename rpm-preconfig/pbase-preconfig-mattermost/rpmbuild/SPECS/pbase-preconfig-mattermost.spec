@@ -34,16 +34,15 @@ fail() {
     exit 1
 }
 
-echo "PBase Mattermost config file create"
+echo "PBase Mattermost pre-config file create"
 
 echo ""
-echo "PBase Mattermost module config file:"
 echo "Next step - optional - change the Mattermost server default configuration"
 echo "  by editing the sample config file. For example:"
 echo ""
 
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
-echo "  cp ../module-config-samples/pbase_mattermost.json ."
+echo "  cp /usr/local/pbase-data/pbase-preconfig-mattermost/module-config-samples/pbase_mattermost.json ."
 echo "  vi pbase_mattermost.json"
 
 echo ""
@@ -54,4 +53,4 @@ echo ""
 %files
 ## root only access to pbase configuration directories
 %defattr(600,root,root,700)
-/usr/local/pbase-data/admin-only/module-config-samples/pbase_mattermost.json
+/usr/local/pbase-data/pbase-preconfig-mattermost/module-config-samples/pbase_mattermost.json

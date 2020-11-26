@@ -34,15 +34,14 @@ fail() {
     exit 1
 }
 
-echo "PBase Vault config file create"
+echo "PBase Vault pre-config file create"
 
 echo ""
-echo "PBase SSH module config file:"
 echo "Next step - optional - change the Vault default config by making a copy "
 echo "     of the sample file and editing it. For example:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
-echo "  cp ../module-config-samples/pbase_vault.json ."
+echo "  cp /usr/local/pbase-data/pbase-preconfig-vault/module-config-samples/pbase_vault.json ."
 echo "  vi pbase_vault.json"
 echo ""
 
@@ -53,4 +52,4 @@ echo ""
 
 %files
 %defattr(600,root,root,700)
-/usr/local/pbase-data/admin-only/module-config-samples/pbase_vault.json
+/usr/local/pbase-data/pbase-preconfig-vault/module-config-samples/pbase_vault.json

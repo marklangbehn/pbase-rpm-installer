@@ -68,7 +68,7 @@ else
 
   ## yum
   ln -s /var/www/yum-repo yum-repo
-  ln -s /var/www/yum-repo/pbase-components/1.0/RPMS/pbase-preconfig-1.0-0.noarch.rpm pbase-preconfig.rpm
+  ln -s /var/www/yum-repo/pbase-components/1.0/RPMS/pbase-preconfig-1.0-0.noarch.rpm pbase-repo.rpm
 fi
 
 

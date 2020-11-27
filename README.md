@@ -2,9 +2,11 @@
 ## PBase RPM Installer Application Components
 ##### Version 1.0
 
-Installing and configuring a Linux server can be challenging. PBase Foundation is a set of configurable RPM installers
+Installing and configuring a Linux server can be challenging. 
+PBase-Foundation is a set of configurable RPM installers
 that provide a foundation for servers and desktops that work consistently across several versions
 of the Red Hat Enterprise Linux and CentOS operating system family.
+Several application stack installers are provided using these RPM components.
 
 ## Our Almost Famous 3-Minute Installation
 
@@ -18,10 +20,7 @@ yum -y install pbase-lets-encrypt
 
 Additionally, you may want to lock down SSH access and enable the firewall.
 ```jsx
-yum -y install pbase-epel
 yum -y install pbase-ssh-fail2ban
-## or the 'crowdsec' tool
-yum -y install pbase-crowdsec
 yum -y install pbase-firewall-enable
 ```
 
@@ -33,14 +32,23 @@ This enables entire application stacks to be configured and installed with ease.
 
 
 #### PREREQUISITES
-Requires a Red Hat EL compatible operating system such as:  
-CentOS/RHEL 6, 7 or 8  
-Amazon Linux 1 or 2  
+Requires a Red Hat Enterprise Linux (EL) compatible operating system such as:
+- Red Hat EL 6, 7 or 8
+- CentOS 6, 7 or 8
+- Amazon Linux 1 or 2 AMI
+- Fedora 3x (tested on Fedora versions 31 through 33 for most RPM components)
+
+All `yum` install commands must be run as root user, or using sudo.
+
+#### DNS
+
+If your server has its domain name registered in DNS our RPMs can generate a valid HTTPS certificate with Let's Encrypt.
+Several of the application stacks assume a valid DNS is ready and will do just that. 
 
 #### Check hostname AND domain name
 
 Make sure the target server's `hostname` command returns the fully qualified hostname.
-If needed, change it with: 
+If needed, change it with the hostnamectl command, substituting your correct value: 
 ```
 hostnamectl set-hostname myhost1.myrealdomainname.net
 ```
@@ -48,22 +56,18 @@ Also be sure the target server's `hostname -d` command returns the correct domai
 
 #### Check /etc/hosts
 Be sure the target server's `/etc/hosts` file is correct.
-The pbase-preconfig RPM may add a commented-out line with the host's IP and hostname. Enable this line only if needed.
-In a DHCP environment your IP address may change on reboot and the value added to /etc/hosts may become stale.
-Some of the pbase modules expect the domain name to resolvable.
-In these cases that host must either be registered in DNS.
-
 
 #### Temporarily disable automatic updates
 You may want to pause the automatic updates while installing RPMs.  
-Do that with the `systemctl stop packagekit` command.
+On some systems you can do that with the `systemctl stop packagekit` command.
 
-#### Install preconfig RPM
-The first step is to install the pbase-preconfig RPM. It places YUM repository specs into the target server's /etc/yum.repos.d/ directory.
+#### Install the PBase repository RPM
+The first step is to install the pbase-repo RPM. 
+It places YUM repository specs into the target server's /etc/yum.repos.d/ directory.
 ```
 yum -y install https://pbase-foundation.com/pbase-repo.rpm
 ```
-Once that bootstrapping step is done, all the other application components become available.
+Once that bootstrapping step is done, all the other pbase application components become available.
 
 #### Install apache standard RPM
 ```
@@ -114,20 +118,45 @@ yum -y install pbase-terraform
 
 ## Node JS
 #### Install the latest Node JS release
-Depending on your OS version.
-To use node version 12 or 14
-```
-yum -y install pbase-preconfig-nodejs12
-yum -y install pbase-preconfig-nodejs14
-```
+Depending on your OS version select the appropriate preconfig rpm 
+to install the NodeSource repository for Node JS version 10, 12 or 14.
 
-now you can install node and npm with
+EL8/CentOS 8 - requires passing `--disablerepo=AppStream` to point to the NodeSource repo
 ```  
-## CentOS 8
+yum -y install pbase-preconfig-nodejs12
+## or
+yum -y install pbase-preconfig-nodejs14
 yum -y install --disablerepo=AppStream nodejs
+```
 
-## others
+EL7/CentOS 7
+```  
+yum -y install pbase-preconfig-nodejs10
+## or
+yum -y install pbase-preconfig-nodejs12
+## or
+yum -y install pbase-preconfig-nodejs14
 yum -y install nodejs  
+```
+
+EL6/CentOS 6
+```  
+yum -y install pbase-preconfig-nodejs10
+## or
+yum -y install pbase-preconfig-nodejs12
+yum -y install nodejs  
+```
+
+Fedora 3x - to override the built-in Node JS version 14.
+```  
+yum -y install pbase-preconfig-nodejs12
+## or
+yum -y install pbase-preconfig-nodejs14
+
+## check the exact version available with yum provides 
+## for example installing version 12:
+yum provides nodejs
+yum -y install nodejs-12.19
 ```
 
 #### Gatsby JS
@@ -412,7 +441,7 @@ yum -y install pbase-apache
 yum -y install pbase-mysql
 
 ## optional - to add content
-yum -y install vrl-preconfig
+yum -y install vrl-repo
 yum -y install vrl-website-content
 
 ## wordpress
@@ -519,7 +548,7 @@ yum -y install activpb-peertube
 #### SOLID NSS: Node Solid Server
 
 ```
-yum -y install https://pbase-foundation.com/pbase-preconfig.rpm
+yum -y install https://pbase-foundation.com/pbase-repo.rpm
 yum -y install pbase-preconfig-node-solid-server
 yum -y install --enablerepo=AppStream python3
 yum -y install --disablerepo=AppStream nodejs

@@ -77,12 +77,16 @@ check_linux_version
 YUM_REPO_PATH="/usr/local/pbase-data/pbase-preconfig-nodejs12/etc-yum-repos-d/el7"
 REPO_NAME="nodesource-el7.repo"
 
-if [[ "${REDHAT_RELEASE_DIGIT}" == "8" ]]; then
-  ## switch to repo for EL8
-  YUM_REPO_PATH="/usr/local/pbase-data/pbase-preconfig-nodejs12/etc-yum-repos-d/el8"
+if [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]]; then
+  REPO_NAME="nodesource-el6.repo"
+  YUM_REPO_PATH="/usr/local/pbase-data/pbase-preconfig-nodejs12/etc-yum-repos-d/el6"
+elif [[ "${REDHAT_RELEASE_DIGIT}" == "7" ]]; then
+  REPO_NAME="nodesource-el7.repo"
+  YUM_REPO_PATH="/usr/local/pbase-data/pbase-preconfig-nodejs12/etc-yum-repos-d/el7"
+elif [[ "${REDHAT_RELEASE_DIGIT}" == "8" ]]; then
   REPO_NAME="nodesource-el8.repo"
+  YUM_REPO_PATH="/usr/local/pbase-data/pbase-preconfig-nodejs12/etc-yum-repos-d/el8"
 elif [[ "${FEDORA_RELEASE}" != "" ]]; then
-  ## switch to repo for Fedora 3x
   REPO_NAME="nodesource-fc33.repo"
   YUM_REPO_PATH="/usr/local/pbase-data/pbase-preconfig-nodejs12/etc-yum-repos-d/fedora"
 fi

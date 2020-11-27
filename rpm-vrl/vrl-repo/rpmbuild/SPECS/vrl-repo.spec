@@ -1,15 +1,15 @@
-Name: vrl-preconfig
+Name: vrl-repo
 Version: 1.0
 Release: 0
 Summary: VirtualRecordLabel.net website bootstrap rpm
 Group: System Environment/Base
 License: Apache-2.0
 URL: https://pbase-foundation.com
-Source0: vrl-preconfig-1.0.tar.gz
+Source0: vrl-repo-1.0.tar.gz
 BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
-Provides: vrl-preconfig
+Provides: vrl-repo
 
 %description
 VirtualRecordLabel.net preconfig rpm that adds YUM .repo file pointing to VRL repository

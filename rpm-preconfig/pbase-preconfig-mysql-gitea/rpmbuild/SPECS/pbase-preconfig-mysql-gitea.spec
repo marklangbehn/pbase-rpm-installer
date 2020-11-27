@@ -34,6 +34,7 @@ fail() {
     echo "ERROR: $1"
     exit 1
 }
+
 ## config is stored in json file with root-only permissions
 ## it can be one of two places:
 ##     /usr/local/pbase-data/admin-only/pbase_module_config.json
@@ -199,6 +200,13 @@ echo "    pbase_mysql.json. For example:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
 echo "  vi pbase_mysql.json"
+
+echo ""
+echo "Next step - optional change the default 'git' subdomain by editing"
+echo "    pbase_lets_encrypt.json. For example:"
+echo ""
+echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
+echo "  vi pbase_lets_encrypt.json"
 
 echo ""
 echo "Next step - optional change the Gitea URI or port by editing"

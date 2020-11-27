@@ -144,7 +144,7 @@ PBASE_CONFIG_FILENAME="pbase_postgres.json"
 PBASE_CONFIG_NAME="pbase_postgres"
 
 echo "PBASE_CONFIG_FILENAME:   $PBASE_CONFIG_FILENAME"
-echo "PBASE_CONFIG_NAME:       $PBASE_CONFIG_NAME"
+##echo "PBASE_CONFIG_NAME:       $PBASE_CONFIG_NAME"
 
 locateConfigFile "${PBASE_CONFIG_FILENAME}"
 
@@ -202,7 +202,7 @@ PBASE_CONFIG_NAME="pbase_smtp"
 
 echo ""
 echo "PBASE_CONFIG_FILENAME:   $PBASE_CONFIG_FILENAME"
-echo "PBASE_CONFIG_NAME:       $PBASE_CONFIG_NAME"
+##echo "PBASE_CONFIG_NAME:       $PBASE_CONFIG_NAME"
 
 locateConfigFile "${PBASE_CONFIG_FILENAME}"
 
@@ -440,7 +440,8 @@ grep "User" /usr/local/pbase-data/admin-only/activpb-peertube/journalctl-output.
 echo ""
 
 echo "Next Step - required - login to your PeerTube instance URL with the"
-echo "                         user and password from 'journalctl -u peertube | grep User | cut -d: -f8-'"
+echo "                         user and password shown by running the command:"
+echo "                             journalctl -u peertube | grep User | cut -d: -f8-"
 echo "                         then follow the setup dialog."
 echo ""
 

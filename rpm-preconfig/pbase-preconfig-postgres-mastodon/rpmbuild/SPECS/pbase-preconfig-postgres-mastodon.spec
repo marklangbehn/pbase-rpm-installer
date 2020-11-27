@@ -126,7 +126,7 @@ check_linux_version() {
 }
 
 
-echo "PBase Postgres create config preset user and DB name for use by pbase-mastodon"
+echo "PBase Postgres create config preset user and DB name for use by activpb-mastodon"
 
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
@@ -169,10 +169,9 @@ sed -i "s/example.com/${THISDOMAINNAME}/" "${MODULE_CONFIG_DIR}/pbase_smtp.json"
 
 ## when defined in pbase_repo.json use that to provide the Let's Encrypt email address
 if [[ $DEFAULT_EMAIL_ADDRESS != "" ]]; then
-  echo "Setting 'defaultEmailAddress' in pbase_apache.json and pbase_lets_encrypt.json"
+  echo "Setting 'defaultEmailAddress' in pbase_lets_encrypt.json"
   echo "                         ${DEFAULT_EMAIL_ADDRESS}"
   sed -i "s/yoursysadmin@yourrealmail.com/${DEFAULT_EMAIL_ADDRESS}/" "${MODULE_CONFIG_DIR}/pbase_lets_encrypt.json"
-  sed -i "s/yoursysadmin@yourrealmail.com/${DEFAULT_EMAIL_ADDRESS}/" "${MODULE_CONFIG_DIR}/pbase_apache.json"
 fi
 
 

@@ -400,7 +400,7 @@ yum -y install pbase-lets-encrypt
 
 #### GitLab CI/CD UI for git
 #### Here's how to stand up a GitLab CE Omnibus stack ready to manage a Git repository.
-GitLab is resource hungry and needs at least 4GB of RAM. It also requires CentOS 8.
+GitLab is resource hungry and needs more than 4GB of available RAM. It also requires CentOS 8.
 
 ```
 yum -y install https://pbase-foundation.com/pbase-repo.rpm

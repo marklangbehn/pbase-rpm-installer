@@ -28,7 +28,7 @@ rm -rf "$RPM_BUILD_ROOT"
 %pre
 
 %post
-echo "rpm postinstall $1"
+#echo "rpm postinstall $1"
 
 fail() {
     echo "ERROR: $1"
@@ -126,7 +126,7 @@ check_linux_version() {
 }
 
 
-echo "PBase Postgres create config preset user and DB name for use by pbase-funkwhale"
+echo "PBase Postgres create config preset user and DB name for use by activpb-funkwhale"
 
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
@@ -178,7 +178,7 @@ fi
 
 echo ""
 echo "Postgres, SMTP and Let's Encrypt module config files for Funkwhale added."
-echo "Next step - required - customize your configuration by editing these JSON files: "
+echo "Next step - required - customize your configuration by editing these JSON files:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
 echo "  vi pbase_lets_encrypt.json"

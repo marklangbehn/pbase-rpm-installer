@@ -405,9 +405,9 @@ fi
 ## Add aliases helpful for admin tasks to .bashrc
 echo "" >> /root/.bashrc
 append_bashrc_alias tailhttp "tail -f /var/log/httpd/error_log /var/log/httpd/access_log"
-append_bashrc_alias tailhttpdaccess "tail -f -n100 /var/log/httpd/access_log"
-append_bashrc_alias tailhttpderr "tail -f -n100 /var/log/httpd/error_log"
 append_bashrc_alias tailhttpd "tail -f /var/log/httpd/error_log /var/log/httpd/access_log"
+append_bashrc_alias tailhttpderr "tail -f -n100 /var/log/httpd/error_log"
+append_bashrc_alias tailhttpdaccess "tail -f -n100 /var/log/httpd/access_log"
 
 if [[ "$REDHAT_RELEASE_DIGIT" == "6" ]]; then
   append_bashrc_alias stophttpd "service httpd stop"

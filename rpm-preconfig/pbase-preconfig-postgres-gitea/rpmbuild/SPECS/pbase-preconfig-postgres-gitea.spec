@@ -198,6 +198,13 @@ echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
 echo "  vi pbase_postgres.json"
 
 echo ""
+echo "Next step - optional change the default 'git' subdomain by editing"
+echo "    pbase_lets_encrypt.json. For example:"
+echo ""
+echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
+echo "  vi pbase_lets_encrypt.json"
+
+echo ""
 echo "Next step - optional change the Gitea URI or port by editing"
 echo "    pbase_gitea.json. For example:"
 echo ""

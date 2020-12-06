@@ -2,7 +2,6 @@
   "pbase_nextcloud" : {
     "database": "postgres",
     "urlSubPath": "",
-    "useSubDomain": true,
-    "subDomainName": "nextcloud"
+    "urlSubDomain": "nextcloud"
   }
 }

@@ -130,8 +130,7 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 ## fetch config value from JSON file
 parseConfig "HTTP_PORT" ".activpb_mastodon.httpPort" "8065"
 parseConfig "ADD_NGINX_PROXY" ".activpb_mastodon.addNgnixProxy" "true"
-parseConfig "USE_SUB_DOMAIN" ".activpb_mastodon.useSubDomain" "true"
-parseConfig "SUB_DOMAIN_NAME" ".activpb_mastodon.subDomainName" "mastodon"
+parseConfig "URL_SUB_DOMAIN" ".activpb_mastodon.urlSubDomain" "mastodon"
 parseConfig "WEB_DOMAIN_NAME" ".activpb_mastodon.webDomainName" ""
 parseConfig "ALTERNATE_DOMAINS" ".activpb_mastodon.alternateDomains" ""
 parseConfig "SINGLE_USER_MODE" ".activpb_mastodon.singleUserMode" "false"
@@ -141,8 +140,7 @@ parseConfig "LIMITED_FEDERATION_MODE" ".activpb_mastodon.limitedFederationMode" 
 
 echo "HTTP_PORT:               $HTTP_PORT"
 ##echo "ADD_NGINX_PROXY:         $ADD_NGINX_PROXY"
-echo "USE_SUB_DOMAIN:          $USE_SUB_DOMAIN"
-echo "SUB_DOMAIN_NAME:         $SUB_DOMAIN_NAME"
+echo "URL_SUB_DOMAIN:         $URL_SUB_DOMAIN"
 echo "WEB_DOMAIN_NAME:         $WEB_DOMAIN_NAME"
 echo "ALTERNATE_DOMAINS:       $ALTERNATE_DOMAINS"
 echo "SINGLE_USER_MODE:        $SINGLE_USER_MODE"
@@ -254,8 +252,8 @@ systemctl status redis
 ## FULLDOMAINNAME is the subdomain if declared plus the domain
 FULLDOMAINNAME="${THISDOMAINNAME}"
 
-if [[ "$USE_SUB_DOMAIN" == "true" ]] && [[ "$SUB_DOMAIN_NAME" != "" ]] ; then
-  FULLDOMAINNAME="${SUB_DOMAIN_NAME}.${THISDOMAINNAME}"
+if [[ "$URL_SUB_DOMAIN" != "" ]] ; then
+  FULLDOMAINNAME="${URL_SUB_DOMAIN}.${THISDOMAINNAME}"
   echo "Using subdomain:         ${FULLDOMAINNAME}"
 fi
 

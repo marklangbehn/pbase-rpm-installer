@@ -131,13 +131,14 @@ parseConfig() {
 }
 
 
+THISHOSTNAME="$(hostname)"
+THISDOMAINNAME="$(hostname -d)"
+
 ## look for either separate config file "pbase_gitea.json" or all-in-one file: "pbase_module_config.json"
 PBASE_CONFIG_FILENAME="pbase_gitea.json"
-
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config value from JSON file
-
 ## version to download
 parseConfig "GITEA_VER_CONFIG" ".pbase_gitea.giteaVersion" ""
 
@@ -146,11 +147,11 @@ parseConfig "ADD_APACHE_PROXY" ".pbase_gitea.addApacheProxy" "false"
 parseConfig "DATABASE" ".pbase_gitea.database" "postgres"
 parseConfig "URL_SUBPATH" ".pbase_gitea.urlSubPath" ""
 
-
 echo "HTTP_PORT:               $HTTP_PORT"
 echo "ADD_APACHE_PROXY:        $ADD_APACHE_PROXY"
 echo "DATABASE:                $DATABASE"
 echo "URL_SUBPATH:             $URL_SUBPATH"
+
 
 ## Let's Encrypt config
 PBASE_CONFIG_FILENAME="pbase_lets_encrypt.json"
@@ -226,6 +227,54 @@ echo "Setting permission:      chown git:git /etc/gitea/app.ini"
 touch /etc/gitea/app.ini
 chown git:git /etc/gitea/app.ini
 
+
+## when DB_PSWD is populated below that means DB config has been defined
+DB_PSWD=""
+
+if [[ $DATABASE == "postgres" ]]; then
+  PBASE_CONFIG_FILENAME="pbase_postgres.json"
+  locateConfigFile "$PBASE_CONFIG_FILENAME"
+  parseConfig "DB_HOSTNAME" ".pbase_postgres[0].default.hostName" "localhost"
+  parseConfig "DB_PORT"     ".pbase_postgres[0].default.port" "5432"
+  parseConfig "DB_NAME"     ".pbase_postgres[0].default.database[0].name" "gitea"
+  parseConfig "DB_USER"     ".pbase_postgres[0].default.database[0].user" "gitea"
+  parseConfig "DB_CHARSET"  ".pbase_postgres[0].default.database[0].characterSet" "UTF8"
+  parseConfig "DB_PSWD"     ".pbase_postgres[0].default.database[0].password" ""
+
+elif [[ $DATABASE == "mysql" ]]; then
+  PBASE_CONFIG_FILENAME="pbase_mysql.json"
+  locateConfigFile "$PBASE_CONFIG_FILENAME"
+  parseConfig "DB_HOSTNAME" ".pbase_mysql[0].default.hostName" "localhost"
+  parseConfig "DB_PORT"     ".pbase_mysql[0].default.port" "3306"
+  parseConfig "DB_NAME"     ".pbase_mysql[0].default.database[0].name" "gitea"
+  parseConfig "DB_USER"     ".pbase_mysql[0].default.database[0].user" "gitea"
+  parseConfig "DB_CHARSET"  ".pbase_mysql[0].default.database[0].characterSet" "utf8mb48"
+  parseConfig "DB_PSWD"     ".pbase_mysql[0].default.database[0].password" ""
+fi
+
+## add DB config to app.ini
+if [[ $DB_PSWD != "" ]]; then
+  echo "Setting Gitea database:  /etc/gitea/app.ini"
+  echo "DB_TYPE  = ${DATABASE}"
+  echo "HOST     = ${DB_HOSTNAME}:${DB_PORT}"
+  echo "NAME     = ${DB_NAME}"
+  echo "USER     = ${DB_USER}"
+  echo "PASSWD   = ${DB_PSWD}"
+  echo "CHARSET  = ${DB_CHARSET}"
+
+  echo "" >> "/etc/gitea/app.ini"
+  echo "[database]" >> "/etc/gitea/app.ini"
+  echo "DB_TYPE  = ${DATABASE}" >> "/etc/gitea/app.ini"
+  echo "HOST     = ${DB_HOSTNAME}:${DB_PORT}" >> "/etc/gitea/app.ini"
+  echo "NAME     = ${DB_NAME}" >> "/etc/gitea/app.ini"
+  echo "USER     = ${DB_USER}" >> "/etc/gitea/app.ini"
+  echo "PASSWD   = ${DB_PSWD}" >> "/etc/gitea/app.ini"
+  echo "SCHEMA   = "           >> "/etc/gitea/app.ini"
+  echo "SSL_MODE = disable"    >> "/etc/gitea/app.ini"
+  echo "CHARSET  = ${DB_CHARSET}" >> "/etc/gitea/app.ini"
+fi
+
+## configure systemd service file depending on database type
 if [[ $DATABASE == "postgres" ]]; then
   cp --no-clobber /usr/local/pbase-data/pbase-gitea/etc-systemd-system/postgres/gitea.service /etc/systemd/system/
 else
@@ -238,6 +287,43 @@ if [[ $DATABASE == "" ]]; then
 fi
 
 
+## configure SMTP email
+PBASE_CONFIG_FILENAME="pbase_smtp.json"
+PBASE_CONFIG_NAME="pbase_smtp"
+locateConfigFile "$PBASE_CONFIG_FILENAME"
+SMTP_PASSWORD=""
+
+if [[ -e "/usr/local/pbase-data/admin-only/module-config.d/pbase_smtp.json" ]] ; then
+  parseConfig "SMTP_SERVER" ".${PBASE_CONFIG_NAME}.server" "smtp.mailgun.org"
+  parseConfig "SMTP_PORT" ".${PBASE_CONFIG_NAME}.port" "587"
+  parseConfig "SMTP_LOGIN" ".${PBASE_CONFIG_NAME}.login" "postmaster@mail.${THISDOMAINNAME}"
+  parseConfig "SMTP_PASSWORD" ".${PBASE_CONFIG_NAME}.password" ""
+  parseConfig "SMTP_AUTH_METHOD" ".${PBASE_CONFIG_NAME}.authMethod" "plain"
+  parseConfig "SMTP_OPENSSL_VERIFY_MODE" ".${PBASE_CONFIG_NAME}.openSSLVerifyMode" "none"
+fi
+
+
+if [[ "$SMTP_PASSWORD" == "" ]] ; then
+  echo "No SMTP config found:    pbase_smtp.json"
+else
+  echo "Setting SMTP config:     /etc/gitea/app.ini"
+  echo "SMTP_SERVER:             $SMTP_SERVER"
+  echo "SMTP_PORT:               $SMTP_PORT"
+  echo "SMTP_LOGIN:              $SMTP_LOGIN"
+  echo "SMTP_PASSWORD:           $SMTP_PASSWORD"
+  #echo "SMTP_AUTH_METHOD:        $SMTP_AUTH_METHOD"
+  #echo "SMTP_OPENSSL_VERIFY_MODE:$SMTP_OPENSSL_VERIFY_MODE"
+
+  echo "" >> "/etc/gitea/app.ini"
+  echo "[mailer]" >> "/etc/gitea/app.ini"
+  echo "ENABLED = true" >> "/etc/gitea/app.ini"
+  echo "HOST    = ${SMTP_SERVER}:${SMTP_PORT}" >> "/etc/gitea/app.ini"
+  echo "FROM    = noreply@${THISDOMAINNAME}"   >> "/etc/gitea/app.ini"
+  echo "USER    = ${SMTP_LOGIN}"    >> "/etc/gitea/app.ini"
+  echo "PASSWD  = ${SMTP_PASSWORD}" >> "/etc/gitea/app.ini"
+fi
+
+
 echo "Starting service:        /etc/systemd/system/gitea"
 
 systemctl daemon-reload
@@ -246,9 +332,7 @@ systemctl start gitea
 
 systemctl status gitea
 
-
-THISHOSTNAME="$(hostname)"
-THISDOMAINNAME="$(hostname -d)"
+## check for subdomain
 FULLDOMAINNAME="$THISDOMAINNAME"
 
 PROXY_CONF_FILE="gitea-proxy-subpath.conf"
@@ -286,11 +370,10 @@ if [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
     fi
   fi
 
-  echo "Gitea config:            /etc/gitea/app.ini"
+  echo "Gitea server config:     /etc/gitea/app.ini"
   echo "" >> "/etc/gitea/app.ini"
   echo "[server]" >> "/etc/gitea/app.ini"
   echo "ROOT_URL = http://${FULLDOMAINNAME}${SUBPATH_URI}" >> "/etc/gitea/app.ini"
-  chown git:git /etc/gitea/app.ini
 
   systemctl restart gitea
   systemctl restart httpd
@@ -305,6 +388,11 @@ fi
 ## add shell aliases
 append_bashrc_alias tailgitea "tail -f /var/lib/gitea/log/gitea.log"
 append_bashrc_alias editgiteaconf "vi /etc/gitea/app.ini"
+append_bashrc_alias stopgitea "/bin/systemctl stop gitea"
+append_bashrc_alias startgitea "/bin/systemctl start gitea"
+append_bashrc_alias statusgitea "/bin/systemctl status gitea"
+append_bashrc_alias restartgitea "/bin/systemctl restart gitea"
+
 
 echo ""
 

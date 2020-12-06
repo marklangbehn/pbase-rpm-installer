@@ -90,19 +90,19 @@ sed -i "s/shomeddata/${RAND_PW_USER}/" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAM
 /bin/cp -f --no-clobber /usr/local/pbase-data/pbase-preconfig-postgres13/etc-pki-rpm-gpg/RPM-GPG-KEY-PGDG /etc/pki/rpm-gpg
 
 if [[ "$FEDORA_RELEASE" != "" ]] ; then
-    if [[ -f "/etc/yum.repos.d/pgdg-fedora-all.repo" ]]; then
-      echo "Existing Postgres pgdg-fedora-all.repo found, leaving unchanged"
-    else
-      echo "Postgres for Fedora:        /etc/yum.repos.d/pgdg-fedora-all.repo"
-      /bin/cp -f /usr/local/pbase-data/pbase-preconfig-postgres13/etc-yum-repos-d/fedora/pgdg-fedora-all.repo /etc/yum.repos.d/
-    fi
+  if [[ -f "/etc/yum.repos.d/pgdg-fedora-all.repo" ]]; then
+    echo "Existing Postgres pgdg-fedora-all.repo found, leaving unchanged"
+  else
+    echo "Postgres for Fedora:     /etc/yum.repos.d/pgdg-fedora-all.repo"
+    /bin/cp -f /usr/local/pbase-data/pbase-preconfig-postgres13/etc-yum-repos-d/fedora/pgdg-fedora-all.repo /etc/yum.repos.d/
+  fi
 elif [[ "$AMAZON1_RELEASE" != "" ]] || [[ "$AMAZON2_RELEASE" != "" ]] ; then
-    if [[ -f "/etc/yum.repos.d/pgdg-redhat-all.repo" ]]; then
-      echo "Existing Postgres repo found, leaving unchanged"
-    else
-      echo "Postgres for AWS:        /etc/yum.repos.d/pgdg-redhat-amzn2.repo"
-      /bin/cp -f /usr/local/pbase-data/pbase-preconfig-postgres13/etc-yum-repos-d/pgdg-redhat-amzn2.repo /etc/yum.repos.d/pgdg-redhat-amzn2.repo
-    fi
+  if [[ -f "/etc/yum.repos.d/pgdg-redhat-all.repo" ]]; then
+    echo "Existing Postgres repo found, leaving unchanged"
+  else
+    echo "Postgres for AWS:        /etc/yum.repos.d/pgdg-redhat-amzn2.repo"
+    /bin/cp -f /usr/local/pbase-data/pbase-preconfig-postgres13/etc-yum-repos-d/pgdg-redhat-amzn2.repo /etc/yum.repos.d/pgdg-redhat-amzn2.repo
+  fi
 else
   if [[ -f "/etc/yum.repos.d/pgdg-redhat-all.repo" ]]; then
     echo "Existing Postgres repo found, leaving unchanged"

@@ -72,32 +72,23 @@ echo ""
 ## check which version of Linux is installed
 check_linux_version
 
-/bin/cp -f --no-clobber /usr/local/pbase-data/pbase-preconfig-mongodb-org/etc-pki-rpm-gpg/server-4.0.asc /etc/pki/rpm-gpg
 
-
-if [[ "$AMAZON1_RELEASE" != "" ]]  ||  [[ "$AMAZON2_RELEASE" != "" ]]  ||  [[ "$FEDORA_RELEASE" != "" ]] ; then
-  if [[ -e "/etc/yum.repos.d/mongodb-org-4.0.repo" ]]  ||  [[ -e "/etc/yum.repos.d/mongodb-org-4.2.repo" ]] ; then
-    echo "Existing Mongo.org repo found, leaving unchanged"
+if [[ "$AMAZON1_RELEASE" != "" ]]  ||  [[ "$AMAZON2_RELEASE" != "" ]]  ||  [[ "$FEDORA_RELEASE" != "" ]]  ; then
+  if [[ -e "/etc/yum.repos.d/mongodb-org-4.4-amazon.repo" ]]  ||  [[ -e "/etc/yum.repos.d/mongodb-org-4.4.repo" ]] ; then
+    echo "Existing Mongodb.org repo found, leaving unchanged"
   else
-    echo "Mongo.org:               /etc/yum.repos.d/mongodb-org-4.2.repo"
-    /bin/cp -f /usr/local/pbase-data/pbase-preconfig-mongodb-org/etc-yum-repos-d/mongodb-org-4.2-amazon.repo /etc/yum.repos.d/mongodb-org-4.2.repo
+    echo "Mongodb.org:             /etc/yum.repos.d/mongodb-org-4.4.repo"
+    /bin/cp -f /usr/local/pbase-data/pbase-preconfig-mongodb-org/etc-yum-repos-d/mongodb-org-4.4-amazon.repo /etc/yum.repos.d/mongodb-org-4.4.repo
   fi
 else
   if [[ -e "/etc/yum.repos.d/mongodb-org-4.0.repo" ]]; then
-    echo "Existing Mongo.org repo found, leaving unchanged"
+    echo "Existing Mongodb.org repo found, leaving unchanged"
   elif [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]]; then
-    echo "Mongo.org for EL6:       /etc/yum.repos.d/mongodb-org-4.0.repo"
-    /bin/cp -f /usr/local/pbase-data/pbase-preconfig-mongodb-org/etc-yum-repos-d/mongodb-org-4.0.repo /etc/yum.repos.d/mongodb-org-4.0.repo
-  elif [[ "${REDHAT_RELEASE_DIGIT}" == "7" ]]; then
-    echo "Mongo.org for EL7:       /etc/yum.repos.d/mongodb-org-4.0.repo"
-    /bin/cp -f /usr/local/pbase-data/pbase-preconfig-mongodb-org/etc-yum-repos-d/mongodb-org-4.0.repo /etc/yum.repos.d/mongodb-org-4.0.repo
-  elif [[ "${REDHAT_RELEASE_DIGIT}" == "8" ]]; then
-    echo "Mongo.org for EL8:       /etc/yum.repos.d/mongodb-org-4.4.repo"
-    /bin/cp -f /usr/local/pbase-data/pbase-preconfig-mongodb-org/etc-yum-repos-d/mongodb-org-4.2.repo /etc/yum.repos.d/mongodb-org-4.2.repo
-  else
-    echo "Mongo.org default:       /etc/yum.repos.d/mongodb-org-4.4.repo"
-    /bin/cp -f /usr/local/pbase-data/pbase-preconfig-mongodb-org/etc-yum-repos-d/mongodb-org-4.2.repo /etc/yum.repos.d/mongodb-org-4.2.repo
-
+    echo "Mongodb.org for EL6:     /etc/yum.repos.d/mongodb-org-4.0.repo"
+    /bin/cp -f /usr/local/pbase-data/pbase-preconfig-mongodb-org/etc-yum-repos-d/mongodb-org-4.0.repo /etc/yum.repos.d/
+  elif [[ "${REDHAT_RELEASE_DIGIT}" == "7" ]]  ||  [[ "${REDHAT_RELEASE_DIGIT}" == "8" ]]  ||  [[ "$FEDORA_RELEASE" != "" ]] ; then
+    echo "Mongodb.org repo:        /etc/yum.repos.d/mongodb-org-4.4.repo"
+    /bin/cp -f /usr/local/pbase-data/pbase-preconfig-mongodb-org/etc-yum-repos-d/mongodb-org-4.4.repo /etc/yum.repos.d/
   fi
 fi
 
@@ -136,10 +127,7 @@ echo "rpm preuninstall"House Speaker Nancy Pelosi attacks negotiators from the W
 
 %files
 %defattr(-,root,root,-)
-/usr/local/pbase-data/pbase-preconfig-mongodb-org/etc-yum-repos-d/mongodb-org-4.0.repo
-/usr/local/pbase-data/pbase-preconfig-mongodb-org/etc-yum-repos-d/mongodb-org-4.2.repo
 /usr/local/pbase-data/pbase-preconfig-mongodb-org/etc-yum-repos-d/mongodb-org-4.4.repo
-/usr/local/pbase-data/pbase-preconfig-mongodb-org/etc-yum-repos-d/mongodb-org-4.2-amazon.repo
-/usr/local/pbase-data/pbase-preconfig-mongodb-org/etc-pki-rpm-gpg/server-4.0.asc
+/usr/local/pbase-data/pbase-preconfig-mongodb-org/etc-yum-repos-d/mongodb-org-4.4-amazon.repo
 /usr/local/pbase-data/pbase-preconfig-mongodb-org/etc-security-limits-d/mongod.conf
 /usr/local/pbase-data/pbase-preconfig-mongodb-org/etc-tuned-virtual-guest-no-thp/tuned.conf

@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-postgres13
-Requires: postgresql13 postgresql13-server postgresql13-contrib postgresql13-libs
+Requires: jq, postgresql13 postgresql13-server postgresql13-contrib postgresql13-libs
 
 ## omitted:  postgresql13-devel
 
@@ -161,6 +161,8 @@ parseConfig "CONFIG_DB_INSTALL"  ".pbase_postgres13[0].default.install" "true"
 parseConfig "CONFIG_DB_NAME"     ".pbase_postgres13[0].default.database[0].name" "app_db"
 parseConfig "CONFIG_DB_USER"     ".pbase_postgres13[0].default.database[0].user" "dbappuser"
 parseConfig "CONFIG_DB_PSWD"     ".pbase_postgres13[0].default.database[0].password" $RAND_PW_USER
+parseConfig "CONFIG_DB_CHARSET"  ".pbase_postgres13[0].default.database[0].characterSet" "UTF8"
+parseConfig "CONFIG_CREATEDB"    ".pbase_postgres13[0].default.database[0].grantCreateDatabase" "false"
 
 echo "CONFIG_DB_HOSTNAME:      $CONFIG_DB_HOSTNAME"
 echo "CONFIG_DB_PORT:          $CONFIG_DB_PORT"
@@ -327,17 +329,18 @@ TMPL_APPUSER_PSWD="shomeddata"
 sed -i -e "s/$TMPL_APPUSER_NAME/$CONFIG_DB_USER/g" $SCRIPT_DIR/create-dbappuser-mods.sql
 sed -i -e "s/$TMPL_APPUSER_PSWD/$CONFIG_DB_PSWD/g" $SCRIPT_DIR/create-dbappuser-mods.sql
 
+if [[ $CONFIG_CREATEDB == "true" ]]; then
+  echo "Granting createdb:       $CONFIG_DB_USER"
+  echo "alter user $CONFIG_DB_USER with createdb" >> $SCRIPT_DIR/create-dbappuser-mods.sql
+fi
+
+## create the user, then the databse owned by that user
 echo "Creating Postgres user:  $CONFIG_DB_USER"
 
 su - postgres -c "psql${PORT_NUM_SUFFIX} -a -f $SCRIPT_DIR/create-dbappuser-mods.sql"
 
-#su postgres <<'EOF'
-#psql -c "create user $CONFIG_DB_USER;"
-#psql -c "alter user $CONFIG_DB_USER with password 'shomeddata';"
-#EOF
-
-echo "Creating database:       createdb${PORT_NUM_SUFFIX} -O $CONFIG_DB_USER $CONFIG_DB_NAME"
-su - postgres -c "createdb${PORT_NUM_SUFFIX} -O $CONFIG_DB_USER $CONFIG_DB_NAME"
+echo "Creating database:       createdb${PORT_NUM_SUFFIX} -E ${CONFIG_DB_CHARSET} -O ${CONFIG_DB_USER} ${CONFIG_DB_NAME}"
+su - postgres -c "createdb${PORT_NUM_SUFFIX} -E ${CONFIG_DB_CHARSET} -O ${CONFIG_DB_USER} ${CONFIG_DB_NAME}"
 
 echo "Next step - optional - login with:"
 echo ""

@@ -302,39 +302,51 @@ systemctl status mattermost
 append_bashrc_alias tailmattermost "tail -f /opt/mattermost/logs/mattermost.log"
 append_bashrc_alias editmattermostconf "vi /opt/mattermost/config/config.json"
 
-echo "Mattermost service running. Open this URL to complete install."
 
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
+
+if [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
+  echo "Disabling previous:      /etc/httpd/conf.d/${THISDOMAINNAME}.conf"
+  mv "/etc/httpd/conf.d/${THISDOMAINNAME}.conf"  "/etc/httpd/conf.d/${THISDOMAINNAME}.conf-DISABLED"
+fi
+
+MATTERMOST_READY_MSG="Next Step - Open URL to complete install"
 
 if [[ "$URL_SUBDOMAIN" != "" ]] && [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
   PROXY_CONF="/etc/httpd/conf.d/mattermost-proxy-subdomain.conf"
   echo "Adding ${URL_SUBDOMAIN} subdomain proxy to mattermost application"
 
   /bin/cp --no-clobber /usr/local/pbase-data/pbase-mattermost/root-uri/etc-httpd-confd/mattermost-proxy-subdomain.conf /etc/httpd/conf.d/
+
   echo "Updating config file:    ${PROXY_CONF}"
   sed -i "s/mysubdomain.mydomain.com/${URL_SUBDOMAIN}.${THISDOMAINNAME}/" $PROXY_CONF
   sed -i "s/hostmaster@mydomain.com/${APACHE_SERVER_ADMIN}/" $PROXY_CONF
-
   systemctl daemon-reload
   systemctl restart httpd
+
+  echo "$MATTERMOST_READY_MSG"
   echo "                         http://${URL_SUBDOMAIN}.${THISDOMAINNAME}/install"
-  echo "or"
+  echo "  or"
   echo "                         http://localhost/install"
 elif [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
   echo "Adding / proxy to mattermost"
   /bin/cp --no-clobber /usr/local/pbase-data/pbase-mattermost/root-uri/etc-httpd-confd/mattermost-proxy.conf /etc/httpd/conf.d/
   PROXY_CONF="/etc/httpd/conf.d/mattermost-proxy.conf"
+
   echo "Updating config file:    ${PROXY_CONF}"
   sed -i "s/mydomain.com/${THISDOMAINNAME}/" $PROXY_CONF
   systemctl daemon-reload
   systemctl restart httpd
+
+  echo "$MATTERMOST_READY_MSG"
   echo "                         http://${THISDOMAINNAME}/install"
-  echo "or"
+  echo "  or"
   echo "                         http://localhost/install"
 else
+  echo "$MATTERMOST_READY_MSG"
   echo "                         http://${THISDOMAINNAME}:8065/install"
-  echo "or"
+  echo "  or"
   echo "                         http://localhost:8065/install"
 fi
 

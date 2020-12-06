@@ -159,6 +159,7 @@ parseConfig "CONFIG_DB_INSTALL"  ".pbase_postgres[0].default.install" "true"
 parseConfig "CONFIG_DB_NAME"     ".pbase_postgres[0].default.database[0].name" "app_db"
 parseConfig "CONFIG_DB_USER"     ".pbase_postgres[0].default.database[0].user" "dbappuser"
 parseConfig "CONFIG_DB_PSWD"     ".pbase_postgres[0].default.database[0].password" $RAND_PW_USER
+parseConfig "CONFIG_DB_CHARSET"  ".pbase_postgres[0].default.database[0].characterSet" "UTF8"
 parseConfig "CONFIG_CREATEDB"    ".pbase_postgres[0].default.database[0].grantCreateDatabase" "false"
 
 echo "CONFIG_DB_HOSTNAME:      $CONFIG_DB_HOSTNAME"
@@ -182,6 +183,7 @@ fi
 ## Get hostname to be substituted in template config files
 TARGETHOSTNAME="$(hostname)"
 
+echo ""
 echo "Postgres postinstall configuration"
 echo "Hostname:                $TARGETHOSTNAME"
 
@@ -348,21 +350,13 @@ if [[ $CONFIG_CREATEDB == "true" ]]; then
   echo "alter user $CONFIG_DB_USER with createdb" >> $SCRIPT_DIR/create-dbappuser-mods.sql
 fi
 
-
+## create the user, then the databse owned by that user
 echo "Creating Postgres user:  $CONFIG_DB_USER"
 
 su - postgres -c "psql${PORT_NUM_SUFFIX} -a -f $SCRIPT_DIR/create-dbappuser-mods.sql"
 
-#su postgres <<'EOF'
-#psql -c "create user $CONFIG_DB_USER;"
-#psql -c "alter user $CONFIG_DB_USER with password 'shomeddata';"
-#EOF
-
-
-##TODO add config params to specify -E encoding param and -T template0 param
-
-echo "Creating database:       createdb${PORT_NUM_SUFFIX} -E UTF8 -T template0 -O $CONFIG_DB_USER $CONFIG_DB_NAME"
-su - postgres -c "createdb${PORT_NUM_SUFFIX} -E UTF8 -T template0 -O $CONFIG_DB_USER $CONFIG_DB_NAME"
+echo "Creating database:       createdb${PORT_NUM_SUFFIX} -E ${CONFIG_DB_CHARSET} -T template0 -O ${CONFIG_DB_USER} ${CONFIG_DB_NAME}"
+su - postgres -c "createdb${PORT_NUM_SUFFIX} -E ${CONFIG_DB_CHARSET} -T template0 -O ${CONFIG_DB_USER} ${CONFIG_DB_NAME}"
 
 echo "Next step - optional - login with:"
 echo ""

@@ -12,7 +12,7 @@
             "name": "gitea",
             "user": "gitea",
             "password": "shomeddata",
-            "encoding": "UTF8",
+            "characterSet": "UTF8",
             "grantCreateDatabase": false
           }
         ]

@@ -132,7 +132,7 @@ fi
 # Enable mongod service at boot-time, and start mongod service
 
 if [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]]; then
-  /sbin/chkconfig mongod --level 2345 on || fail "chkconfig failed to enable mongod service"
+  /sbin/chkconfig mongod --level 345 on || fail "chkconfig failed to enable mongod service"
   /sbin/service mongod start || fail "failed to start mongod service"
 else
   /bin/systemctl daemon-reload
@@ -146,14 +146,14 @@ append_bashrc_alias tailmongo "tail -f /var/log/mongodb/mongod.log"
 append_bashrc_alias editmongoconf "/etc/mongodb.conf"
 
 if [[ "$REDHAT_RELEASE_DIGIT" == "6" ]]; then
-  append_bashrc_alias stopmongod "service mongod stop"
-  append_bashrc_alias startmongod "service mongod start"
-  append_bashrc_alias statusmongod "service mongod status"
-  append_bashrc_alias restartmongod "service mongod restart"
+  append_bashrc_alias stopmongo "service mongod stop"
+  append_bashrc_alias startmongo "service mongod start"
+  append_bashrc_alias statusmongo "service mongod status"
+  append_bashrc_alias restartmongo "service mongod restart"
 else
-  append_bashrc_alias stopmongod "/bin/systemctl stop mongod"
-  append_bashrc_alias startmongod "/bin/systemctl start mongod"
-  append_bashrc_alias statusmongod "/bin/systemctl status mongod"
+  append_bashrc_alias stopmongo "/bin/systemctl stop mongod"
+  append_bashrc_alias startmongo "/bin/systemctl start mongod"
+  append_bashrc_alias statusmongo "/bin/systemctl status mongod"
   append_bashrc_alias restartmongod "/bin/systemctl restart mongod"
 fi
 

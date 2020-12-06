@@ -12,7 +12,7 @@
             "name": "funkwhale",
             "user": "funkwhale",
             "password": "shomeddata",
-            "encoding": "UTF8",
+            "characterSet": "UTF8",
             "createDbWithTemplate0": true,
             "grantCreateDatabase": false
           }

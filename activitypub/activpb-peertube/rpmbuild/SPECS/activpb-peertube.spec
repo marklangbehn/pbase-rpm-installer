@@ -124,13 +124,11 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 ## fetch config value from JSON file
 parseConfig "HTTP_PORT" ".activpb_peertube.port" "9000"
 parseConfig "ADD_NGINX_PROXY" ".activpb_peertube.addNgnixProxy" "true"
-parseConfig "USE_SUB_DOMAIN" ".activpb_peertube.useSubDomain" "true"
-parseConfig "SUB_DOMAIN_NAME" ".activpb_peertube.subDomainName" "peertube"
+parseConfig "URL_SUB_DOMAIN" ".activpb_peertube.urlSubDomain" "peertube"
 
 echo "HTTP_PORT:               $HTTP_PORT"
 ##echo "ADD_NGINX_PROXY:         $ADD_NGINX_PROXY"
-echo "USE_SUB_DOMAIN:          $USE_SUB_DOMAIN"
-echo "SUB_DOMAIN_NAME:         $SUB_DOMAIN_NAME"
+echo "URL_SUB_DOMAIN:         $URL_SUB_DOMAIN"
 
 
 ## use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars
@@ -310,8 +308,8 @@ su - peertube -c "cp /var/www/peertube/peertube-latest/config/production.yaml.ex
 ## FULLDOMAINNAME is the subdomain if declared plus the domain
 FULLDOMAINNAME="${THISDOMAINNAME}"
 
-if [[ "$USE_SUB_DOMAIN" == "true" ]] && [[ "$SUB_DOMAIN_NAME" != "" ]] ; then
-  FULLDOMAINNAME="${SUB_DOMAIN_NAME}.${THISDOMAINNAME}"
+if [[ "$URL_SUB_DOMAIN" != "" ]] ; then
+  FULLDOMAINNAME="${URL_SUB_DOMAIN}.${THISDOMAINNAME}"
   echo "Using subdomain:         ${FULLDOMAINNAME}"
 fi
 
@@ -354,6 +352,9 @@ else
   echo "Not executing:           certbot certonly --standalone --post-hook "systemctl start nginx" -d ${FULLDOMAINNAME} -m ${EMAIL_ADDR} --agree-tos -n"
   echo "Skipping certbot:        EXECUTE_CERTBOT_CMD=false"
 fi
+
+EXTERNALURL="https://$FULLDOMAINNAME"
+echo "URL:                     $EXTERNALURL"
 
 
 ## CRON

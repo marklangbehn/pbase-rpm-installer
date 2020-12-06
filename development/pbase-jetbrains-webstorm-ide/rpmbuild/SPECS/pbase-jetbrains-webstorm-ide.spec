@@ -164,7 +164,7 @@ echo "Downloading Webstorm from jetbrains.com"
 
 cd /usr/local/pbase-data/pbase-jetbrains-webstorm-ide
 
-wget -q https://download.jetbrains.com/webstorm/WebStorm-2020.2.4.tar.gz
+wget -q https://download.jetbrains.com/webstorm/WebStorm-2020.3.tar.gz
 
 echo "Downloaded file from jetbrains.com:"
 ls -lh /usr/local/pbase-data/pbase-jetbrains-webstorm-ide/*.gz

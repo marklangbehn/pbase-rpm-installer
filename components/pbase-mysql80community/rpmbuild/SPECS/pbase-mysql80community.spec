@@ -293,10 +293,9 @@ MYSQL_DBAPPUSER_PWD=$CONFIG_DB_PSWD
 
 MYSQL_TMP_PWD="$(echo "$a" | tac /var/log/mysqld.log | grep "A temporary password is generated for root@localhost: " | sed "s|^.*localhost: ||")"
 
-echo "Temporary password:      $MYSQL_TMP_PWD"
-echo "Transitional password:   $MYSQL_ROOT_PWD"
-echo "MYSQL_ROOT_PWD_AFTER:    $MYSQL_ROOT_PWD_AFTER"
-
+#echo "Temporary password:      $MYSQL_TMP_PWD"
+#echo "Transitional password:   $MYSQL_ROOT_PWD"
+#echo "MYSQL_ROOT_PWD_AFTER:    $MYSQL_ROOT_PWD_AFTER"
 
 SET_ROOT_CMD='mysql -uroot -p"'
 SET_ROOT_CMD+="$MYSQL_TMP_PWD"
@@ -326,10 +325,10 @@ if [[ "$REDHAT_RELEASE_DIGIT" == "6" ]]; then
   append_bashrc_alias statusmysql "service mysql status"
   append_bashrc_alias restartmysql "service mysql restart"
 else
-  append_bashrc_alias stopmysql "/bin/systemctl stop mysql"
-  append_bashrc_alias startmysql "/bin/systemctl start mysql"
-  append_bashrc_alias statusmysql "/bin/systemctl status mysql"
-  append_bashrc_alias restartmysql "/bin/systemctl restart mysql"
+  append_bashrc_alias stopmysql "/bin/systemctl stop mysqld"
+  append_bashrc_alias startmysql "/bin/systemctl start mysqld"
+  append_bashrc_alias statusmysql "/bin/systemctl status mysqld"
+  append_bashrc_alias restartmysql "/bin/systemctl restart mysqld"
 fi
 
 append_bashrc_alias tailmysql "tail -f -n100 /var/log/mysqld.log"

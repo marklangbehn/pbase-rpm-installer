@@ -136,9 +136,8 @@ echo "Downloading Terraform binary from releases.hashicorp.com"
 
 cd /usr/local/pbase-data/pbase-terraform
 /bin/rm -f *.zip
-#wget -q -O terraform.zip https://releases.hashicorp.com/terraform/0.12.24/terraform_0.12.24_linux_amd64.zip
 
-export TERRAFORM_VERS="0.12.24"
+TERRAFORM_VERS="0.14.0"
 wget -q https://releases.hashicorp.com/terraform/${TERRAFORM_VERS}/terraform_${TERRAFORM_VERS}_linux_amd64.zip
 
 ls -l *.zip

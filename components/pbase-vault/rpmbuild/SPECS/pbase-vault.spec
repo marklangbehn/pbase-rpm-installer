@@ -204,7 +204,8 @@ echo "Downloading Vault server binary"
 
 cd /usr/local/pbase-data/pbase-vault
 
-wget -q -O vault.zip https://releases.hashicorp.com/vault/1.3.0/vault_1.3.0_linux_amd64.zip
+VAULT_VERS="1.6.0"
+wget -q -O vault.zip https://releases.hashicorp.com/vault/${VAULT_VERS}/vault_${VAULT_VERS}_linux_amd64.zip
 unzip vault.zip -d /usr/local/bin
 
 echo "Downloaded file from hashicorp.com:"

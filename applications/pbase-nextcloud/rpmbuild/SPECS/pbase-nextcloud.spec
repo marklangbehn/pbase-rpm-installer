@@ -179,12 +179,10 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 ## fetch config value from JSON file
 parseConfig "CONFIG_DATABASE" ".pbase_nextcloud.database" ""
 parseConfig "CONFIG_URLSUBPATH" ".pbase_nextcloud.urlSubPath" ""
-parseConfig "CONFIG_USE_SUBDOMAIN" ".pbase_nextcloud.useSubDomain" "true"
-parseConfig "CONFIG_SUBDOMAIN_NAME" ".pbase_nextcloud.subDomainName" "nextcloud"
+parseConfig "CONFIG_SUBDOMAIN_NAME" ".pbase_nextcloud.urlSubDomain" "nextcloud"
 
 echo "CONFIG_DATABASE:         $CONFIG_DATABASE"
 echo "CONFIG_URLSUBPATH:       $CONFIG_URLSUBPATH"
-echo "CONFIG_USE_SUBDOMAIN:    $CONFIG_USE_SUBDOMAIN"
 echo "CONFIG_SUBDOMAIN_NAME:   $CONFIG_SUBDOMAIN_NAME"
 
 SLASH_NEXTCLOUD_URLSUBPATH=""
@@ -202,7 +200,7 @@ THISDOMAINNAME="$(hostname -d)"
 ## FULLDOMAINNAME is the subdomain if declared plus the domain
 FULLDOMAINNAME="${THISDOMAINNAME}"
 
-if [[ "$CONFIG_USE_SUBDOMAIN" == "true" ]] && [[ "$CONFIG_SUBDOMAIN_NAME" != "" ]] ; then
+if [[ "$CONFIG_SUBDOMAIN_NAME" != "" ]] ; then
   FULLDOMAINNAME="${CONFIG_SUBDOMAIN_NAME}.${THISDOMAINNAME}"
   echo "Using subdomain:         ${FULLDOMAINNAME}"
 fi
@@ -299,7 +297,7 @@ echo "                        /usr/local/pbase-data/admin-only/module-config.d/"
 
 INSTALLED_DOMAIN_URI="${THISDOMAINNAME}${SLASH_NEXTCLOUD_URLSUBPATH}"
 
-if [[ "$CONFIG_USE_SUBDOMAIN" == "true" ]] && [[ "$CONFIG_SUBDOMAIN_NAME" != "" ]] ; then
+if [[ "$CONFIG_SUBDOMAIN_NAME" != "" ]] ; then
   INSTALLED_DOMAIN_URI="${FULLDOMAINNAME}"
 fi
 

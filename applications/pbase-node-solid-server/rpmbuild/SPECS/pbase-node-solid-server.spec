@@ -176,8 +176,7 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 ## fetch config value from JSON file
 #parseConfig "CONFIG_DATABASE" ".pbase_node_solid_server.database" ""
 parseConfig "ADD_APACHE_PROXY" ".pbase_node_solid_server.addApacheProxy" "true"
-parseConfig "CONFIG_USE_SUBDOMAIN" ".pbase_node_solid_server.useSubDomain" "true"
-parseConfig "CONFIG_SUBDOMAIN_NAME" ".pbase_node_solid_server.subDomainName" "solid"
+parseConfig "CONFIG_SUBDOMAIN_NAME" ".pbase_node_solid_server.urlSubDomain" "solid"
 parseConfig "CONFIG_URLSUBPATH" ".pbase_node_solid_server.urlSubPath" ""
 
 #echo "CONFIG_DATABASE:         $CONFIG_DATABASE"
@@ -224,7 +223,7 @@ THISDOMAINNAME="$(hostname -d)"
 ## FULLDOMAINNAME is the subdomain if declared plus the domain
 FULLDOMAINNAME="${THISDOMAINNAME}"
 
-if [[ "$CONFIG_USE_SUBDOMAIN" == "true" ]] && [[ "$CONFIG_SUBDOMAIN_NAME" != "" ]] ; then
+if [[ "$CONFIG_SUBDOMAIN_NAME" != "" ]] ; then
   FULLDOMAINNAME="${CONFIG_SUBDOMAIN_NAME}.${THISDOMAINNAME}"
   echo "Using subdomain:         ${FULLDOMAINNAME}"
 fi

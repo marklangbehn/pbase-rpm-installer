@@ -10,4 +10,5 @@ rm -rf .cache
 ## refresh and rebuild - creates "public" dir
 git pull
 
+npm install
 gatsby build

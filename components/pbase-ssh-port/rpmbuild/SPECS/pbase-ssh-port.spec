@@ -141,7 +141,7 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config value from JSON file
 parseConfig "ENABLE_ROOT_LOGIN" ".pbase_ssh_port.enableRootLogin" "true"
-parseConfig "SSH_PORT" ".pbase_ssh_port.port" "28800"
+parseConfig "SSH_PORT" ".pbase_ssh_port.port" "29900"
 
 echo "ENABLE_ROOT_LOGIN:       $ENABLE_ROOT_LOGIN"
 echo "SSH_PORT:                $SSH_PORT"

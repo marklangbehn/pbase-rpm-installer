@@ -351,7 +351,7 @@ echo "if locally installed"
 echo "                         http://localhost${SLASH_WORDPRESS_URI_BASE}"
 echo "if hostname is accessible"
 echo "                         http://${THISHOSTNAME}${SLASH_WORDPRESS_URI_BASE}"
-echo "or if your domain is registered in DNS"
+echo "or if your domain is registered in DNS and has HTTPS enabled"
 echo "                         https://${THISDOMAINNAME}${SLASH_WORDPRESS_URI_BASE}"
 echo ""
 

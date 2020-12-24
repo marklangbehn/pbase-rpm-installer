@@ -34,7 +34,7 @@ This enables entire application stacks to be configured and installed with ease.
 #### PREREQUISITES
 Requires a Red Hat Enterprise Linux (EL) compatible operating system such as:
 - Red Hat EL 6, 7 or 8
-- CentOS 6, 7 or 8
+- CentOS 6, 7, 8 including CentOS Steam 8
 - Amazon Linux 1 or 2 AMI
 - Fedora 3x (tested on Fedora versions 31 through 33 for most RPM components)
 
@@ -96,7 +96,7 @@ yum -y install pbase-ssh-fail2ban
 ``` 
 
 Or to simply configure SSH to listen on a port other than 22 use the pbase-ssh-port package. 
-The preconfig package lets you choose the alternate SSH port number which defaults 28800.
+The preconfig package lets you choose the alternate SSH port number which defaults 29900.
 And whether permit remote root logins, which it disables by default.
 ```
 yum -y install pbase-preconfig-ssh-port
@@ -260,6 +260,14 @@ yum -y install pbase-mysql80community
 The Adminer database Web UI
 ```
 yum -y install pbase-adminer
+```
+
+
+#### MONGODB.ORG
+#### Install MongoDB Community Server edition from mongodb.org
+```
+yum -y install pbase-preconfig-mongodb-org
+yum -y install pbase-mongodb-org
 ```
 
 
@@ -528,7 +536,7 @@ Here's how to install Mastodon:
 (Note: On RHEL 8 you must enable CodeReadyBuilder with:  subscription-manager repos --enable codeready-builder-for-rhel-8-x86_64-rpms)
 ```
 yum -y install https://pbase-foundation.com/pbase-repo.rpm
-yum -y install pbase-preconfig-postgres-mastodon
+yum -y install activpb-preconfig-postgres-mastodon
 yum -y install pbase-postgres
 yum -y install activpb-mastodon
 ```
@@ -539,7 +547,7 @@ For example: peertube.mydomainname.com
 If you want to change this edit the `activpb_peertube.json` preconfig file.
 ```
 yum -y install https://pbase-foundation.com/pbase-repo.rpm
-yum -y install pbase-preconfig-postgres-peertube
+yum -y install activpb-preconfig-postgres-peertube
 yum -y install pbase-postgres
 yum -y install activpb-peertube
 ```

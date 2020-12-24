@@ -297,7 +297,6 @@ systemctl restart httpd
 
 
 ## add shell aliases
-## append_bashrc_alias tailmattermost "tail -f /opt/mattermost/logs/mattermost.log"
 append_bashrc_alias editsolidserverconf "vi ${VAR_WWW_ROOT}/config.json"
 
 

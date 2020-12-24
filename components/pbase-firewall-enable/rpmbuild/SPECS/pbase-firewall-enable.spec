@@ -140,7 +140,7 @@ PBASE_CONFIG_FILENAME="pbase_firewall_enable.json"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
-ADDITIONAL_PORT="28800"
+ADDITIONAL_PORT="29900"
 
 ## check which version of Linux is installed
 check_linux_version

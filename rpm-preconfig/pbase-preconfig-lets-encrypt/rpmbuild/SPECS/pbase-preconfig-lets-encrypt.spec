@@ -129,7 +129,7 @@ check_linux_version() {
 }
 
 MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
-MODULE_SAMPLES_DIR=/usr/local/pbase-data/pbase-preconfig-lets-encrypt/module-config-samples/"
+MODULE_SAMPLES_DIR="/usr/local/pbase-data/pbase-preconfig-lets-encrypt/module-config-samples/"
 
 PBASE_DEFAULTS_FILENAME="pbase_repo.json"
 

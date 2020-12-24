@@ -167,7 +167,7 @@ locateConfigFile "${PBASE_CONFIG_FILENAME}"
 
 parseConfig "CONFIG_DB_HOSTNAME" ".${PBASE_CONFIG_NAME}[0].default.hostName" "localhost"
 parseConfig "CONFIG_DB_PORT"     ".${PBASE_CONFIG_NAME}[0].default.port" "5432"
-parseConfig "CONFIG_DB_CHARSET"  ".${PBASE_CONFIG_NAME}[0].default.characterSet" "UTF8"
+parseConfig "CONFIG_DB_CHARSET"  ".${PBASE_CONFIG_NAME}[0].default.database[0].characterSet" "UTF8"
 
 parseConfig "CONFIG_DB_STARTSVC" ".${PBASE_CONFIG_NAME}[0].default.startService" "true"
 parseConfig "CONFIG_DB_INSTALL"  ".${PBASE_CONFIG_NAME}[0].default.install" "true"
@@ -443,8 +443,18 @@ echo "" >> /root/.bashrc
 append_bashrc_alias tailnginx "tail -f /var/log/nginx/error.log /var/log/nginx/access.log"
 append_bashrc_alias tailmastodon "journalctl -xf -u mastodon-*"
 
-append_bashrc_alias editnginxconf "vi /etc/nginx/conf.d/mastodon.conf"
+append_bashrc_alias statusmastodon "systemctl status mastodon-*"
+append_bashrc_alias stopmastodon "systemctl stop mastodon-*"
+append_bashrc_alias startmastodon "systemctl start mastodon-*"
+append_bashrc_alias restartmastodon "systemctl restart mastodon-*"
+
 append_bashrc_alias editmastodonconf "vi /home/mastodon/live/.env.production"
+append_bashrc_alias editnginxconf "vi /etc/nginx/conf.d/mastodon.conf"
+
+append_bashrc_alias statusnginx "systemctl status nginx"
+append_bashrc_alias stopnginx "systemctl stop nginx"
+append_bashrc_alias startnginx "systemctl start nginx"
+append_bashrc_alias restartnginx "systemctl restart nginx"
 
 
 echo ""

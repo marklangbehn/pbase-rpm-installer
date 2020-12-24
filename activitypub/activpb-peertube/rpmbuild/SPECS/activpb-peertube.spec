@@ -5,6 +5,7 @@ Summary: PBase Peertube service rpm
 Group: System Environment/Base
 License: Apache-2.0
 URL: https://pbase-foundation.com
+Source0: activpb-peertube-1.0.tar.gz
 BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
@@ -15,10 +16,14 @@ Requires: nginx, postgresql, openssl, gcc-c++, make, wget, redis, git, ffmpeg, n
 PBase Peertube ActivityPub service
 
 %prep
+%setup -q
 
 %install
+mkdir -p "$RPM_BUILD_ROOT"
+cp -R * "$RPM_BUILD_ROOT"
 
 %clean
+rm -rf "$RPM_BUILD_ROOT"
 
 %pre
 
@@ -122,13 +127,16 @@ PBASE_CONFIG_FILENAME="activpb_peertube.json"
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config value from JSON file
+## version to download
+parseConfig "PEERTUBE_VER_CONFIG" ".activpb_peertube.peertubeVersion" ""
+
 parseConfig "HTTP_PORT" ".activpb_peertube.port" "9000"
 parseConfig "ADD_NGINX_PROXY" ".activpb_peertube.addNgnixProxy" "true"
 parseConfig "URL_SUB_DOMAIN" ".activpb_peertube.urlSubDomain" "peertube"
 
 echo "HTTP_PORT:               $HTTP_PORT"
 ##echo "ADD_NGINX_PROXY:         $ADD_NGINX_PROXY"
-echo "URL_SUB_DOMAIN:         $URL_SUB_DOMAIN"
+echo "URL_SUB_DOMAIN:          $URL_SUB_DOMAIN"
 
 
 ## use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars
@@ -150,7 +158,7 @@ locateConfigFile "${PBASE_CONFIG_FILENAME}"
 
 parseConfig "CONFIG_DB_HOSTNAME" ".${PBASE_CONFIG_NAME}[0].default.hostName" "localhost"
 parseConfig "CONFIG_DB_PORT"     ".${PBASE_CONFIG_NAME}[0].default.port" "5432"
-parseConfig "CONFIG_DB_CHARSET"  ".${PBASE_CONFIG_NAME}[0].default.characterSet" "UTF8"
+parseConfig "CONFIG_DB_CHARSET"  ".${PBASE_CONFIG_NAME}[0].default.database[0].characterSet" "UTF8"
 
 parseConfig "CONFIG_DB_STARTSVC" ".${PBASE_CONFIG_NAME}[0].default.startService" "true"
 parseConfig "CONFIG_DB_INSTALL"  ".${PBASE_CONFIG_NAME}[0].default.install" "true"
@@ -272,9 +280,15 @@ ls -l /usr/local/bin/yq
 
 ## download peertube package from github
 cd /var/www/peertube/versions
-
-VERSION=$(curl -s https://api.github.com/repos/chocobozzz/peertube/releases/latest | grep tag_name | cut -d '"' -f 4)
 echo "Downloading Peertube:    $VERSION"
+
+if [[ "${PEERTUBE_VER_CONFIG}" != "" ]]; then
+  VERSION="${PEERTUBE_VER_CONFIG}"
+  echo "Configured version:      $PEERTUBE_VER_CONFIG"
+else
+  VERSION=$(curl -s https://api.github.com/repos/chocobozzz/peertube/releases/latest | grep tag_name | cut -d '"' -f 4)
+  echo "Latest version:          $VERSION"
+fi
 
 wget -q "https://github.com/Chocobozzz/PeerTube/releases/download/${VERSION}/peertube-${VERSION}.zip"
 
@@ -333,9 +347,27 @@ echo "Updating config in production.yaml"
 chown peertube:peertube /var/www/peertube/config/production.yaml
 chmod 0600 /var/www/peertube/config/production.yaml
 
-/bin/cp -f --no-clobber /var/www/peertube/peertube-latest/support/nginx/peertube /etc/nginx/conf.d/peertube.conf
+## 3.0 preliminary template substitution
+## variables to be substituted in nginx conf.d file
+#export WEBSERVER_HOST="${FULLDOMAINNAME}"
+#export PEERTUBE_HOST="localhost"
+#envsubst '${WEBSERVER_HOST},${PEERTUBE_HOST}' < /var/www/peertube/peertube-latest/support/nginx/peertube > /etc/nginx/conf.d/peertube.conf
+#
+## template cert path changed for v3.0rc
+#sed -i "s|peertube/fullchain.pem|${FULLDOMAINNAME}/fullchain.pem|g" /etc/nginx/conf.d/peertube.conf
+#sed -i "s|peertube/privkey.pem|${FULLDOMAINNAME}/privkey.pem|g" /etc/nginx/conf.d/peertube.conf
+#
+##  how enable aio on nginx? turn off 'aio threads' for now
+#sed -i "s/aio threads/##aio threads/g" /etc/nginx/conf.d/peertube.conf
 
+
+## 2.4 template substitution
+## /bin/cp -f --no-clobber /var/www/peertube/peertube-latest/support/nginx/peertube /etc/nginx/conf.d/peertube.conf
+
+## replace domain name
+/bin/cp -f --no-clobber /usr/local/pbase-data/activpb-peertube/etc-nginx-conf-d/peertube.conf /etc/nginx/conf.d/peertube.conf
 sed -i "s/peertube.example.com/${FULLDOMAINNAME}/g" /etc/nginx/conf.d/peertube.conf
+
 echo "Configuration updated:   /etc/nginx/conf.d/peertube.conf"
 
 echo "Nginx configuration:     /etc/nginx/conf.d/"
@@ -388,8 +420,19 @@ echo "" >> /root/.bashrc
 append_bashrc_alias tailnginx "tail -f /var/log/nginx/*.log"
 append_bashrc_alias tailpeertube "journalctl -feu peertube"
 
-append_bashrc_alias editnginxconf "vi /etc/nginx/conf.d/peertube.conf"
+append_bashrc_alias statuspeertube "systemctl status peertube"
+append_bashrc_alias stoppeertube "systemctl stop peertube"
+append_bashrc_alias startpeertube "systemctl start peertube"
+append_bashrc_alias restartpeertube "systemctl restart peertube"
+
 append_bashrc_alias editpeertubeconf "vi /var/www/peertube/config/production.yaml"
+append_bashrc_alias editnginxconf "vi /etc/nginx/conf.d/peertube.conf"
+
+append_bashrc_alias statusnginx "systemctl status nginx"
+append_bashrc_alias stopnginx "systemctl stop nginx"
+append_bashrc_alias startnginx "systemctl start nginx"
+append_bashrc_alias restartnginx "systemctl restart nginx"
+
 
 
 echo "TCP/IP Tuning:           /etc/sysctl.d/30-peertube-tcp.conf"
@@ -455,3 +498,5 @@ echo "PeerTube Ready:          $EXTERNALURL"
 echo ""
 
 %files
+%defattr(-,root,root,-)
+/usr/local/pbase-data/activpb-peertube/etc-nginx-conf-d/peertube.conf

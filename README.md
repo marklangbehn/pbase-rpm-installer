@@ -8,10 +8,12 @@ that provide a foundation for servers and desktops that work consistently across
 of the Red Hat Enterprise Linux and CentOS operating system family.
 Several application stack installers are provided using these RPM components.
 
-## Our Almost Famous 3-Minute Installation
+## Our Almost Famous 4-Minute Installation
 
 Here's how to stand up a WordPress instance on an Apache server with a MySQL database.
+In the first command replace the email sample with your appropriate admin email address.
 ```jsx
+echo "pbase.foundation@gmail.com" > /root/DEFAULT_EMAIL_ADDRESS.txt
 yum -y install https://pbase-foundation.com/pbase-repo.rpm
 yum -y install pbase-preconfig-mysql-wordpress
 yum -y install pbase-wordpress-allinone
@@ -61,10 +63,17 @@ Be sure the target server's `/etc/hosts` file is correct.
 You may want to pause the automatic updates while installing RPMs.  
 On some systems you can do that with the `systemctl stop packagekit` command.
 
-#### Install the PBase repository RPM
-The first step is to install the pbase-repo RPM. 
+#### Set default email address file, and install the PBase repository RPM
+First create a text file containing your admin email address in the /root directory called `DEFAULT_EMAIL_ADDRESS.txt`
+similarly, some rpms use DEFAULT_DESKTOP_USERNAME and DEFAULT_SUB_DOMAIN files to provide defaults.
+ ... then install the pbase-repo RPM.
 It places YUM repository specs into the target server's /etc/yum.repos.d/ directory.
 ```
+echo "pbase.foundation@gmail.com" > /root/DEFAULT_EMAIL_ADDRESS.txt
+echo "mark" > /root/DEFAULT_DESKTOP_USERNAME.txt
+echo "app" > /root/DEFAULT_SUB_DOMAIN.txt
+echo "000myrealoutgoingsmtppassword999" > /root/DEFAULT_SMTP_PASSWORD.txt
+
 yum -y install https://pbase-foundation.com/pbase-repo.rpm
 ```
 Once that bootstrapping step is done, all the other pbase application components become available.
@@ -73,7 +82,6 @@ Once that bootstrapping step is done, all the other pbase application components
 ```
 yum -y install pbase-preconfig-apache
 yum -y install pbase-apache
-yum -y install pbase-preconfig-lets-encrypt
 yum -y install pbase-lets-encrypt
 yum -y install pbase-firewall-enable
 ```
@@ -121,12 +129,12 @@ yum -y install pbase-terraform
 Depending on your OS version select the appropriate preconfig rpm 
 to install the NodeSource repository for Node JS version 10, 12 or 14.
 
-EL8/CentOS 8 - requires passing `--disablerepo=AppStream` to point to the NodeSource repo
+EL8/CentOS 8 - requires passing `--disablerepo=appstream` to point to the NodeSource repo
 ```  
 yum -y install pbase-preconfig-nodejs12
 ## or
 yum -y install pbase-preconfig-nodejs14
-yum -y install --disablerepo=AppStream nodejs
+yum -y install --disablerepo=appstream nodejs
 ```
 
 EL7/CentOS 7
@@ -203,7 +211,7 @@ yum -y install pbase-postgres11
 Postgres 11 - using the postgresql.org repo - on CentOS 8 only  
 ```
 yum -y install pbase-preconfig-postgres11
-yum -y --disablerepo=AppStream install postgresql11-server postgresql11-contrib
+yum -y --disablerepo=appstream install postgresql11-server postgresql11-contrib
 yum -y install pbase-postgres11
 ```
 
@@ -217,7 +225,7 @@ yum -y install pbase-postgres12
 Postgres 12 - using the postgresql.org repo - on CentOS 8 only  
 ```
 yum -y install pbase-preconfig-postgres12
-yum -y --disablerepo=AppStream install postgresql12-server postgresql12-contrib
+yum -y --disablerepo=appstream install postgresql12-server postgresql12-contrib
 yum -y install pbase-postgres12
 ```
 
@@ -232,7 +240,7 @@ yum -y install pbase-postgres13
 Postgres 13 - using the postgresql.org repo - on CentOS 8 only  
 ```
 yum -y install pbase-preconfig-postgres13
-yum -y --disablerepo=AppStream install postgresql13-server postgresql13-contrib
+yum -y --disablerepo=appstream install postgresql13-server postgresql13-contrib
 yum -y install pbase-postgres13
 ```
 
@@ -253,7 +261,7 @@ yum -y install pbase-mysql80community
 MYSQL 8.0 - using the MySQL Community repo - on CentOS 8 only
 ```
 yum -y install pbase-preconfig-mysql80community
-yum -y --disablerepo=AppStream install mysql-community-server
+yum -y --disablerepo=appstream install mysql-community-server
 yum -y install pbase-mysql80community
 ```
 
@@ -343,6 +351,8 @@ tailelastic
   
 Install the Nextcloud PHP based application.
 Either PostgreSQL or MySQL 8.0 community can be used.  
+First create the default email text file.  
+`echo "pbase.foundation@gmail.com" > /root/DEFAULT_EMAIL_ADDRESS.txt`
 
 To install Nextcloud with a Postgres database for storage  
 Use these steps:  
@@ -359,7 +369,7 @@ Use these steps:
 ```
 yum -y install https://pbase-foundation.com/pbase-repo.rpm
 yum -y install pbase-preconfig-mysql-nextcloud
-yum -y --disablerepo=AppStream install mysql-community-server
+yum -y --disablerepo=appstream install mysql-community-server
 yum -y install pbase-mysql80community
 yum -y install pbase-nextcloud
 ```
@@ -378,6 +388,7 @@ yum -y install pbase-nextcloud
 
 Install the Mattermost messaging platform with a Postgres database for storage  
 on CentOS8/EL8
+
 ```
 yum -y install https://pbase-foundation.com/pbase-repo.rpm
 yum -y install pbase-preconfig-postgres-mattermost
@@ -559,7 +570,7 @@ yum -y install activpb-peertube
 yum -y install https://pbase-foundation.com/pbase-repo.rpm
 yum -y install pbase-preconfig-node-solid-server
 yum -y install --enablerepo=AppStream python3
-yum -y install --disablerepo=AppStream nodejs
+yum -y install --disablerepo=appstream nodejs
 yum -y install pbase-apache
 yum -y install pbase-lets-encrypt
 yum -y install pbase-node-solid-server

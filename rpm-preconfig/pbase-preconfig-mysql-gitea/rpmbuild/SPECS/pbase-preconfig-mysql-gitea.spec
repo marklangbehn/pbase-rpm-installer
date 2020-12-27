@@ -126,6 +126,31 @@ check_linux_version() {
   fi
 }
 
+setFieldInJsonModuleConfig() {
+  NEWVALUE="$1"
+  MODULE="$2"
+  FULLFIELDNAME="$3"
+  MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
+
+  SOURCE_DIR="$4"
+  if [[ "$SOURCE_DIR" == "" ]]; then
+    SOURCE_DIR="$MODULE_CONFIG_DIR"
+  fi
+
+  CONFIG_FILE_NAME="${MODULE}.json"
+  TEMPLATE_JSON_FILE="${SOURCE_DIR}/${CONFIG_FILE_NAME}"
+  /bin/cp -f "${TEMPLATE_JSON_FILE}" "/tmp/${CONFIG_FILE_NAME}"
+
+  ## set a value in the json file
+  PREFIX="jq '.${MODULE}.${FULLFIELDNAME}= \""
+  SUFFIX="\"'"
+  JQ_COMMAND="${PREFIX}${NEWVALUE}${SUFFIX} /tmp/${CONFIG_FILE_NAME} > ${MODULE_CONFIG_DIR}/${CONFIG_FILE_NAME}"
+
+  ##echo "Executing:  eval $JQ_COMMAND"
+  eval $JQ_COMMAND
+
+  /bin/rm -f "/tmp/${CONFIG_FILE_NAME}"
+}
 
 echo "PBase MySQL create config preset user and DB name for use by pbase-gitea"
 
@@ -147,6 +172,8 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config values from JSON file
 parseConfig "DEFAULT_EMAIL_ADDRESS" ".pbase_repo.defaultEmailAddress" ""
+parseConfig "DEFAULT_SMTP_PASSWORD" ".pbase_repo.defaultSmtpPassword" ""
+parseConfig "DEFAULT_SUB_DOMAIN" ".pbase_repo.defaultSubDomain" ""
 
 DB_CONFIG_FILENAME="pbase_mysql.json"
 GITEA_CONFIG_FILENAME="pbase_gitea.json"
@@ -154,9 +181,28 @@ echo "Gitea config:            ${MODULE_CONFIG_DIR}/pbase_gitea.json"
 
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_apache.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_lets_encrypt.json  ${MODULE_CONFIG_DIR}/
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_smtp.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${GITEA_CONFIG_FILENAME}  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${DB_CONFIG_FILENAME}  ${MODULE_CONFIG_DIR}/
-/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_smtp.json  ${MODULE_CONFIG_DIR}/
+
+echo "Let's Encrypt defaults:  ${MODULE_CONFIG_DIR}/pbase_lets_encrypt.json"
+
+if [[ "${DEFAULT_EMAIL_ADDRESS}" != "" ]] ; then
+  echo "emailAddress:            ${DEFAULT_EMAIL_ADDRESS}"
+  setFieldInJsonModuleConfig ${DEFAULT_EMAIL_ADDRESS} pbase_lets_encrypt emailAddress
+fi
+
+if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] ; then
+  echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN}"
+  setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_lets_encrypt urlSubDomain
+fi
+
+echo "SMTP defaults:           ${MODULE_CONFIG_DIR}/pbase_smtp.json"
+
+if [[ "${DEFAULT_SMTP_PASSWORD}" != "" ]] ; then
+  echo "defaultSmtpPassword:     ${DEFAULT_SMTP_PASSWORD}"
+  setFieldInJsonModuleConfig ${DEFAULT_SMTP_PASSWORD} pbase_smtp password
+fi
 
 
 ## use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars
@@ -194,25 +240,13 @@ sed -i "s/pbase-foundation.com/${THISDOMAINNAME}/g" "${MODULE_CONFIG_DIR}/${GITE
 
 echo ""
 echo "MySQL module config files ready for Gitea:"
-echo "Next step - optional change the default MySQL DB root password, "
-echo "    application-database and user and other default config by editing"
-echo "    pbase_mysql.json. For example:"
+echo "Next step - optional - review the configuration defaults provided"
+echo "    under 'module-config.d' by editing their JSON text files. For example:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
-echo "  vi pbase_mysql.json"
-
-echo ""
-echo "Next step - optional change the default 'git' subdomain by editing"
-echo "    pbase_lets_encrypt.json. For example:"
-echo ""
-echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
+echo "  vi pbase_postgres.json"
 echo "  vi pbase_lets_encrypt.json"
-
-echo ""
-echo "Next step - optional change the Gitea URI or port by editing"
-echo "    pbase_gitea.json. For example:"
-echo ""
-echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
+echo "  vi pbase_smtp.json         ## must contain valid SMTP credentials"
 echo "  vi pbase_gitea.json"
 echo ""
 

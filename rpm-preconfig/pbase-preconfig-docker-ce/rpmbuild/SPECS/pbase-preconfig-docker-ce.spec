@@ -124,6 +124,33 @@ check_linux_version() {
   fi
 }
 
+setFieldInJsonModuleConfig() {
+  NEWVALUE="$1"
+  MODULE="$2"
+  FULLFIELDNAME="$3"
+  MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d/"
+  SAMPLE_SOURCE_DIR="/usr/local/pbase-data/pbase-preconfig-docker-ce/module-config-samples/"
+
+  SOURCE_DIR="$4"
+  if [[ "$SOURCE_DIR" == "" ]]; then
+    SOURCE_DIR="$MODULE_CONFIG_DIR"
+  fi
+
+  CONFIG_FILE_NAME="${MODULE}.json"
+  TEMPLATE_JSON_FILE="${SOURCE_DIR}${CONFIG_FILE_NAME}"
+  /bin/cp -f "${TEMPLATE_JSON_FILE}" "/tmp/${CONFIG_FILE_NAME}"
+
+  ## set a value in the json file
+  PREFIX="jq '.${MODULE}.${FULLFIELDNAME}= \""
+  SUFFIX="\"'"
+  JQ_COMMAND="${PREFIX}${NEWVALUE}${SUFFIX} /tmp/${CONFIG_FILE_NAME} > ${MODULE_CONFIG_DIR}${CONFIG_FILE_NAME}"
+
+  ##echo "Executing:  eval $JQ_COMMAND"
+  eval $JQ_COMMAND
+
+  /bin/rm -f "/tmp/${CONFIG_FILE_NAME}"
+}
+
 
 echo "PBase Docker CE yum repos and dependencies pre-configuration"
 echo ""
@@ -178,16 +205,7 @@ fi
 ## check if desktop username was specified
 if [[ "$DEFAULT_DESKTOP_USER_NAME" != "" ]]; then
   echo "Docker username:         $DEFAULT_DESKTOP_USER_NAME"
-  cd /usr/local/pbase-data/admin-only/module-config.d/
-  TEMPLATE_JSON_FILE="/usr/local/pbase-data/pbase-preconfig-docker-ce/module-config-samples/pbase_docker_ce.json"
-
-  ## set a value in the json file
-  PREFIX="jq  '.pbase_docker_ce.addUserToDockerGroup = \""
-  SUFFIX="\"'  "
-  JQ_COMMAND="${PREFIX}${DEFAULT_DESKTOP_USER_NAME}${SUFFIX}${TEMPLATE_JSON_FILE} > ${MODULE_CONFIG_DIR}/pbase_docker_ce.json"
-
-  echo "Executing:  eval $JQ_COMMAND"
-  eval $JQ_COMMAND
+  setFieldInJsonModuleConfig $DEFAULT_DESKTOP_USER_NAME pbase_docker_ce addUserToDockerGroup "/usr/local/pbase-data/pbase-preconfig-docker-ce/module-config-samples/"
 else
   echo ""
   echo "Next step - Enable adding a user to the docker group by making "

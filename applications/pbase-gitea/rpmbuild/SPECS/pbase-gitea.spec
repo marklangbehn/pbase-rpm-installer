@@ -248,7 +248,7 @@ elif [[ $DATABASE == "mysql" ]]; then
   parseConfig "DB_PORT"     ".pbase_mysql[0].default.port" "3306"
   parseConfig "DB_NAME"     ".pbase_mysql[0].default.database[0].name" "gitea"
   parseConfig "DB_USER"     ".pbase_mysql[0].default.database[0].user" "gitea"
-  parseConfig "DB_CHARSET"  ".pbase_mysql[0].default.database[0].characterSet" "utf8mb48"
+  parseConfig "DB_CHARSET"  ".pbase_mysql[0].default.characterSet" "utf8mb48"
   parseConfig "DB_PSWD"     ".pbase_mysql[0].default.database[0].password" ""
 fi
 
@@ -304,7 +304,7 @@ fi
 
 
 if [[ "$SMTP_PASSWORD" == "" ]] ; then
-  echo "No SMTP config found:    pbase_smtp.json"
+  echo "No SMTP password given:  pbase_smtp.json"
 else
   echo "Setting SMTP config:     /etc/gitea/app.ini"
   echo "SMTP_SERVER:             $SMTP_SERVER"
@@ -343,12 +343,12 @@ fi
 
 SUBPATH_URI=""
 if [[ ${URL_SUBPATH} != "" ]] ; then
-  SUBPATH_URI="/${URL_SUBPATH}/"
+  SUBPATH_URI="/${URL_SUBPATH}"
 fi
 
-echo "FULLDOMAINNAME           $FULLDOMAINNAME"
-echo "SUBPATH_URI              $SUBPATH_URI"
-echo "PROXY_CONF_FILE          $PROXY_CONF_FILE"
+echo "FULLDOMAINNAME:          $FULLDOMAINNAME"
+echo "SUBPATH_URI:             $SUBPATH_URI"
+echo "PROXY_CONF_FILE:         $PROXY_CONF_FILE"
 
 if [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
   ## must install apache first
@@ -356,6 +356,9 @@ if [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
     echo "Apache not found:        /etc/httpd/conf.d/"
     exit 0
   fi
+
+  echo "Disabling previous:      /etc/httpd/conf.d/${THISDOMAINNAME}.conf"
+  mv "/etc/httpd/conf.d/${THISDOMAINNAME}.conf"  "/etc/httpd/conf.d/${THISDOMAINNAME}.conf-DISABLED"
 
   /bin/cp --no-clobber /usr/local/pbase-data/pbase-gitea/etc-httpd-confd/${PROXY_CONF_FILE} /etc/httpd/conf.d/
   CONF_FILE="/etc/httpd/conf.d/${PROXY_CONF_FILE}"
@@ -365,15 +368,16 @@ if [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
     sed -i -e "s/git.example.com/${FULLDOMAINNAME}/" "${CONF_FILE}"
   else
     if [[ ${URL_SUBPATH} != "git" ]] ; then
-      echo "Setting subpath:       ${CONF_FILE}"
-      sed -i -e "s|/git|/${URL_SUBPATH}|" "${CONF_FILE}"
+      echo "Setting subpath:         ${CONF_FILE}"
+      sed -i -e "s/git.example.com/${FULLDOMAINNAME}/" "${CONF_FILE}"
+      sed -i -e "s|/git http|/${URL_SUBPATH} http|" "${CONF_FILE}"
     fi
   fi
 
   echo "Gitea server config:     /etc/gitea/app.ini"
   echo "" >> "/etc/gitea/app.ini"
   echo "[server]" >> "/etc/gitea/app.ini"
-  echo "ROOT_URL = http://${FULLDOMAINNAME}${SUBPATH_URI}" >> "/etc/gitea/app.ini"
+  echo "ROOT_URL = http://${FULLDOMAINNAME}${SUBPATH_URI}/" >> "/etc/gitea/app.ini"
 
   systemctl restart gitea
   systemctl restart httpd

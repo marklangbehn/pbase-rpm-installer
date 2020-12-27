@@ -5,7 +5,6 @@ Summary: PBase GitLab CE service rpm
 Group: System Environment/Base
 License: Apache-2.0
 URL: https://pbase-foundation.com
-Source0: pbase-gitlab-ce-1.0.tar.gz
 BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
@@ -16,14 +15,10 @@ Requires: pbase-epel, jq, git, gitlab-ce
 PBase GitLab CE service
 
 %prep
-%setup -q
 
 %install
-mkdir -p "$RPM_BUILD_ROOT"
-cp -R * "$RPM_BUILD_ROOT"
 
 %clean
-rm -rf "$RPM_BUILD_ROOT"
 
 %pre
 
@@ -153,10 +148,19 @@ echo "LETS_ENCRYPT_EMAILADDR:  $LETS_ENCRYPT_EMAILADDR"
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
 
+## FULLDOMAINNAME is the subdomain if declared plus the domain
+FULLDOMAINNAME="${THISDOMAINNAME}"
+
+if [[ "${EXTERN_URL_SUBDOMAIN}" != "" ]] ; then
+  FULLDOMAINNAME="${EXTERN_URL_SUBDOMAIN}.${THISDOMAINNAME}"
+  echo "Using subdomain:         ${FULLDOMAINNAME}"
+fi
+
+
 if [[ $EXTERN_URL_IS_HTTPS == "true" ]]; then
-  EXTERNALURL="https://$EXTERN_URL_SUBDOMAIN.$THISDOMAINNAME"
+  EXTERNALURL="https://${FULLDOMAINNAME}"
 else
-  EXTERNALURL="http://$EXTERN_URL_SUBDOMAIN.$THISDOMAINNAME"
+  EXTERNALURL="http://${FULLDOMAINNAME}"
 fi
 
 QT="'"
@@ -197,27 +201,25 @@ if [[ $LETS_ENCRYPT_EMAILADDR != "" ]]; then
 fi
 
 
-if [[ $CRONTAB_BACKUP_ENABLE == "true" ]]; then
-  echo "CRONTAB_BACKUP_ENABLE:   $CRONTAB_BACKUP_ENABLE"
-  echo "CRONTAB_BACKUP_HOUR:     $CRONTAB_BACKUP_HOUR"
-
-  ##sed -i "s/^external_url \'http:\/\/gitlab\.example\.com\'/external_url $EXTERNALURLQUOTED/" /etc/gitlab/gitlab.rb
-fi
+#if [[ $CRONTAB_BACKUP_ENABLE == "true" ]]; then
+#  echo "CRONTAB_BACKUP_ENABLE:   $CRONTAB_BACKUP_ENABLE"
+#  echo "CRONTAB_BACKUP_HOUR:     $CRONTAB_BACKUP_HOUR"
+#  ##sed -i "s/^external_url \'http:\/\/gitlab\.example\.com\'/external_url $EXTERNALURLQUOTED/" /etc/gitlab/gitlab.rb
+#fi
 
 ## finish setup after setting config
 echo "Executing:               gitlab-ctl reconfigure"
 gitlab-ctl reconfigure
 
+echo ""
 ## add shell aliases
 append_bashrc_alias restartgitlab "gitlab-ctl restart"
 append_bashrc_alias tailgitlab "gitlab-ctl tail"
 append_bashrc_alias editgitlabconf "vi /etc/gitlab/gitlab.rb"
 
-echo "GitLab service running. Open this URL to complete install."
-echo "Next steps - login first time to setup your password and account"
-echo "                         http://$EXTERN_URL_SUBDOMAIN.$THISDOMAINNAME"
+echo "GitLab service running. Open this URL to complete the install."
+echo "Next step - required - login to setup the password for the root account"
+echo "                         ${EXTERNALURL}"
 echo ""
 
 %files
-%defattr(-,root,root,-)
-/usr/local/pbase-data/pbase-gitlab-ce/etc-httpd-confd/gitlab-proxy.conf

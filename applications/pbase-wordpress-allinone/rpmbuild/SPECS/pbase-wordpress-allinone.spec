@@ -346,7 +346,7 @@ fi
 
 
 echo "WordPress web application is running."
-echo "Next step - Open this URL to complete the install:"
+echo "Next step - required - Open this URL to complete the install."
 echo "if locally installed"
 echo "                         http://localhost${SLASH_WORDPRESS_URI_BASE}"
 echo "if hostname is accessible"

@@ -173,7 +173,7 @@ else
     YUM_REPO_PATH="/usr/local/pbase-data/pbase-preconfig-gitlab-ce/etc-yum-repos-d/el8/gitlab_gitlab-ce.repo"
   fi
 
-  echo "gitlab_gitlab-ce.repo:          /etc/yum.repos.d/gitlab_gitlab-ce.repo"
+  echo "gitlab_gitlab-ce.repo:   /etc/yum.repos.d/gitlab_gitlab-ce.repo"
   /bin/cp -f $YUM_REPO_PATH /etc/yum.repos.d/
 fi
 
@@ -211,3 +211,4 @@ echo "rpm preuninstall"
 /usr/local/pbase-data/pbase-preconfig-gitlab-ce/etc-yum-repos-d/el8/gitlab_gitlab-ce.repo
 /usr/local/pbase-data/pbase-preconfig-gitlab-ce/etc-yum-repos-d/fedora/gitlab_gitlab-ce.repo
 /usr/local/pbase-data/pbase-preconfig-postgres-gitea/module-config-samples/pbase_gitlab_ce.json
+/usr/local/pbase-data/pbase-preconfig-postgres-gitea/module-config-samples/pbase_smtp.json

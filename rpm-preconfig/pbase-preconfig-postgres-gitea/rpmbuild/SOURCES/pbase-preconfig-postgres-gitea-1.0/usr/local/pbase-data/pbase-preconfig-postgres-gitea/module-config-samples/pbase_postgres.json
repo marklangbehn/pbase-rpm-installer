@@ -9,11 +9,10 @@
         "install": true,
         "database": [
           {
-            "name": "peertube_prod",
-            "user": "peertube",
+            "name": "gitea",
+            "user": "gitea",
             "password": "shomeddata",
             "characterSet": "UTF8",
-            "createDbWithTemplate0": true,
             "grantCreateDatabase": false
           }
         ]

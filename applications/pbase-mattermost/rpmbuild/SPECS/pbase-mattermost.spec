@@ -143,7 +143,7 @@ PBASE_CONFIG_FILENAME="pbase_mattermost.json"
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config value from JSON file
-parseConfig "HTTP_PORT" ".pbase_mattermost.httpPort" "8065"
+parseConfig "HTTP_PORT" ".pbase_mattermost.port" "8065"
 parseConfig "ADD_APACHE_PROXY" ".pbase_mattermost.addApacheProxy" "false"
 
 echo "HTTP_PORT:               $HTTP_PORT"
@@ -209,7 +209,12 @@ locateConfigFile "${PBASE_CONFIG_FILENAME}"
 
 parseConfig "CONFIG_DB_HOSTNAME" ".${PBASE_CONFIG_NAME}[0].default.hostName" "localhost"
 parseConfig "CONFIG_DB_PORT"     ".${PBASE_CONFIG_NAME}[0].default.port" "3306"
-parseConfig "CONFIG_DB_CHARSET"  ".${PBASE_CONFIG_NAME}[0].default.characterSet" "utf8mb4"
+
+if [[ "${PBASE_CONFIG_NAME}" == "pbase_postgres" ]] ; then
+  parseConfig "CONFIG_DB_CHARSET"  ".${PBASE_CONFIG_NAME}[0].default.database[0].characterSet" "UTF8"
+else
+  parseConfig "CONFIG_DB_CHARSET"  ".${PBASE_CONFIG_NAME}[0].default.characterSet" "utf8mb4"
+fi
 
 parseConfig "CONFIG_DB_STARTSVC" ".${PBASE_CONFIG_NAME}[0].default.startService" "true"
 parseConfig "CONFIG_DB_INSTALL"  ".${PBASE_CONFIG_NAME}[0].default.install" "true"
@@ -258,7 +263,13 @@ chmod -R g+w /opt/mattermost
 /bin/cp --no-clobber /opt/mattermost/config/config.json /opt/mattermost/config/config.json-ORIG
 
 ## sample after editing the config file's datasource line
-##     "DataSource": "mmuser:shomeddata@tcp(localhost:3306)/mattermost?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s",
+##   "SqlSettings": {
+##       "DriverName": "mysql",
+##       "DataSource": "mysql://mmuser:shomeddata@tcp(localhost:3306)/mattermost?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s",
+
+##   "SqlSettings": {
+##     "DriverName": "postgres",
+##     "DataSource": "postgres://mmuser:mostest@localhost/mattermost_test?sslmode=disable\u0026connect_timeout=10",
 
 echo "Updating config:         /opt/mattermost/config/config.json"
 echo "Enabling service:        /etc/systemd/system/mattermost"
@@ -266,13 +277,14 @@ echo "Enabling service:        /etc/systemd/system/mattermost"
 /bin/cp --no-clobber /usr/local/pbase-data/pbase-mattermost/etc-systemd-system/mattermost.service /etc/systemd/system/
 chmod 664 /etc/systemd/system/mattermost.service
 
+/bin/cp --no-clobber /opt/mattermost/config/config.json /opt/mattermost/config/config.json-ORIG
 
 if [[ $PBASE_CONFIG_NAME == "pbase_postgres" ]] ; then
   echo "Setting Postgres connection"
   sed -i -e "s/mysqld.service/postgresql.service/" /etc/systemd/system/mattermost.service
 
   sed -i -e "s/mysql/postgres/" /opt/mattermost/config/config.json
-  sed -i -e "s/mmuser\:mostest/postgres:\/\/mmuser:mostest/" /opt/mattermost/config/config.json
+  ##sed -i -e "s/mmuser\:mostest/postgres:\/\/mmuser:mostest/" /opt/mattermost/config/config.json
   sed -i -e "s/charset\=utf8mb4\,utf8/sslmode=disable\&connect_timeout=10/" /opt/mattermost/config/config.json
   sed -i -e "s/tcp(localhost\:3306)/localhost:5432/" /opt/mattermost/config/config.json
   sed -i -e "s/\\\u0026readTimeout=30s//" /opt/mattermost/config/config.json
@@ -284,6 +296,7 @@ if [[ $PBASE_CONFIG_NAME == "pbase_postgres" ]] ; then
   sed -i -e "s/utf8mb4/utf8/" /opt/mattermost/config/config.json
 else
   echo "Setting MySQL connection"
+  sed -i -e "s/postgres/mysql/" /opt/mattermost/config/config.json
   sed -i -e "s/mmuser/$CONFIG_DB_USER/" /opt/mattermost/config/config.json
   sed -i -e "s/mostest/$CONFIG_DB_PSWD/" /opt/mattermost/config/config.json
   sed -i -e "s/mattermost_test/$CONFIG_DB_NAME/" /opt/mattermost/config/config.json

@@ -1,0 +1,11 @@
+{
+  "pbase_gitea" : {
+    "giteaVersion": "",
+    "httpPort": 3000,
+    "addApacheProxy": true,
+    "database": "postgres",
+    "urlSubPath": "",
+    "disableRegistration": false,
+    "requireSigninView": false
+  }
+}

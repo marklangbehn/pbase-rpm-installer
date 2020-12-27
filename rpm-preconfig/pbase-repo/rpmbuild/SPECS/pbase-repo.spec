@@ -26,7 +26,7 @@ cp -R * "$RPM_BUILD_ROOT"
 rm -rf "$RPM_BUILD_ROOT"
 
 %pre
-echo "rpm preinstall $1"
+##echo "rpm preinstall $1"
 
 ## disable SELinux
 ALREADY_DISABLED=$(grep "SELINUX=disabled" /etc/selinux/config)
@@ -115,8 +115,8 @@ locateConfigFile() {
 
   if [[ -f "$PBASE_CONFIG" ]] ; then
     echo "Config file found:       $PBASE_CONFIG"
-  else
-    echo "Custom config not found: $PBASE_CONFIG"
+  #else
+  #  echo "Custom config not found: $PBASE_CONFIG"
   fi
 }
 
@@ -183,7 +183,7 @@ service_exists() {
 
 
 echo ""
-echo "PBase repository bootstrap"
+echo "PBase repository bootstrap rpm"
 
 check_linux_version
 
@@ -199,9 +199,74 @@ PBASE_DEFAULTS_FILENAME="pbase_repo.json"
 mkdir -p  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${PBASE_CONFIG_FILENAME}  ${MODULE_CONFIG_DIR}/
 
-echo "PBase config directory:  ${MODULE_SAMPLES_DIR}"
+echo "PBase config directory:  ${MODULE_SAMPLES_DIR}/"
 chmod 0600 ${MODULE_CONFIG_DIR}/
 chmod 0600 ${MODULE_SAMPLES_DIR}/${PBASE_CONFIG_FILENAME}
+
+
+## These defaults may be provided in text files at /root level
+# echo "pbase.foundation@gmail.com" > /root/DEFAULT_EMAIL_ADDRESS.txt
+# echo "mark" > /root/DEFAULT_DESKTOP_USERNAME.txt
+# echo "app" > /root/DEFAULT_SUB_DOMAIN.txt
+#
+## copy simple text file properties at /root directory into the pbase_repo.json preconfig file
+#  "pbase_repo": {
+#    "defaultEmailAddress": "",
+#    "defaultDesktopUsername": "",
+#    "defaultSubDomain": ""
+#  }
+
+echo ""
+ROOT_DEFAULT_TEXTFILE_USED="false"
+PBASE_REPO_JSON_PATH="/usr/local/pbase-data/admin-only/module-config.d/pbase_repo.json"
+
+## use 'read' command to populate the default variables
+read -r DEFAULT_EMAIL_ADDRESS < /root/DEFAULT_EMAIL_ADDRESS.txt
+read -r DEFAULT_DESKTOP_USERNAME < /root/DEFAULT_DESKTOP_USERNAME.txt
+read -r DEFAULT_SMTP_PASSWORD < /root/DEFAULT_SMTP_PASSWORD.txt
+read -r DEFAULT_SUB_DOMAIN < /root/DEFAULT_SUB_DOMAIN.txt
+
+## when a default was specified copy it to the json file used by other packages
+if [[ "${DEFAULT_EMAIL_ADDRESS}" != "" ]] ; then
+  sed -i "s/defaultEmailAddress\": \"\"/defaultEmailAddress\": \"${DEFAULT_EMAIL_ADDRESS}\"/" ${PBASE_REPO_JSON_PATH}
+
+  echo "Reading from text file:  /root/DEFAULT_EMAIL_ADDRESS.txt"
+  echo "defaultEmailAddress:     ${DEFAULT_EMAIL_ADDRESS}"
+  ROOT_DEFAULT_TEXTFILE_USED="true"
+fi
+
+
+if [[ "${DEFAULT_DESKTOP_USERNAME}" != "" ]] ; then
+  sed -i "s/defaultDesktopUsername\": \"\"/defaultDesktopUsername\": \"${DEFAULT_DESKTOP_USERNAME}\"/" ${PBASE_REPO_JSON_PATH}
+
+  echo "Reading from text file:  /root/DEFAULT_DESKTOP_USERNAME.txt"
+  echo "defaultDesktopUsername:  ${DEFAULT_DESKTOP_USERNAME}"
+  ROOT_DEFAULT_TEXTFILE_USED="true"
+fi
+
+
+if [[ "${DEFAULT_SMTP_PASSWORD}" != "" ]] ; then
+  sed -i "s/defaultSmtpPassword\": \"\"/defaultSmtpPassword\": \"${DEFAULT_SMTP_PASSWORD}\"/" ${PBASE_REPO_JSON_PATH}
+
+  echo "Reading from text file:  /root/DEFAULT_SMTP_PASSWORD.txt"
+  echo "defaultSmtpPassword:     ${DEFAULT_SMTP_PASSWORD}"
+  ROOT_DEFAULT_TEXTFILE_USED="true"
+fi
+
+
+if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] ; then
+  sed -i "s/defaultSubDomain\": \"\"/defaultSubDomain\": \"${DEFAULT_SUB_DOMAIN}\"/" ${PBASE_REPO_JSON_PATH}
+
+  echo "Reading from text file:  /root/DEFAULT_SUB_DOMAIN.txt"
+  echo "defaultSubDomain:        ${DEFAULT_SUB_DOMAIN}"
+  ROOT_DEFAULT_TEXTFILE_USED="true"
+fi
+
+
+if [[ ${ROOT_DEFAULT_TEXTFILE_USED} == "true" ]] ; then
+  echo "Updating config:         ${PBASE_REPO_JSON_PATH}"
+  echo ""
+fi
 
 
 ## modify grub2 config file
@@ -307,17 +372,23 @@ echo ""
 
 echo "Next steps - continue to install other pbase RPM modules"
 echo "    The pbase-preconfig-* modules will place .json files in the directory:"
-echo "       /usr/local/pbase-data/admin-only/module-config.d/"
+echo "        /usr/local/pbase-data/admin-only/module-config.d/"
 echo "    ...  or samples to be copied to 'module-config.d' in:"
-echo "       /usr/local/pbase-data/pbase-*/module-config-samples/"
-echo "    Modify these default configurations if needed."
-echo ""
-echo "Next step - recommended - set the defaultEmailAddress in pbase_repo.json"
-echo "                          also set defaultDesktopUsername for desktop usage"
-echo ""
-echo "  vi /usr/local/pbase-data/admin-only/module-config.d/pbase_repo.json"
-echo ""
+echo "        /usr/local/pbase-data/pbase-*/module-config-samples/"
 
+if [[ ${ROOT_DEFAULT_TEXTFILE_USED} == "true" ]] ; then
+  echo "    Populated from text files:  /root/DEFAULT-*"
+  echo "        /usr/local/pbase-data/admin-only/module-config.d/pbase_repo.json"
+else
+  echo "Next step - recommended - set the defaultEmailAddress in pbase_repo.json"
+  echo "                          set defaultDesktopUsername for desktop app usage"
+  echo "                          set defaultSubDomain to customize subdomain"
+  echo ""
+  echo "  cd /usr/local/pbase-data/admin-only/module-config.d"
+  echo "  vi pbase_repo.json"
+fi
+
+echo ""
 
 %preun
 echo "rpm preuninstall"

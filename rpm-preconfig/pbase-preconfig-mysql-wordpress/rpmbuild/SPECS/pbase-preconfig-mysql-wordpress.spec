@@ -34,6 +34,7 @@ fail() {
     echo "ERROR: $1"
     exit 1
 }
+
 ## config is stored in json file with root-only permissions
 ## it can be one of two places:
 ##     /usr/local/pbase-data/admin-only/pbase_module_config.json
@@ -125,15 +126,41 @@ check_linux_version() {
   fi
 }
 
+setFieldInJsonModuleConfig() {
+  NEWVALUE="$1"
+  MODULE="$2"
+  FULLFIELDNAME="$3"
+  MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
+
+  SOURCE_DIR="$4"
+  if [[ "$SOURCE_DIR" == "" ]]; then
+    SOURCE_DIR="$MODULE_CONFIG_DIR"
+  fi
+
+  CONFIG_FILE_NAME="${MODULE}.json"
+  TEMPLATE_JSON_FILE="${SOURCE_DIR}/${CONFIG_FILE_NAME}"
+  /bin/cp -f "${TEMPLATE_JSON_FILE}" "/tmp/${CONFIG_FILE_NAME}"
+
+  ## set a value in the json file
+  PREFIX="jq '.${MODULE}.${FULLFIELDNAME}= \""
+  SUFFIX="\"'"
+  JQ_COMMAND="${PREFIX}${NEWVALUE}${SUFFIX} /tmp/${CONFIG_FILE_NAME} > ${MODULE_CONFIG_DIR}/${CONFIG_FILE_NAME}"
+
+  ##echo "Executing:  eval $JQ_COMMAND"
+  eval $JQ_COMMAND
+
+  /bin/rm -f "/tmp/${CONFIG_FILE_NAME}"
+}
+
+echo "PBase pre-configuration for MySQL and WordPress"
 
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
 
-echo "PBase pre-configuration for MySQL and WordPress"
-echo ""
 echo "hostname:                $THISHOSTNAME"
 echo "domainname:              $THISDOMAINNAME"
 
+check_linux_version
 
 MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
 MODULE_SAMPLES_DIR="/usr/local/pbase-data/pbase-preconfig-mysql-wordpress/module-config-samples"
@@ -147,6 +174,8 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config values from JSON file
 parseConfig "DEFAULT_EMAIL_ADDRESS" ".pbase_repo.defaultEmailAddress" ""
+parseConfig "DEFAULT_SMTP_PASSWORD" ".pbase_repo.defaultSmtpPassword" ""
+parseConfig "DEFAULT_SUB_DOMAIN" ".pbase_repo.defaultSubDomain" ""
 
 APACHE_CONFIG_FILENAME="pbase_apache.json"
 DB_CONFIG_FILENAME="pbase_mysql.json"
@@ -159,6 +188,27 @@ WORDPRESS_CONFIG_FILENAME="pbase_wordpress.json"
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${LETSENCRYPT_CONFIG_FILENAME}  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${SMTP_CONFIG_FILENAME}  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${WORDPRESS_CONFIG_FILENAME}  ${MODULE_CONFIG_DIR}/
+
+echo "Let's Encrypt defaults:  ${MODULE_CONFIG_DIR}/pbase_lets_encrypt.json"
+
+if [[ "${DEFAULT_EMAIL_ADDRESS}" != "" ]] ; then
+  echo "emailAddress:            ${DEFAULT_EMAIL_ADDRESS}"
+  setFieldInJsonModuleConfig ${DEFAULT_EMAIL_ADDRESS} pbase_lets_encrypt emailAddress
+  setFieldInJsonModuleConfig ${DEFAULT_EMAIL_ADDRESS} pbase_apache serverAdmin
+fi
+
+if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] ; then
+  echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN}"
+  setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_lets_encrypt urlSubDomain
+  setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_wordpress wordpressUriBase
+fi
+
+echo "SMTP defaults:           ${MODULE_CONFIG_DIR}/pbase_smtp.json"
+
+if [[ "${DEFAULT_SMTP_PASSWORD}" != "" ]] ; then
+  echo "defaultSmtpPassword:     ${DEFAULT_SMTP_PASSWORD}"
+  setFieldInJsonModuleConfig ${DEFAULT_SMTP_PASSWORD} pbase_smtp password
+fi
 
 ## use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars
 RAND_PW_USER="u$(date +%s | sha256sum | base64 | head -c 8)"
@@ -178,20 +228,10 @@ if [[ -e "${MODULE_CONFIG_DIR}/pbase_smtp.json" ]]; then
   sed -i "s/example.com/${THISDOMAINNAME}/" "${MODULE_CONFIG_DIR}/pbase_smtp.json"
 fi
 
-## when defined in pbase_repo.json use that to provide the Let's Encrypt email address
-if [[ $DEFAULT_EMAIL_ADDRESS != "" ]]; then
-  echo "Setting 'defaultEmailAddress' field in pbase_apache.json"
-  sed -i "s/yoursysadmin@yourrealmail.com/${DEFAULT_EMAIL_ADDRESS}/" "${MODULE_CONFIG_DIR}/pbase_apache.json"
-
-  echo "Setting 'defaultEmailAddress' field in pbase_lets_encrypt.json"
-  echo "                         ${DEFAULT_EMAIL_ADDRESS}"
-  sed -i "s/yoursysadmin@yourrealmail.com/${DEFAULT_EMAIL_ADDRESS}/" "${MODULE_CONFIG_DIR}/pbase_lets_encrypt.json"
-fi
-
 
 echo ""
 echo "Default configuration files for Wordpress:"
-echo "Next step - optional - customize your configuration"
+echo "Next step - optional - review your configuration"
 echo "            change the Let's Encrypt admin email if needed "
 echo "              by editing pbase_lets_encrypt.json"
 echo "            change the Apache admin email if needed "

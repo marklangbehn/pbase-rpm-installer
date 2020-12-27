@@ -118,7 +118,7 @@ if [[ $DEFAULT_EMAIL_ADDRESS != "" ]]; then
   sed -i "s/yoursysadmin@yourrealmail.com/${DEFAULT_EMAIL_ADDRESS}/" "${MODULE_CONFIG_DIR}/pbase_apache.json"
 
   echo ""
-  echo "Next step - optional - change the Apache server default config by"
+  echo "Next step - optional - review the Apache server default config by"
   echo "    editing the pbase_apache.json file. For example:"
   echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
 else

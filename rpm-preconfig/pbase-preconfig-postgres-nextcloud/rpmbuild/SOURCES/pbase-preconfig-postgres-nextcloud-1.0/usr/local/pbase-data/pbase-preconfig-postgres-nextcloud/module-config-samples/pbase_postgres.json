@@ -11,7 +11,9 @@
           {
             "name": "nextcloud",
             "user": "admin",
-            "password": "shomeddata"
+            "password": "shomeddata",
+            "characterSet": "UTF8",
+            "grantCreateDatabase": false
           }
         ]
       }

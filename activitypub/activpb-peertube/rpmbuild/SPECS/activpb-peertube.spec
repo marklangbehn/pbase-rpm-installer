@@ -280,7 +280,7 @@ ls -l /usr/local/bin/yq
 
 ## download peertube package from github
 cd /var/www/peertube/versions
-echo "Downloading Peertube:    $VERSION"
+echo "Downloading Peertube"
 
 if [[ "${PEERTUBE_VER_CONFIG}" != "" ]]; then
   VERSION="${PEERTUBE_VER_CONFIG}"

@@ -1,8 +1,10 @@
 {
   "pbase_repo": {
     "defaultEmailAddress": "",
-    "defaultDesktopUsername": "",
+    "defaultSmtpServer": "",
+    "defaultSmtpUsername": "",
     "defaultSmtpPassword": "",
-    "defaultSubDomain": ""
+    "defaultSubDomain": "",
+    "defaultDesktopUsername": ""
   }
 }

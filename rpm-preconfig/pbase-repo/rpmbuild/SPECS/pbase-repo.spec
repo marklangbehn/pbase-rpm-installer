@@ -185,6 +185,9 @@ service_exists() {
 echo ""
 echo "PBase repository bootstrap rpm"
 
+THISHOSTNAME="$(hostname)"
+THISDOMAINNAME="$(hostname -d)"
+
 check_linux_version
 
 ## look for either separate config file "pbase_apache.json" or all-in-one file: "pbase_module_config.json"
@@ -221,44 +224,83 @@ ROOT_DEFAULT_TEXTFILE_USED="false"
 PBASE_REPO_JSON_PATH="/usr/local/pbase-data/admin-only/module-config.d/pbase_repo.json"
 
 ## use 'read' command to populate the default variables
-read -r DEFAULT_EMAIL_ADDRESS < /root/DEFAULT_EMAIL_ADDRESS.txt
-read -r DEFAULT_DESKTOP_USERNAME < /root/DEFAULT_DESKTOP_USERNAME.txt
-read -r DEFAULT_SMTP_PASSWORD < /root/DEFAULT_SMTP_PASSWORD.txt
-read -r DEFAULT_SUB_DOMAIN < /root/DEFAULT_SUB_DOMAIN.txt
+DEFAULT_EMAIL_ADDRESS=""
+DEFAULT_SMTP_SERVER=""
+DEFAULT_SMTP_USERNAME=""
+DEFAULT_SMTP_PASSWORD=""
+DEFAULT_SUB_DOMAIN=""
+DEFAULT_DESKTOP_USERNAME=""
+
+if [[ -e /root/DEFAULT_EMAIL_ADDRESS.txt ]] ; then
+  read -r DEFAULT_EMAIL_ADDRESS < /root/DEFAULT_EMAIL_ADDRESS.txt
+fi
+
+if [[ -e /root/DEFAULT_SMTP_SERVER.txt ]] ; then
+  read -r DEFAULT_SMTP_SERVER < /root/DEFAULT_SMTP_SERVER.txt
+fi
+
+if [[ -e /root/DEFAULT_SMTP_USERNAME.txt ]] ; then
+  read -r DEFAULT_SMTP_USERNAME < /root/DEFAULT_SMTP_USERNAME.txt
+fi
+
+if [[ -e /root/DEFAULT_SMTP_PASSWORD.txt ]] ; then
+  read -r DEFAULT_SMTP_PASSWORD < /root/DEFAULT_SMTP_PASSWORD.txt
+fi
+
+if [[ -e /root/DEFAULT_SUB_DOMAIN.txt ]] ; then
+  read -r DEFAULT_SUB_DOMAIN < /root/DEFAULT_SUB_DOMAIN.txt
+fi
+
+if [[ -e /root/DEFAULT_DESKTOP_USERNAME.txt ]] ; then
+  read -r DEFAULT_DESKTOP_USERNAME < /root/DEFAULT_DESKTOP_USERNAME.txt
+fi
+
+## assume default smtp-username of 'postmaster@mail...' in case where password is given, but smtp-username is empty
+if [[ "${DEFAULT_SMTP_USERNAME}" == "" ]] && [[ "${DEFAULT_SMTP_PASSWORD}" != "" ]] ; then
+  DEFAULT_SMTP_USERNAME="postmaster@mail.${THISDOMAINNAME}"
+fi
+
 
 ## when a default was specified copy it to the json file used by other packages
 if [[ "${DEFAULT_EMAIL_ADDRESS}" != "" ]] ; then
   sed -i "s/defaultEmailAddress\": \"\"/defaultEmailAddress\": \"${DEFAULT_EMAIL_ADDRESS}\"/" ${PBASE_REPO_JSON_PATH}
-
-  echo "Reading from text file:  /root/DEFAULT_EMAIL_ADDRESS.txt"
+  echo "Reading:                 /root/DEFAULT_EMAIL_ADDRESS.txt"
   echo "defaultEmailAddress:     ${DEFAULT_EMAIL_ADDRESS}"
   ROOT_DEFAULT_TEXTFILE_USED="true"
 fi
 
-
-if [[ "${DEFAULT_DESKTOP_USERNAME}" != "" ]] ; then
-  sed -i "s/defaultDesktopUsername\": \"\"/defaultDesktopUsername\": \"${DEFAULT_DESKTOP_USERNAME}\"/" ${PBASE_REPO_JSON_PATH}
-
-  echo "Reading from text file:  /root/DEFAULT_DESKTOP_USERNAME.txt"
-  echo "defaultDesktopUsername:  ${DEFAULT_DESKTOP_USERNAME}"
+if [[ "${DEFAULT_SMTP_SERVER}" != "" ]] ; then
+  sed -i "s/defaultSmtpServer\": \"\"/defaultSmtpServer\": \"${DEFAULT_SMTP_SERVER}\"/" ${PBASE_REPO_JSON_PATH}
+  echo "Reading:                 /root/DEFAULT_SMTP_SERVER.txt"
+  echo "defaultSmtpServer:       ${DEFAULT_SMTP_SERVER}"
   ROOT_DEFAULT_TEXTFILE_USED="true"
 fi
 
+if [[ "${DEFAULT_SMTP_USERNAME}" != "" ]] ; then
+  sed -i "s/defaultSmtpUsername\": \"\"/defaultSmtpUsername\": \"${DEFAULT_SMTP_USERNAME}\"/" ${PBASE_REPO_JSON_PATH}
+  echo "Reading:                 /root/DEFAULT_SMTP_USERNAME.txt"
+  echo "defaultSmtpUsername:     ${DEFAULT_SMTP_USERNAME}"
+  ROOT_DEFAULT_TEXTFILE_USED="true"
+fi
 
 if [[ "${DEFAULT_SMTP_PASSWORD}" != "" ]] ; then
   sed -i "s/defaultSmtpPassword\": \"\"/defaultSmtpPassword\": \"${DEFAULT_SMTP_PASSWORD}\"/" ${PBASE_REPO_JSON_PATH}
-
-  echo "Reading from text file:  /root/DEFAULT_SMTP_PASSWORD.txt"
+  echo "Reading:                 /root/DEFAULT_SMTP_PASSWORD.txt"
   echo "defaultSmtpPassword:     ${DEFAULT_SMTP_PASSWORD}"
   ROOT_DEFAULT_TEXTFILE_USED="true"
 fi
 
-
 if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] ; then
   sed -i "s/defaultSubDomain\": \"\"/defaultSubDomain\": \"${DEFAULT_SUB_DOMAIN}\"/" ${PBASE_REPO_JSON_PATH}
-
-  echo "Reading from text file:  /root/DEFAULT_SUB_DOMAIN.txt"
+  echo "Reading:                 /root/DEFAULT_SUB_DOMAIN.txt"
   echo "defaultSubDomain:        ${DEFAULT_SUB_DOMAIN}"
+  ROOT_DEFAULT_TEXTFILE_USED="true"
+fi
+
+if [[ "${DEFAULT_DESKTOP_USERNAME}" != "" ]] ; then
+  sed -i "s/defaultDesktopUsername\": \"\"/defaultDesktopUsername\": \"${DEFAULT_DESKTOP_USERNAME}\"/" ${PBASE_REPO_JSON_PATH}
+  echo "Reading:                 /root/DEFAULT_DESKTOP_USERNAME.txt"
+  echo "defaultDesktopUsername:  ${DEFAULT_DESKTOP_USERNAME}"
   ROOT_DEFAULT_TEXTFILE_USED="true"
 fi
 
@@ -380,9 +422,11 @@ if [[ ${ROOT_DEFAULT_TEXTFILE_USED} == "true" ]] ; then
   echo "    Populated from text files:  /root/DEFAULT-*"
   echo "        /usr/local/pbase-data/admin-only/module-config.d/pbase_repo.json"
 else
-  echo "Next step - recommended - set the defaultEmailAddress in pbase_repo.json"
-  echo "                          set defaultDesktopUsername for desktop app usage"
-  echo "                          set defaultSubDomain to customize subdomain"
+  echo "Next step - optional - set the defaultEmailAddress in pbase_repo.json"
+  echo "                       set the defaultSmtpServer for outgoing email"
+  echo "                       set defaultSmtpPassword for outgoing email"
+  echo "                       set defaultSubDomain to customize subdomain"
+  echo "                       set defaultDesktopUsername for desktop app usage"
   echo ""
   echo "  cd /usr/local/pbase-data/admin-only/module-config.d"
   echo "  vi pbase_repo.json"

@@ -28,12 +28,13 @@ rm -rf "$RPM_BUILD_ROOT"
 %pre
 
 %post
-echo "rpm postinstall $1"
+#echo "rpm postinstall $1"
 
 fail() {
     echo "ERROR: $1"
     exit 1
 }
+
 ## config is stored in json file with root-only permissions
 ## it can be one of two places:
 ##     /usr/local/pbase-data/admin-only/pbase_module_config.json
@@ -125,6 +126,31 @@ check_linux_version() {
   fi
 }
 
+setFieldInJsonModuleConfig() {
+  NEWVALUE="$1"
+  MODULE="$2"
+  FULLFIELDNAME="$3"
+  MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
+
+  SOURCE_DIR="$4"
+  if [[ "$SOURCE_DIR" == "" ]]; then
+    SOURCE_DIR="$MODULE_CONFIG_DIR"
+  fi
+
+  CONFIG_FILE_NAME="${MODULE}.json"
+  TEMPLATE_JSON_FILE="${SOURCE_DIR}/${CONFIG_FILE_NAME}"
+  /bin/cp -f "${TEMPLATE_JSON_FILE}" "/tmp/${CONFIG_FILE_NAME}"
+
+  ## set a value in the json file
+  PREFIX="jq '.${MODULE}.${FULLFIELDNAME}= \""
+  SUFFIX="\"'"
+  JQ_COMMAND="${PREFIX}${NEWVALUE}${SUFFIX} /tmp/${CONFIG_FILE_NAME} > ${MODULE_CONFIG_DIR}/${CONFIG_FILE_NAME}"
+
+  ##echo "Executing:  eval $JQ_COMMAND"
+  eval $JQ_COMMAND
+
+  /bin/rm -f "/tmp/${CONFIG_FILE_NAME}"
+}
 
 echo "PBase Postgres create config preset user and DB name for use by activpb-peertube"
 
@@ -146,15 +172,54 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config values from JSON file
 parseConfig "DEFAULT_EMAIL_ADDRESS" ".pbase_repo.defaultEmailAddress" ""
+parseConfig "DEFAULT_SMTP_SERVER" ".pbase_repo.defaultSmtpServer" ""
+parseConfig "DEFAULT_SMTP_USERNAME" ".pbase_repo.defaultSmtpUsername" ""
+parseConfig "DEFAULT_SMTP_PASSWORD" ".pbase_repo.defaultSmtpPassword" ""
+parseConfig "DEFAULT_SUB_DOMAIN" ".pbase_repo.defaultSubDomain" ""
+
+if [[ "${DEFAULT_SMTP_SERVER}" == "" ]] && [[ "${DEFAULT_SMTP_PASSWORD}" != "" ]] ; then
+  ## when smtp password was given, but not server then assume mailgun
+  DEFAULT_SMTP_SERVER="smtp.mailgun.org"
+fi
+
 
 DB_CONFIG_FILENAME="pbase_postgres.json"
-
 
 echo "Peertube config:         ${MODULE_CONFIG_DIR}/activpb_peertube.json"
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_lets_encrypt.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/activpb_peertube.json  ${MODULE_CONFIG_DIR}/
-/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_postgres.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_smtp.json  ${MODULE_CONFIG_DIR}/
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_postgres.json  ${MODULE_CONFIG_DIR}/
+
+echo "Let's Encrypt defaults:  ${MODULE_CONFIG_DIR}/pbase_lets_encrypt.json"
+
+if [[ "${DEFAULT_EMAIL_ADDRESS}" != "" ]] ; then
+  echo "emailAddress:            ${DEFAULT_EMAIL_ADDRESS}"
+  setFieldInJsonModuleConfig ${DEFAULT_EMAIL_ADDRESS} pbase_lets_encrypt emailAddress
+fi
+
+if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] ; then
+  echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN}"
+  setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_lets_encrypt urlSubDomain
+  setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} activpb_peertube urlSubDomain
+fi
+
+echo "SMTP defaults:           ${MODULE_CONFIG_DIR}/pbase_smtp.json"
+
+if [[ "${DEFAULT_SMTP_SERVER}" != "" ]] ; then
+  echo "defaultSmtpServer:       ${DEFAULT_SMTP_SERVER}"
+  setFieldInJsonModuleConfig ${DEFAULT_SMTP_SERVER} pbase_smtp server
+fi
+
+if [[ "${DEFAULT_SMTP_USERNAME}" != "" ]] ; then
+  echo "defaultSmtpUsername:     ${DEFAULT_SMTP_USERNAME}"
+  setFieldInJsonModuleConfig ${DEFAULT_SMTP_USERNAME} pbase_smtp login
+fi
+
+if [[ "${DEFAULT_SMTP_PASSWORD}" != "" ]] ; then
+  echo "defaultSmtpPassword:     ${DEFAULT_SMTP_PASSWORD}"
+  setFieldInJsonModuleConfig ${DEFAULT_SMTP_PASSWORD} pbase_smtp password
+fi
 
 
 ## use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars
@@ -167,27 +232,22 @@ sed -i "s/shomeddata/${RAND_PW_USER}/" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAM
 ## provide domainname in smtp config file
 sed -i "s/example.com/${THISDOMAINNAME}/" "${MODULE_CONFIG_DIR}/pbase_smtp.json"
 
-## when defined in pbase_repo.json use that to provide the Let's Encrypt email address
-if [[ $DEFAULT_EMAIL_ADDRESS != "" ]]; then
-  echo "Setting 'defaultEmailAddress' in pbase_lets_encrypt.json"
-  echo "                         ${DEFAULT_EMAIL_ADDRESS}"
-  sed -i "s/yoursysadmin@yourrealmail.com/${DEFAULT_EMAIL_ADDRESS}/" "${MODULE_CONFIG_DIR}/pbase_lets_encrypt.json"
-fi
-
 
 echo ""
 echo "Postgres, SMTP and Let's Encrypt module config files for Peertube added."
-echo "Next step - required - customize your configuration by editing these JSON files:"
+echo "Next step - optional - review the configuration defaults provided"
+echo "    under 'module-config.d' by editing their JSON text files. For example:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
 echo "  vi pbase_lets_encrypt.json"
-echo "  vi activpb_peertube.json"
 echo "  vi pbase_postgres.json"
 echo "  vi pbase_smtp.json"
+echo "  vi activpb_peertube.json"
 echo ""
 
-echo "Next step - optional install local postgres service with:"
+echo "Next step - install Postgres and Peertube application with:"
 echo "  yum -y install pbase-postgres"
+echo "  yum -y install activpb-peertube"
 echo ""
 
 %files

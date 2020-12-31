@@ -42,16 +42,8 @@ fi
 echo "Checking rbenv"
 su - mastodon -c "rbenv --version"
 
-echo "Checking out Mastodon source code from github"
-echo "Mastodon code:           /home/mastodon/live"
-
-## PULL SOURCE CODE
-cd /home/mastodon/
-su - mastodon -c "git clone https://github.com/tootsuite/mastodon.git live"
-
-cd /home/mastodon/live/
-echo "Checkout latest release:"
-su - mastodon -c "cd /home/mastodon/live  ;  git checkout $(git tag -l | grep -v 'rc[0-9]*$' | sort -V | tail -n 1)"
+echo "Mastodon source code from Github"
+echo "Mastodon base directory: /home/mastodon/live"
 
 echo ""
 

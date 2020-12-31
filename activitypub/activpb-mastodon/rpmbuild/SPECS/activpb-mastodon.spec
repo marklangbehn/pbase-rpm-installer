@@ -128,6 +128,9 @@ PBASE_CONFIG_FILENAME="activpb_mastodon.json"
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config value from JSON file
+## version to download
+parseConfig "MASTODON_VER_CONFIG" ".activpb_mastodon.mastodonVersion" ""
+
 parseConfig "HTTP_PORT" ".activpb_mastodon.port" "3000"
 parseConfig "ADD_NGINX_PROXY" ".activpb_mastodon.addNgnixProxy" "true"
 parseConfig "URL_SUB_DOMAIN" ".activpb_mastodon.urlSubDomain" "mastodon"
@@ -469,7 +472,8 @@ echo "Mastodon configuration:  /home/mastodon/live/.env.production"
 
 EXTERNALURL="https://${FULLDOMAINNAME}"
 echo ""
-echo "Next Step - required - login to your Mastodon instance now to create your admin account"
+echo "Next Step - required - open your Mastodon instance now at the URL below"
+echo "                       and click 'Sign Up' to create your administrator account"
 echo ""
 
 echo "Mastodon Ready:            $EXTERNALURL"

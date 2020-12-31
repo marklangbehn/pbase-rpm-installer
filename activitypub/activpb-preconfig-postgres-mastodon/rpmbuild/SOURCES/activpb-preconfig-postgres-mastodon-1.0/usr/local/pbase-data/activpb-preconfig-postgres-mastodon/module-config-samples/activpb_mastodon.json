@@ -1,5 +1,6 @@
 {
   "activpb_mastodon" : {
+    "mastodonVersion": "",
     "port": 3000,
     "addNgnixProxy": true,
     "urlSubDomain": "mastodon",

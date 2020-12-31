@@ -172,8 +172,16 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config values from JSON file
 parseConfig "DEFAULT_EMAIL_ADDRESS" ".pbase_repo.defaultEmailAddress" ""
+parseConfig "DEFAULT_SMTP_SERVER" ".pbase_repo.defaultSmtpServer" ""
+parseConfig "DEFAULT_SMTP_USERNAME" ".pbase_repo.defaultSmtpUsername" ""
 parseConfig "DEFAULT_SMTP_PASSWORD" ".pbase_repo.defaultSmtpPassword" ""
 parseConfig "DEFAULT_SUB_DOMAIN" ".pbase_repo.defaultSubDomain" ""
+
+if [[ "${DEFAULT_SMTP_SERVER}" == "" ]] && [[ "${DEFAULT_SMTP_PASSWORD}" != "" ]] ; then
+  ## when smtp password was given, but not server then assume mailgun
+  DEFAULT_SMTP_SERVER="smtp.mailgun.org"
+fi
+
 
 DB_CONFIG_FILENAME="pbase_postgres.json"
 
@@ -190,13 +198,24 @@ if [[ "${DEFAULT_EMAIL_ADDRESS}" != "" ]] ; then
   setFieldInJsonModuleConfig ${DEFAULT_EMAIL_ADDRESS} pbase_lets_encrypt emailAddress
 fi
 
-if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] ; then
+## when empty string in subdomain
+if [[ "${DEFAULT_SUB_DOMAIN}" != "null" ]] ; then
   echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN}"
-  setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_lets_encrypt urlSubDomain
-  setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} activpb_mastodon urlSubDomain
+  setFieldInJsonModuleConfig "${DEFAULT_SUB_DOMAIN}" pbase_lets_encrypt urlSubDomain
+  setFieldInJsonModuleConfig "${DEFAULT_SUB_DOMAIN}" activpb_mastodon urlSubDomain
 fi
 
 echo "SMTP defaults:           ${MODULE_CONFIG_DIR}/pbase_smtp.json"
+
+if [[ "${DEFAULT_SMTP_SERVER}" != "" ]] ; then
+  echo "defaultSmtpServer:       ${DEFAULT_SMTP_SERVER}"
+  setFieldInJsonModuleConfig ${DEFAULT_SMTP_SERVER} pbase_smtp server
+fi
+
+if [[ "${DEFAULT_SMTP_USERNAME}" != "" ]] ; then
+  echo "defaultSmtpUsername:     ${DEFAULT_SMTP_USERNAME}"
+  setFieldInJsonModuleConfig ${DEFAULT_SMTP_USERNAME} pbase_smtp login
+fi
 
 if [[ "${DEFAULT_SMTP_PASSWORD}" != "" ]] ; then
   echo "defaultSmtpPassword:     ${DEFAULT_SMTP_PASSWORD}"
@@ -215,6 +234,9 @@ sed -i "s/shomeddata/${RAND_PW_USER}/" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAM
 sed -i "s/example.com/${THISDOMAINNAME}/" "${MODULE_CONFIG_DIR}/pbase_smtp.json"
 
 
+#if [[ "${REDHAT_RELEASE_DIGIT}" == "7" ]]; then
+#fi
+
 echo ""
 echo "Postgres, SMTP and Let's Encrypt module config files for Mastodon added."
 echo "Next step - optional - review the configuration defaults provided"
@@ -222,9 +244,9 @@ echo "    under 'module-config.d' by editing their JSON text files. For example:
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
 echo "  vi pbase_lets_encrypt.json"
-echo "  vi activpb_mastodon.json"
 echo "  vi pbase_postgres.json"
 echo "  vi pbase_smtp.json         ## must contain valid SMTP credentials"
+echo "  vi activpb_mastodon.json"
 echo ""
 
 echo "Next step - install Postgres and Mastodon application with:"

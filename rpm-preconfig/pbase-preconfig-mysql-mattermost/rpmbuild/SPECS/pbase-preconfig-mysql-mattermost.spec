@@ -174,8 +174,15 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config values from JSON file
 parseConfig "DEFAULT_EMAIL_ADDRESS" ".pbase_repo.defaultEmailAddress" ""
+parseConfig "DEFAULT_SMTP_SERVER" ".pbase_repo.defaultSmtpServer" ""
+parseConfig "DEFAULT_SMTP_USERNAME" ".pbase_repo.defaultSmtpUsername" ""
 parseConfig "DEFAULT_SMTP_PASSWORD" ".pbase_repo.defaultSmtpPassword" ""
 parseConfig "DEFAULT_SUB_DOMAIN" ".pbase_repo.defaultSubDomain" ""
+
+if [[ "${DEFAULT_SMTP_SERVER}" == "" ]] && [[ "${DEFAULT_SMTP_PASSWORD}" != "" ]] ; then
+  ## when smtp password was given, but not server then assume mailgun
+  DEFAULT_SMTP_SERVER="smtp.mailgun.org"
+fi
 
 DB_CONFIG_FILENAME="pbase_mysql80community.json"
 mkdir -p ${MODULE_CONFIG_DIR}
@@ -212,6 +219,21 @@ fi
 
 echo "SMTP defaults:           ${MODULE_CONFIG_DIR}/pbase_smtp.json"
 
+## replace domainname in smtp config template file
+if [[ -e "${MODULE_CONFIG_DIR}/pbase_smtp.json" ]]; then
+  sed -i "s/example.com/${THISDOMAINNAME}/" "${MODULE_CONFIG_DIR}/pbase_smtp.json"
+fi
+
+if [[ "${DEFAULT_SMTP_SERVER}" != "" ]] ; then
+  echo "defaultSmtpServer:       ${DEFAULT_SMTP_SERVER}"
+  setFieldInJsonModuleConfig ${DEFAULT_SMTP_SERVER} pbase_smtp server
+fi
+
+if [[ "${DEFAULT_SMTP_USERNAME}" != "" ]] ; then
+  echo "defaultSmtpUsername:     ${DEFAULT_SMTP_USERNAME}"
+  setFieldInJsonModuleConfig ${DEFAULT_SMTP_USERNAME} pbase_smtp login
+fi
+
 if [[ "${DEFAULT_SMTP_PASSWORD}" != "" ]] ; then
   echo "defaultSmtpPassword:     ${DEFAULT_SMTP_PASSWORD}"
   setFieldInJsonModuleConfig ${DEFAULT_SMTP_PASSWORD} pbase_smtp password
@@ -236,18 +258,19 @@ fi
 
 
 echo ""
-echo "MySQL and Let's Encrypt module config files for Mattermost added:"
+echo "MySQL, SMTP and Let's Encrypt module config files for Mattermost added."
 echo "Next step - optional - review the configuration defaults provided"
 echo "    under 'module-config.d' by editing their JSON text files. For example:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
 echo "  vi ${DB_CONFIG_FILENAME}"
 echo "  vi pbase_lets_encrypt.json"
-echo "  vi pbase_smtp.json         ## must contain valid SMTP credentials"
+echo "  vi pbase_smtp.json"
 echo "  vi pbase_mattermost.json"
 echo ""
 
-echo "Next step - install mysql service with:"
+echo "Next step - install MySQL and Mattermost application with:"
+echo ""
 echo "  yum -y install pbase-mysql"
 echo "  yum -y install pbase-mattermost"
 echo ""

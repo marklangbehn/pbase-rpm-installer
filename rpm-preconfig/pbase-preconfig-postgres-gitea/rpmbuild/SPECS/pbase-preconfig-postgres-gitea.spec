@@ -172,8 +172,15 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config values from JSON file
 parseConfig "DEFAULT_EMAIL_ADDRESS" ".pbase_repo.defaultEmailAddress" ""
+parseConfig "DEFAULT_SMTP_SERVER" ".pbase_repo.defaultSmtpServer" ""
+parseConfig "DEFAULT_SMTP_USERNAME" ".pbase_repo.defaultSmtpUsername" ""
 parseConfig "DEFAULT_SMTP_PASSWORD" ".pbase_repo.defaultSmtpPassword" ""
 parseConfig "DEFAULT_SUB_DOMAIN" ".pbase_repo.defaultSubDomain" ""
+
+if [[ "${DEFAULT_SMTP_SERVER}" == "" ]] && [[ "${DEFAULT_SMTP_PASSWORD}" != "" ]] ; then
+  ## when smtp password was given, but not server then assume mailgun
+  DEFAULT_SMTP_SERVER="smtp.mailgun.org"
+fi
 
 DB_CONFIG_FILENAME="pbase_postgres.json"
 GITEA_CONFIG_FILENAME="pbase_gitea.json"
@@ -190,6 +197,7 @@ echo "Let's Encrypt defaults:  ${MODULE_CONFIG_DIR}/pbase_lets_encrypt.json"
 if [[ "${DEFAULT_EMAIL_ADDRESS}" != "" ]] ; then
   echo "emailAddress:            ${DEFAULT_EMAIL_ADDRESS}"
   setFieldInJsonModuleConfig ${DEFAULT_EMAIL_ADDRESS} pbase_lets_encrypt emailAddress
+  setFieldInJsonModuleConfig ${DEFAULT_EMAIL_ADDRESS} pbase_apache serverAdmin
 fi
 
 if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] ; then
@@ -198,6 +206,21 @@ if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] ; then
 fi
 
 echo "SMTP defaults:           ${MODULE_CONFIG_DIR}/pbase_smtp.json"
+
+## replace domainname in smtp config template file
+if [[ -e "${MODULE_CONFIG_DIR}/pbase_smtp.json" ]]; then
+  sed -i "s/example.com/${THISDOMAINNAME}/" "${MODULE_CONFIG_DIR}/pbase_smtp.json"
+fi
+
+if [[ "${DEFAULT_SMTP_SERVER}" != "" ]] ; then
+  echo "defaultSmtpServer:       ${DEFAULT_SMTP_SERVER}"
+  setFieldInJsonModuleConfig ${DEFAULT_SMTP_SERVER} pbase_smtp server
+fi
+
+if [[ "${DEFAULT_SMTP_USERNAME}" != "" ]] ; then
+  echo "defaultSmtpUsername:     ${DEFAULT_SMTP_USERNAME}"
+  setFieldInJsonModuleConfig ${DEFAULT_SMTP_USERNAME} pbase_smtp login
+fi
 
 if [[ "${DEFAULT_SMTP_PASSWORD}" != "" ]] ; then
   echo "defaultSmtpPassword:     ${DEFAULT_SMTP_PASSWORD}"
@@ -215,18 +238,6 @@ echo "                         ${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}"
 ## provide random password in database config file
 sed -i "s/shomeddata/${RAND_PW_USER}/" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}"
 
-## provide domainname in smtp config file
-if [[ -e "${MODULE_CONFIG_DIR}/pbase_smtp.json" ]]; then
-  sed -i "s/example.com/${THISDOMAINNAME}/" "${MODULE_CONFIG_DIR}/pbase_smtp.json"
-fi
-
-## when defined in pbase_repo.json use that to provide the Let's Encrypt email address
-if [[ $DEFAULT_EMAIL_ADDRESS != "" ]]; then
-  echo "Setting 'defaultEmailAddress' in pbase_lets_encrypt.json"
-  echo "                         ${DEFAULT_EMAIL_ADDRESS}"
-  sed -i "s/yoursysadmin@yourrealmail.com/${DEFAULT_EMAIL_ADDRESS}/" "${MODULE_CONFIG_DIR}/pbase_lets_encrypt.json"
-  sed -i "s/yoursysadmin@yourrealmail.com/${DEFAULT_EMAIL_ADDRESS}/" "${MODULE_CONFIG_DIR}/pbase_apache.json"
-fi
 
 echo "Setting config with this server's domainname for use by pbase-gitea"
 echo "                         ${MODULE_CONFIG_DIR}/${GITEA_CONFIG_FILENAME}"
@@ -235,20 +246,21 @@ sed -i "s/pbase-foundation.com/${THISDOMAINNAME}/g" "${MODULE_CONFIG_DIR}/${GITE
 
 
 echo ""
-echo "Postgres module config files ready for Gitea:"
+echo "Postgres, SMTP and Let's Encrypt module config files for Gitea added."
 echo "Next step - optional - review the configuration defaults provided"
 echo "    under 'module-config.d' by editing their JSON text files. For example:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
-echo "  vi pbase_postgres.json"
 echo "  vi pbase_lets_encrypt.json"
-echo "  vi pbase_smtp.json         ## must contain valid SMTP credentials"
+echo "  vi pbase_postgres.json"
+echo "  vi pbase_smtp.json"
 echo "  vi pbase_gitea.json"
 echo ""
 
-echo "Next step - install postgresql service with:"
+echo "Next step - install Postgres and Gitea application with:"
 echo ""
 echo "  yum -y install pbase-postgres"
+echo "  yum -y install pbase-gitea"
 echo ""
 
 %files

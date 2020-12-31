@@ -174,8 +174,15 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config values from JSON file
 parseConfig "DEFAULT_EMAIL_ADDRESS" ".pbase_repo.defaultEmailAddress" ""
+parseConfig "DEFAULT_SMTP_SERVER" ".pbase_repo.defaultSmtpServer" ""
+parseConfig "DEFAULT_SMTP_USERNAME" ".pbase_repo.defaultSmtpUsername" ""
 parseConfig "DEFAULT_SMTP_PASSWORD" ".pbase_repo.defaultSmtpPassword" ""
 parseConfig "DEFAULT_SUB_DOMAIN" ".pbase_repo.defaultSubDomain" ""
+
+if [[ "${DEFAULT_SMTP_SERVER}" == "" ]] && [[ "${DEFAULT_SMTP_PASSWORD}" != "" ]] ; then
+  ## when smtp password was given, but not server then assume mailgun
+  DEFAULT_SMTP_SERVER="smtp.mailgun.org"
+fi
 
 APACHE_CONFIG_FILENAME="pbase_apache.json"
 DB_CONFIG_FILENAME="pbase_mysql.json"
@@ -205,10 +212,26 @@ fi
 
 echo "SMTP defaults:           ${MODULE_CONFIG_DIR}/pbase_smtp.json"
 
+## replace domainname in smtp config template file
+if [[ -e "${MODULE_CONFIG_DIR}/pbase_smtp.json" ]]; then
+  sed -i "s/example.com/${THISDOMAINNAME}/" "${MODULE_CONFIG_DIR}/pbase_smtp.json"
+fi
+
+if [[ "${DEFAULT_SMTP_SERVER}" != "" ]] ; then
+  echo "defaultSmtpServer:       ${DEFAULT_SMTP_SERVER}"
+  setFieldInJsonModuleConfig ${DEFAULT_SMTP_SERVER} pbase_smtp server
+fi
+
+if [[ "${DEFAULT_SMTP_USERNAME}" != "" ]] ; then
+  echo "defaultSmtpUsername:     ${DEFAULT_SMTP_USERNAME}"
+  setFieldInJsonModuleConfig ${DEFAULT_SMTP_USERNAME} pbase_smtp login
+fi
+
 if [[ "${DEFAULT_SMTP_PASSWORD}" != "" ]] ; then
   echo "defaultSmtpPassword:     ${DEFAULT_SMTP_PASSWORD}"
   setFieldInJsonModuleConfig ${DEFAULT_SMTP_PASSWORD} pbase_smtp password
 fi
+
 
 ## use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars
 RAND_PW_USER="u$(date +%s | sha256sum | base64 | head -c 8)"
@@ -219,29 +242,20 @@ echo "Setting database 'rootPassword' and 'password' in ${DB_CONFIG_FILENAME}"
 echo "       for MySQL root:   $RAND_PW_ROOT"
 echo "       for wordpress DB: $RAND_PW_USER"
 
-## provide random password in JSON config file
+## provide random password in database config file
 sed -i "s/shomeddata/${RAND_PW_USER}/" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}"
 sed -i "s/SHOmeddata/${RAND_PW_ROOT}/" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}"
 
-## provide domain name in smtp config file
+## provide domainname in smtp config file
 if [[ -e "${MODULE_CONFIG_DIR}/pbase_smtp.json" ]]; then
   sed -i "s/example.com/${THISDOMAINNAME}/" "${MODULE_CONFIG_DIR}/pbase_smtp.json"
 fi
 
 
 echo ""
-echo "Default configuration files for Wordpress:"
-echo "Next step - optional - review your configuration"
-echo "            change the Let's Encrypt admin email if needed "
-echo "              by editing pbase_lets_encrypt.json"
-echo "            change the Apache admin email if needed "
-echo "              by editing pbase_apache.json"
-echo "            change the default MySQL DB root password and application-db"
-echo "              config if needed by editing pbase_mysql.json"
-echo "            change the Wordpress URI to be a string like 'wordpress' or 'blog'"
-echo "              by editing the wordpressUriBase field in pbase_wordpress.json"
-echo "              default is '' to configures Wordpress as the root-level website"
-echo "            For example:"
+echo "MySQL, SMTP and Let's Encrypt module config files for Wordpress added."
+echo "Next step - optional - review the configuration defaults provided"
+echo "    under 'module-config.d' by editing their JSON text files. For example:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
 echo "  vi pbase_wordpress.json"
@@ -250,7 +264,7 @@ echo "  vi pbase_apache.json"
 echo "  vi pbase_mysql.json"
 echo ""
 
-echo "Next step - install MySQL and Wordpress application stack with:"
+echo "Next step - install MySQL and Wordpress application with:"
 echo ""
 echo "  yum -y install pbase-wordpress-allinone"
 echo ""

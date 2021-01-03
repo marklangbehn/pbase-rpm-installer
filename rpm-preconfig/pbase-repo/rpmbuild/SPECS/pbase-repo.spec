@@ -203,23 +203,11 @@ mkdir -p  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${PBASE_CONFIG_FILENAME}  ${MODULE_CONFIG_DIR}/
 
 echo "PBase config directory:  ${MODULE_SAMPLES_DIR}/"
+echo ""
 chmod 0600 ${MODULE_CONFIG_DIR}/
 chmod 0600 ${MODULE_SAMPLES_DIR}/${PBASE_CONFIG_FILENAME}
 
-
 ## These defaults may be provided in text files at /root level
-# echo "pbase.foundation@gmail.com" > /root/DEFAULT_EMAIL_ADDRESS.txt
-# echo "mark" > /root/DEFAULT_DESKTOP_USERNAME.txt
-# echo "app" > /root/DEFAULT_SUB_DOMAIN.txt
-#
-## copy simple text file properties at /root directory into the pbase_repo.json preconfig file
-#  "pbase_repo": {
-#    "defaultEmailAddress": "",
-#    "defaultDesktopUsername": "",
-#    "defaultSubDomain": ""
-#  }
-
-echo ""
 ROOT_DEFAULT_TEXTFILE_USED="false"
 PBASE_REPO_JSON_PATH="/usr/local/pbase-data/admin-only/module-config.d/pbase_repo.json"
 
@@ -247,23 +235,30 @@ if [[ -e /root/DEFAULT_SMTP_PASSWORD.txt ]] ; then
   read -r DEFAULT_SMTP_PASSWORD < /root/DEFAULT_SMTP_PASSWORD.txt
 fi
 
+## when subdomain text file exists, change 'null' literal to an empty string
+## needed to do subdomain substitution later
+
 if [[ -e /root/DEFAULT_SUB_DOMAIN.txt ]] ; then
   read -r DEFAULT_SUB_DOMAIN < /root/DEFAULT_SUB_DOMAIN.txt
+  sed -i "s/defaultSubDomain\": null/defaultSubDomain\": \"\"/" ${PBASE_REPO_JSON_PATH}
 fi
 
 if [[ -e /root/DEFAULT_DESKTOP_USERNAME.txt ]] ; then
   read -r DEFAULT_DESKTOP_USERNAME < /root/DEFAULT_DESKTOP_USERNAME.txt
 fi
 
-## assume default smtp-username of 'postmaster@mail...' in case where password is given, but smtp-username is empty
+## handle case where password is given, but smtp-username is empty. assume default smtp-username of 'postmaster@mail.example.com' typical for Mailgun
 if [[ "${DEFAULT_SMTP_USERNAME}" == "" ]] && [[ "${DEFAULT_SMTP_PASSWORD}" != "" ]] ; then
   DEFAULT_SMTP_USERNAME="postmaster@mail.${THISDOMAINNAME}"
 fi
 
 
 ## when a default was specified copy it to the json file used by other packages
+## existing value may be either a json 'null' literal, or an empty string: ""
+
 if [[ "${DEFAULT_EMAIL_ADDRESS}" != "" ]] ; then
   sed -i "s/defaultEmailAddress\": \"\"/defaultEmailAddress\": \"${DEFAULT_EMAIL_ADDRESS}\"/" ${PBASE_REPO_JSON_PATH}
+  sed -i "s/defaultEmailAddress\": null/defaultEmailAddress\": \"${DEFAULT_EMAIL_ADDRESS}\"/" ${PBASE_REPO_JSON_PATH}
   echo "Reading:                 /root/DEFAULT_EMAIL_ADDRESS.txt"
   echo "defaultEmailAddress:     ${DEFAULT_EMAIL_ADDRESS}"
   ROOT_DEFAULT_TEXTFILE_USED="true"
@@ -271,6 +266,7 @@ fi
 
 if [[ "${DEFAULT_SMTP_SERVER}" != "" ]] ; then
   sed -i "s/defaultSmtpServer\": \"\"/defaultSmtpServer\": \"${DEFAULT_SMTP_SERVER}\"/" ${PBASE_REPO_JSON_PATH}
+  sed -i "s/defaultSmtpServer\": null/defaultSmtpServer\": \"${DEFAULT_SMTP_SERVER}\"/" ${PBASE_REPO_JSON_PATH}
   echo "Reading:                 /root/DEFAULT_SMTP_SERVER.txt"
   echo "defaultSmtpServer:       ${DEFAULT_SMTP_SERVER}"
   ROOT_DEFAULT_TEXTFILE_USED="true"
@@ -278,6 +274,7 @@ fi
 
 if [[ "${DEFAULT_SMTP_USERNAME}" != "" ]] ; then
   sed -i "s/defaultSmtpUsername\": \"\"/defaultSmtpUsername\": \"${DEFAULT_SMTP_USERNAME}\"/" ${PBASE_REPO_JSON_PATH}
+  sed -i "s/defaultSmtpUsername\": null/defaultSmtpUsername\": \"${DEFAULT_SMTP_USERNAME}\"/" ${PBASE_REPO_JSON_PATH}
   echo "Reading:                 /root/DEFAULT_SMTP_USERNAME.txt"
   echo "defaultSmtpUsername:     ${DEFAULT_SMTP_USERNAME}"
   ROOT_DEFAULT_TEXTFILE_USED="true"
@@ -285,20 +282,31 @@ fi
 
 if [[ "${DEFAULT_SMTP_PASSWORD}" != "" ]] ; then
   sed -i "s/defaultSmtpPassword\": \"\"/defaultSmtpPassword\": \"${DEFAULT_SMTP_PASSWORD}\"/" ${PBASE_REPO_JSON_PATH}
+  sed -i "s/defaultSmtpPassword\": null/defaultSmtpPassword\": \"${DEFAULT_SMTP_PASSWORD}\"/" ${PBASE_REPO_JSON_PATH}
   echo "Reading:                 /root/DEFAULT_SMTP_PASSWORD.txt"
   echo "defaultSmtpPassword:     ${DEFAULT_SMTP_PASSWORD}"
   ROOT_DEFAULT_TEXTFILE_USED="true"
 fi
 
+QT="'"
+DEFAULT_SUB_DOMAIN_QUOTED=${QT}${DEFAULT_SUB_DOMAIN}${QT}
+
 if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] ; then
   sed -i "s/defaultSubDomain\": \"\"/defaultSubDomain\": \"${DEFAULT_SUB_DOMAIN}\"/" ${PBASE_REPO_JSON_PATH}
+  sed -i "s/defaultSubDomain\": null/defaultSubDomain\": \"${DEFAULT_SUB_DOMAIN}\"/" ${PBASE_REPO_JSON_PATH}
   echo "Reading:                 /root/DEFAULT_SUB_DOMAIN.txt"
-  echo "defaultSubDomain:        ${DEFAULT_SUB_DOMAIN}"
+  echo "defaultSubDomain:        ${DEFAULT_SUB_DOMAIN_QUOTED}"
   ROOT_DEFAULT_TEXTFILE_USED="true"
+else
+  if [[ -e /root/DEFAULT_SUB_DOMAIN.txt ]] ; then
+    echo "Reading:                 /root/DEFAULT_SUB_DOMAIN.txt"
+  fi
+  echo "defaultSubDomain:        ${DEFAULT_SUB_DOMAIN_QUOTED}"
 fi
 
 if [[ "${DEFAULT_DESKTOP_USERNAME}" != "" ]] ; then
   sed -i "s/defaultDesktopUsername\": \"\"/defaultDesktopUsername\": \"${DEFAULT_DESKTOP_USERNAME}\"/" ${PBASE_REPO_JSON_PATH}
+  sed -i "s/defaultDesktopUsername\": null/defaultDesktopUsername\": \"${DEFAULT_DESKTOP_USERNAME}\"/" ${PBASE_REPO_JSON_PATH}
   echo "Reading:                 /root/DEFAULT_DESKTOP_USERNAME.txt"
   echo "defaultDesktopUsername:  ${DEFAULT_DESKTOP_USERNAME}"
   ROOT_DEFAULT_TEXTFILE_USED="true"
@@ -306,7 +314,8 @@ fi
 
 
 if [[ ${ROOT_DEFAULT_TEXTFILE_USED} == "true" ]] ; then
-  echo "Updating config:         ${PBASE_REPO_JSON_PATH}"
+  echo ""
+  echo "Updated default config:  ${PBASE_REPO_JSON_PATH}"
   echo ""
 fi
 

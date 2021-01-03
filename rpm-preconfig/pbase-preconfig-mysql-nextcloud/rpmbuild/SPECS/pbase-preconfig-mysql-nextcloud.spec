@@ -180,12 +180,21 @@ parseConfig "DEFAULT_SMTP_USERNAME" ".pbase_repo.defaultSmtpUsername" ""
 parseConfig "DEFAULT_SMTP_PASSWORD" ".pbase_repo.defaultSmtpPassword" ""
 parseConfig "DEFAULT_SUB_DOMAIN" ".pbase_repo.defaultSubDomain" ""
 
+## when DEFAULT_SUB_DOMAIN.txt file is not present
+if [[ $DEFAULT_SUB_DOMAIN == null ]] ; then
+  echo "No DEFAULT_SUB_DOMAIN override file found, using 'nextcloud' for defaultSubDomain"
+  DEFAULT_SUB_DOMAIN="nextcloud"
+fi
+#echo "DEFAULT_SUB_DOMAIN:      ${DEFAULT_SUB_DOMAIN}"
+
+
+## when smtp password was given, but not server then assume mailgun
 if [[ "${DEFAULT_SMTP_SERVER}" == "" ]] && [[ "${DEFAULT_SMTP_PASSWORD}" != "" ]] ; then
-  ## when smtp password was given, but not server then assume mailgun
   DEFAULT_SMTP_SERVER="smtp.mailgun.org"
 fi
 
-#echo "Nextcloud config:       ${MODULE_CONFIG_DIR}/pbase_nextcloud.json"
+
+echo "Nextcloud config:        ${MODULE_CONFIG_DIR}/pbase_nextcloud.json"
 
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_apache.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_lets_encrypt.json  ${MODULE_CONFIG_DIR}/
@@ -202,10 +211,19 @@ if [[ "${DEFAULT_EMAIL_ADDRESS}" != "" ]] ; then
   setFieldInJsonModuleConfig ${DEFAULT_EMAIL_ADDRESS} pbase_apache serverAdmin
 fi
 
+QT="'"
+DEFAULT_SUB_DOMAIN_QUOTED=${QT}${DEFAULT_SUB_DOMAIN}${QT}
+
+echo "DEFAULT_SUB_DOMAIN:      ${DEFAULT_SUB_DOMAIN_QUOTED}"
+
 if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] ; then
   echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN}"
   setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_lets_encrypt urlSubDomain
   setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_nextcloud urlSubDomain
+else
+  echo "Setting empty urlSubDomain, Nextcloud will be root level of domain"
+  setFieldInJsonModuleConfig "" pbase_lets_encrypt urlSubDomain
+  setFieldInJsonModuleConfig "" pbase_nextcloud urlSubDomain
 fi
 
 echo "SMTP defaults:           ${MODULE_CONFIG_DIR}/pbase_smtp.json"
@@ -235,19 +253,15 @@ fi
 RAND_PW_USER="u$(date +%s | sha256sum | base64 | head -c 8)"
 RAND_PW_ROOT="r$(date +%s | sha256sum | base64 | head -c 16 | tail -c 8)"
 
-echo "MySQL user and DB name for use by pbase-nextcloud rpm"
-echo "Setting database 'rootPassword' and 'password' in ${DB_CONFIG_FILENAME}"
-echo "       for MySQL root:   $RAND_PW_ROOT"
-echo "       for nextcloud DB: $RAND_PW_USER"
+echo "Setting config with MySQL user and DB name for use by pbase-nextcloud"
+echo "                         ${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}"
+#echo "Setting database 'rootPassword' and 'password' in ${DB_CONFIG_FILENAME}"
+#echo "       for MySQL root:   $RAND_PW_ROOT"
+#echo "       for nextcloud DB: $RAND_PW_USER"
 
 ## provide random password in database config file
 sed -i "s/shomeddata/${RAND_PW_USER}/" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}"
 sed -i "s/SHOmeddata/${RAND_PW_ROOT}/" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}"
-
-## provide domainname in smtp config file
-if [[ -e "${MODULE_CONFIG_DIR}/pbase_smtp.json" ]]; then
-  sed -i "s/example.com/${THISDOMAINNAME}/" "${MODULE_CONFIG_DIR}/pbase_smtp.json"
-fi
 
 
 echo ""

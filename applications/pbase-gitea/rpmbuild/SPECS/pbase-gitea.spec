@@ -335,15 +335,25 @@ systemctl status gitea
 ## check for subdomain
 FULLDOMAINNAME="$THISDOMAINNAME"
 
-PROXY_CONF_FILE="gitea-proxy-subpath.conf"
-if [[ ${URL_SUBDOMAIN} != "" ]] ; then
-  PROXY_CONF_FILE="gitea-proxy-subdomain.conf"
-  FULLDOMAINNAME="${URL_SUBDOMAIN}.${THISDOMAINNAME}"
-fi
+## for Apache config choose either the ...subpath.conf or the ...subdomain.conf
+##   depending on URL_SUBPATH and URL_SUBDOMAIN
 
+PROXY_CONF_FILE="gitea-proxy-subpath.conf"
 SUBPATH_URI=""
+
 if [[ ${URL_SUBPATH} != "" ]] ; then
   SUBPATH_URI="/${URL_SUBPATH}"
+  echo "Using SUBPATH_URI:       $SUBPATH_URI"
+else
+  if [[ ${URL_SUBDOMAIN} == "" ]] ; then
+    PROXY_CONF_FILE="gitea-proxy-subdomain.conf"
+    FULLDOMAINNAME="${THISDOMAINNAME}"
+    echo "Using root domain:       $FULLDOMAINNAME"
+  else
+    PROXY_CONF_FILE="gitea-proxy-subdomain.conf"
+    FULLDOMAINNAME="${URL_SUBDOMAIN}.${THISDOMAINNAME}"
+    echo "Using subdomain:         $FULLDOMAINNAME"
+  fi
 fi
 
 echo "FULLDOMAINNAME:          $FULLDOMAINNAME"

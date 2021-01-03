@@ -177,10 +177,19 @@ parseConfig "DEFAULT_SMTP_USERNAME" ".pbase_repo.defaultSmtpUsername" ""
 parseConfig "DEFAULT_SMTP_PASSWORD" ".pbase_repo.defaultSmtpPassword" ""
 parseConfig "DEFAULT_SUB_DOMAIN" ".pbase_repo.defaultSubDomain" ""
 
+## when DEFAULT_SUB_DOMAIN.txt file is not present
+if [[ $DEFAULT_SUB_DOMAIN == null ]] ; then
+  echo "No DEFAULT_SUB_DOMAIN override file found, using 'mattermost' for defaultSubDomain"
+  DEFAULT_SUB_DOMAIN="mattermost"
+fi
+#echo "DEFAULT_SUB_DOMAIN:      ${DEFAULT_SUB_DOMAIN}"
+
+
+## when smtp password was given, but not server then assume mailgun
 if [[ "${DEFAULT_SMTP_SERVER}" == "" ]] && [[ "${DEFAULT_SMTP_PASSWORD}" != "" ]] ; then
-  ## when smtp password was given, but not server then assume mailgun
   DEFAULT_SMTP_SERVER="smtp.mailgun.org"
 fi
+
 
 DB_CONFIG_FILENAME="pbase_postgres.json"
 MATTERMOST_CONFIG_FILENAME="pbase_mattermost.json"
@@ -200,9 +209,19 @@ if [[ "${DEFAULT_EMAIL_ADDRESS}" != "" ]] ; then
   setFieldInJsonModuleConfig ${DEFAULT_EMAIL_ADDRESS} pbase_apache serverAdmin
 fi
 
+QT="'"
+DEFAULT_SUB_DOMAIN_QUOTED=${QT}${DEFAULT_SUB_DOMAIN}${QT}
+
+echo "DEFAULT_SUB_DOMAIN:      ${DEFAULT_SUB_DOMAIN_QUOTED}"
+
 if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] ; then
   echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN}"
   setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_lets_encrypt urlSubDomain
+  setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_mattermost urlSubDomain
+else
+  echo "Setting empty urlSubDomain, Mattermost will be root level of domain"
+  setFieldInJsonModuleConfig "" pbase_lets_encrypt urlSubDomain
+  setFieldInJsonModuleConfig "" pbase_mattermost urlSubDomain
 fi
 
 echo "SMTP defaults:           ${MODULE_CONFIG_DIR}/pbase_smtp.json"

@@ -165,11 +165,14 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config values from JSON file
 parseConfig "DEFAULT_DESKTOP_USER_NAME" ".pbase_repo.defaultDesktopUsername" ""
+DESKTOP_USER_NAME=""
 
-DESKTOP_USER_NAME="mydesktopusername"
-if [[ "$DEFAULT_DESKTOP_USER_NAME" != "" ]]; then
+if [[ "$DEFAULT_DESKTOP_USER_NAME" != "" ]] && [[ "$DEFAULT_DESKTOP_USER_NAME" != null ]]; then
   echo "defaultDesktopUsername:  $DEFAULT_DESKTOP_USER_NAME"
   DESKTOP_USER_NAME="$DEFAULT_DESKTOP_USER_NAME"
+else
+  echo "defaultDesktopUsername:  $DEFAULT_DESKTOP_USER_NAME"
+  DESKTOP_USER_NAME=""
 fi
 
 ## check which version of Linux is installed
@@ -203,9 +206,9 @@ fi
 
 
 ## check if desktop username was specified
-if [[ "$DEFAULT_DESKTOP_USER_NAME" != "" ]]; then
-  echo "Docker username:         $DEFAULT_DESKTOP_USER_NAME"
-  setFieldInJsonModuleConfig $DEFAULT_DESKTOP_USER_NAME pbase_docker_ce addUserToDockerGroup "/usr/local/pbase-data/pbase-preconfig-docker-ce/module-config-samples/"
+if [[ "$DESKTOP_USER_NAME" != "" ]] ; then
+  echo "Docker username:         $DESKTOP_USER_NAME"
+  setFieldInJsonModuleConfig $DESKTOP_USER_NAME pbase_docker_ce addUserToDockerGroup "/usr/local/pbase-data/pbase-preconfig-docker-ce/module-config-samples/"
 else
   echo ""
   echo "Next step - Enable adding a user to the docker group by making "
@@ -218,7 +221,7 @@ fi
 
 echo ""
 echo "Next step - install Docker CE with:"
-echo "  yum install docker-ce docker-ce-cli"
+echo "  yum -y install pbase-docker-ce"
 echo ""
 
 %preun

@@ -141,7 +141,7 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 ## fetch config values from JSON file
 parseConfig "DEFAULT_DESKTOP_USER_NAME" ".pbase_repo.defaultDesktopUsername" ""
 
-if [[ "$DEFAULT_DESKTOP_USER_NAME" != "" ]]; then
+if [[ "$DEFAULT_DESKTOP_USER_NAME" != "" ]] && [[ "$DEFAULT_DESKTOP_USER_NAME" != null ]]; then
   echo "defaultDesktopUsername:  $DEFAULT_DESKTOP_USER_NAME"
 fi
 

@@ -28,7 +28,7 @@ rm -rf "$RPM_BUILD_ROOT"
 %pre
 
 %post
-echo "rpm postinstall $1"
+#echo "rpm postinstall $1"
 
 fail() {
     echo "ERROR: $1"
@@ -177,10 +177,19 @@ parseConfig "DEFAULT_SMTP_USERNAME" ".pbase_repo.defaultSmtpUsername" ""
 parseConfig "DEFAULT_SMTP_PASSWORD" ".pbase_repo.defaultSmtpPassword" ""
 parseConfig "DEFAULT_SUB_DOMAIN" ".pbase_repo.defaultSubDomain" ""
 
+## when DEFAULT_SUB_DOMAIN.txt file is not present
+if [[ $DEFAULT_SUB_DOMAIN == null ]] ; then
+  echo "No DEFAULT_SUB_DOMAIN override file found, using 'git' for defaultSubDomain"
+  DEFAULT_SUB_DOMAIN="git"
+fi
+##echo "DEFAULT_SUB_DOMAIN:      ${DEFAULT_SUB_DOMAIN}"
+
+
+## when smtp password was given, but not server then assume mailgun
 if [[ "${DEFAULT_SMTP_SERVER}" == "" ]] && [[ "${DEFAULT_SMTP_PASSWORD}" != "" ]] ; then
-  ## when smtp password was given, but not server then assume mailgun
   DEFAULT_SMTP_SERVER="smtp.mailgun.org"
 fi
+
 
 DB_CONFIG_FILENAME="pbase_postgres.json"
 GITEA_CONFIG_FILENAME="pbase_gitea.json"
@@ -200,9 +209,17 @@ if [[ "${DEFAULT_EMAIL_ADDRESS}" != "" ]] ; then
   setFieldInJsonModuleConfig ${DEFAULT_EMAIL_ADDRESS} pbase_apache serverAdmin
 fi
 
+QT="'"
+DEFAULT_SUB_DOMAIN_QUOTED=${QT}${DEFAULT_SUB_DOMAIN}${QT}
+
+echo "DEFAULT_SUB_DOMAIN:      ${DEFAULT_SUB_DOMAIN_QUOTED}"
+
 if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] ; then
   echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN}"
   setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_lets_encrypt urlSubDomain
+else
+  echo "Setting empty urlSubDomain, Gitea will be root level of domain"
+  setFieldInJsonModuleConfig "" pbase_lets_encrypt urlSubDomain
 fi
 
 echo "SMTP defaults:           ${MODULE_CONFIG_DIR}/pbase_smtp.json"
@@ -257,9 +274,10 @@ echo "  vi pbase_smtp.json"
 echo "  vi pbase_gitea.json"
 echo ""
 
-echo "Next step - install Postgres and Gitea application with:"
+echo "Next step - install Postgres, Apache and Gitea application with:"
 echo ""
 echo "  yum -y install pbase-postgres"
+echo "  yum -y install pbase-apache"
 echo "  yum -y install pbase-gitea"
 echo ""
 

@@ -104,7 +104,7 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 parseConfig "DEFAULT_DESKTOP_USER_NAME" ".pbase_repo.defaultDesktopUsername" ""
 
 DESKTOP_USER_NAME="mydesktopusername"
-if [[ "$DEFAULT_DESKTOP_USER_NAME" != "" ]]; then
+if [[ "$DEFAULT_DESKTOP_USER_NAME" != "" ]] && [[ "$DEFAULT_DESKTOP_USER_NAME" != null ]]; then
   echo "defaultDesktopUsername:  $DEFAULT_DESKTOP_USER_NAME"
   DESKTOP_USER_NAME="$DEFAULT_DESKTOP_USER_NAME"
 fi

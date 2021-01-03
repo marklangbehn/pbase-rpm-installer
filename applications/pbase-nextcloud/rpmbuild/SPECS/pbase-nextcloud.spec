@@ -233,6 +233,11 @@ echo "Apache vhost config:     /etc/httpd/conf.d/nextcloud-vhost.conf"
 echo "FULLDOMAINNAME:          $FULLDOMAINNAME"
 /bin/cp --no-clobber /usr/local/pbase-data/pbase-nextcloud/etc-httpd-confd/nextcloud-vhost.conf /etc/httpd/conf.d/
 
+if [[ -e "/etc/httpd/conf.d/${THISDOMAINNAME}.conf"  ]] ; then
+  echo "Removing existing:       /etc/httpd/conf.d/${THISDOMAINNAME}.conf"
+  mv "/etc/httpd/conf.d/${THISDOMAINNAME}.conf"  "/etc/httpd/conf.d/${THISDOMAINNAME}.conf-DISABLED"
+fi
+
 ## replace your.server.com in template conf
 sed -i "s/your.server.com/${FULLDOMAINNAME}/" "/etc/httpd/conf.d/nextcloud-vhost.conf"
 

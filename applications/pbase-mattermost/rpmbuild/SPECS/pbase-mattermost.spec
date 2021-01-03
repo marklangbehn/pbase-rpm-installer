@@ -167,19 +167,15 @@ PBASE_CONFIG_FILENAME="pbase_lets_encrypt.json"
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 URL_SUBDOMAIN=""
 
+QT="'"
+
 if [[ -e "/usr/local/pbase-data/admin-only/module-config.d/pbase_lets_encrypt.json" ]] ; then
   parseConfig "URL_SUBDOMAIN" ".pbase_lets_encrypt.urlSubDomain" ""
-  echo "URL_SUBDOMAIN:           ${URL_SUBDOMAIN}"
+  URL_SUBDOMAIN_QUOTED=${QT}${URL_SUBDOMAIN}${QT}
+  echo "URL_SUBDOMAIN:           ${URL_SUBDOMAIN_QUOTED}"
 else
   echo "No subdomain config:     pbase_lets_encrypt.json"
 fi
-
-## use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars
-RAND_PW_USER="u$(date +%s | sha256sum | base64 | head -c 8)"
-RAND_PW_ROOT="r$(date +%s | sha256sum | base64 | head -c 16 | tail -c 8)"
-
-echo "RAND_PW_USER:            $RAND_PW_USER"
-echo "RAND_PW_ROOT:            $RAND_PW_ROOT"
 
 
 ## Database config
@@ -312,9 +308,14 @@ systemctl status mattermost
 
 
 ## add shell aliases
+append_bashrc_alias journalmattermost "journalctl -u mattermost -f"
 append_bashrc_alias tailmattermost "tail -f /opt/mattermost/logs/mattermost.log"
 append_bashrc_alias editmattermostconf "vi /opt/mattermost/config/config.json"
 
+append_bashrc_alias stopmattermost "/bin/systemctl stop mattermost"
+append_bashrc_alias startmattermost "/bin/systemctl start mattermost"
+append_bashrc_alias statusmattermost "/bin/systemctl status mattermost"
+append_bashrc_alias restartmattermost "/bin/systemctl restart mattermost"
 
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"

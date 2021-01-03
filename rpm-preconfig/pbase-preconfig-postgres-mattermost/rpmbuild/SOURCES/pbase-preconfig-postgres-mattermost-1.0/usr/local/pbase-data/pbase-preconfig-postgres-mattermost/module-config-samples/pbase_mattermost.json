@@ -1,6 +1,7 @@
 {
-  "pbase_mattermost" : {
+  "pbase_mattermost": {
     "port": 8065,
-    "addApacheProxy": true
+    "addApacheProxy": true,
+    "urlSubDomain": ""
   }
 }

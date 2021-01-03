@@ -177,8 +177,16 @@ parseConfig "DEFAULT_SMTP_USERNAME" ".pbase_repo.defaultSmtpUsername" ""
 parseConfig "DEFAULT_SMTP_PASSWORD" ".pbase_repo.defaultSmtpPassword" ""
 parseConfig "DEFAULT_SUB_DOMAIN" ".pbase_repo.defaultSubDomain" ""
 
+## when DEFAULT_SUB_DOMAIN.txt file is not present
+if [[ $DEFAULT_SUB_DOMAIN == null ]] ; then
+  echo "No DEFAULT_SUB_DOMAIN override file found, using 'mastodon' for defaultSubDomain"
+  DEFAULT_SUB_DOMAIN="mastodon"
+fi
+#echo "DEFAULT_SUB_DOMAIN:      ${DEFAULT_SUB_DOMAIN}"
+
+
+## when smtp password was given, but not server then assume mailgun
 if [[ "${DEFAULT_SMTP_SERVER}" == "" ]] && [[ "${DEFAULT_SMTP_PASSWORD}" != "" ]] ; then
-  ## when smtp password was given, but not server then assume mailgun
   DEFAULT_SMTP_SERVER="smtp.mailgun.org"
 fi
 
@@ -198,14 +206,27 @@ if [[ "${DEFAULT_EMAIL_ADDRESS}" != "" ]] ; then
   setFieldInJsonModuleConfig ${DEFAULT_EMAIL_ADDRESS} pbase_lets_encrypt emailAddress
 fi
 
-## when empty string in subdomain
-if [[ "${DEFAULT_SUB_DOMAIN}" != "null" ]] ; then
+QT="'"
+DEFAULT_SUB_DOMAIN_QUOTED=${QT}${DEFAULT_SUB_DOMAIN}${QT}
+
+echo "DEFAULT_SUB_DOMAIN:      ${DEFAULT_SUB_DOMAIN_QUOTED}"
+
+if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] ; then
   echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN}"
-  setFieldInJsonModuleConfig "${DEFAULT_SUB_DOMAIN}" pbase_lets_encrypt urlSubDomain
-  setFieldInJsonModuleConfig "${DEFAULT_SUB_DOMAIN}" activpb_mastodon urlSubDomain
+  setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_lets_encrypt urlSubDomain
+  setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} activpb_mastodon urlSubDomain
+else
+  echo "Setting empty urlSubDomain, Mastodon will be root level of domain"
+  setFieldInJsonModuleConfig "" pbase_lets_encrypt urlSubDomain
+  setFieldInJsonModuleConfig "" activpb_mastodon urlSubDomain
 fi
 
 echo "SMTP defaults:           ${MODULE_CONFIG_DIR}/pbase_smtp.json"
+
+## replace domainname in smtp config template file
+if [[ -e "${MODULE_CONFIG_DIR}/pbase_smtp.json" ]]; then
+  sed -i "s/example.com/${THISDOMAINNAME}/" "${MODULE_CONFIG_DIR}/pbase_smtp.json"
+fi
 
 if [[ "${DEFAULT_SMTP_SERVER}" != "" ]] ; then
   echo "defaultSmtpServer:       ${DEFAULT_SMTP_SERVER}"
@@ -233,9 +254,6 @@ sed -i "s/shomeddata/${RAND_PW_USER}/" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAM
 ## provide domainname in smtp config file
 sed -i "s/example.com/${THISDOMAINNAME}/" "${MODULE_CONFIG_DIR}/pbase_smtp.json"
 
-
-#if [[ "${REDHAT_RELEASE_DIGIT}" == "7" ]]; then
-#fi
 
 echo ""
 echo "Postgres, SMTP and Let's Encrypt module config files for Mastodon added."

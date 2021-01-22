@@ -85,7 +85,7 @@ parseConfig() {
 echo "PBase Mastodon Ruby and Dependencies"
 
 ## Mastodon config
-## look for either separate config file "activpb_mastodon.json" or all-in-one file: "pbase_module_config.json"
+## look for config file "activpb_mastodon.json"
 PBASE_CONFIG_FILENAME="activpb_mastodon.json"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"

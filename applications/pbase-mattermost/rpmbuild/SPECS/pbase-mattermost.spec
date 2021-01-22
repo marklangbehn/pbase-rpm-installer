@@ -75,9 +75,6 @@ copy_if_not_exists() {
 
 
 ## config is stored in json file with root-only permissions
-## it can be one of two places:
-##     /usr/local/pbase-data/admin-only/pbase_module_config.json
-## or
 ##     /usr/local/pbase-data/admin-only/module-config.d/pbase_mattermost.json
 
 
@@ -137,7 +134,7 @@ if [[ -d "/opt/mattermost" ]]; then
 fi
 
 ## Mattermost config
-## look for either separate config file "pbase_mattermost.json" or all-in-one file: "pbase_module_config.json"
+## look for config file "pbase_mattermost.json"
 PBASE_CONFIG_FILENAME="pbase_mattermost.json"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"

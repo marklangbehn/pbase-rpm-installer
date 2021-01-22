@@ -130,7 +130,7 @@ parseConfig() {
   eval "$1"="$PARSED_VALUE"
 }
 
-## look for either separate config file "pbase_crowdsec.json" or all-in-one file: "pbase_module_config.json"
+## look for config file "pbase_crowdsec.json"
 PBASE_CONFIG_FILENAME="pbase_crowdsec.json"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"

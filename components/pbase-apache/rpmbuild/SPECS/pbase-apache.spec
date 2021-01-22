@@ -186,7 +186,7 @@ EOF
   fi
 }
 
-## look for either separate config file "pbase_apache.json" or all-in-one file: "pbase_module_config.json"
+## look for config file "pbase_apache.json"
 PBASE_CONFIG_FILENAME="pbase_apache.json"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"
@@ -199,6 +199,7 @@ parseConfig "USE_SITES_ENABLED_CONF" ".pbase_apache.useSitesEnabledConf" "false"
 parseConfig "ENABLE_INDEX_PHP" ".pbase_apache.enableIndexPhp" "false"
 
 parseConfig "SERVER_ADMIN_EMAIL" ".pbase_apache.serverAdmin" "nobody@nowhere.nyet"
+parseConfig "SUBDOMAIN_NAME" ".pbase_apache.urlSubDomain" ""
 
 echo "ADD_SELF_TO_ETC_HOSTS:   $ADD_SELF_TO_ETC_HOSTS"
 echo "ADD_SECURITY_HEADERS:    $ADD_SECURITY_HEADERS"
@@ -206,6 +207,7 @@ echo "RESTRICT_HTTP_METHODS:   $RESTRICT_HTTP_METHODS"
 echo "USE_SITES_ENABLED_CONF:  $USE_SITES_ENABLED_CONF"
 echo "ENABLE_INDEX_PHP:        $ENABLE_INDEX_PHP"
 echo "SERVER_ADMIN_EMAIL:      $SERVER_ADMIN_EMAIL"
+echo "SUBDOMAIN_NAME:          $SUBDOMAIN_NAME"
 
 
 ## check which version of Linux is installed
@@ -222,6 +224,15 @@ fi
 ## Get hostname to be substituted in template config files
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
+
+## FULLDOMAINNAME is the subdomain if declared plus the domain
+FULLDOMAINNAME="${THISDOMAINNAME}"
+
+if [[ "${SUBDOMAIN_NAME}" != "" ]] ; then
+  FULLDOMAINNAME="${SUBDOMAIN_NAME}.${THISDOMAINNAME}"
+  echo "Using subdomain:         ${FULLDOMAINNAME}"
+fi
+
 TMPLHOSTNAME="vhost1.virtualrecordlabel.net"
 TMPLDOMAINAME="virtualrecordlabel.net"
 
@@ -230,11 +241,12 @@ TMPLDOMAINAME="virtualrecordlabel.net"
 echo "Apache post-install configuration"
 echo "Hostname:                $THISHOSTNAME"
 echo "Domainname:              $THISDOMAINNAME"
+echo "Full Domainname:         $FULLDOMAINNAME"
 #echo "Tmpl Host:               $TMPLHOSTNAME"
 
 if [[ $USE_SITES_ENABLED_CONF == "true" ]] ; then
   echo "Apache site-enabled / sites-available"
-  DOCROOT="/var/www/html/${THISDOMAINNAME}/public"
+  DOCROOT="/var/www/html/${FULLDOMAINNAME}/public"
 
   mkdir /etc/httpd/sites-available
   mkdir /etc/httpd/sites-enabled
@@ -244,10 +256,10 @@ if [[ $USE_SITES_ENABLED_CONF == "true" ]] ; then
   echo "IncludeOptional sites-enabled/*.conf" >> "/etc/httpd/conf/httpd.conf"
 
   cd /etc/httpd/sites-enabled/
-  ln -s /etc/httpd/sites-available/${THISDOMAINNAME}.conf /etc/httpd/sites-enabled/${THISDOMAINNAME}.conf
+  ln -s /etc/httpd/sites-available/${FULLDOMAINNAME}.conf /etc/httpd/sites-enabled/${FULLDOMAINNAME}.conf
 
 else
-  DOCROOT="/var/www/html/${THISDOMAINNAME}/public"
+  DOCROOT="/var/www/html/${FULLDOMAINNAME}/public"
 fi
 
 ## create servername file
@@ -365,15 +377,21 @@ fi
 ##   Header set Content-Security-Policy "default-src 'self';"
 ##   Header set X-Permitted-Cross-Domain-Policies "none"
 
-if [[ $USE_SITES_ENABLED_CONF == "true" ]] ; then
-  /bin/cp -f "/usr/local/pbase-data/pbase-apache/etc-httpd-conf-d/virtualrecordlabel.net.conf" "/etc/httpd/sites-available/${THISDOMAINNAME}.conf"
+HTTPD_CONF_SRC="/usr/local/pbase-data/pbase-apache/etc-httpd-conf-d"
+if [[ "${SUBDOMAIN_NAME}" != "" ]] ; then
+  HTTPD_CONF_SRC="/usr/local/pbase-data/pbase-apache/etc-httpd-conf-d-subdomain"
+fi
 
-  echo "    Virtual host:        /etc/httpd/sites-available/${THISDOMAINNAME}.conf"
-  sed -i "s/virtualrecordlabel.net/${THISDOMAINNAME}/g" "/etc/httpd/sites-available/${THISDOMAINNAME}.conf"
+
+if [[ $USE_SITES_ENABLED_CONF == "true" ]] ; then
+  /bin/cp -f "${HTTPD_CONF_SRC}/virtualrecordlabel.net.conf" "/etc/httpd/sites-available/${FULLDOMAINNAME}.conf"
+
+  echo "    Virtual host:        /etc/httpd/sites-available/${FULLDOMAINNAME}.conf"
+  sed -i "s/virtualrecordlabel.net/${FULLDOMAINNAME}/g" "/etc/httpd/sites-available/${FULLDOMAINNAME}.conf"
 else
-  echo "    Virtual host:        /etc/httpd/conf.d/${THISDOMAINNAME}.conf"
-  /bin/cp -f "/usr/local/pbase-data/pbase-apache/etc-httpd-conf-d/virtualrecordlabel.net.conf" "/etc/httpd/conf.d/${THISDOMAINNAME}.conf"
-  sed -i "s/virtualrecordlabel.net/${THISDOMAINNAME}/g" "/etc/httpd/conf.d/${THISDOMAINNAME}.conf"
+  echo "    Virtual host:        /etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
+  /bin/cp -f "${HTTPD_CONF_SRC}/virtualrecordlabel.net.conf" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
+  sed -i "s/virtualrecordlabel.net/${FULLDOMAINNAME}/g" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
 fi
 
 if [[ $RESTRICT_HTTP_METHODS == "true" ]] ; then
@@ -421,7 +439,7 @@ else
   append_bashrc_alias restarthttpd "/bin/systemctl restart httpd"
 fi
 
-WEBSITE_URL="http://${THISHOSTNAME}"
+WEBSITE_URL="http://${FULLDOMAINNAME}"
 echo "Website URL:             ${WEBSITE_URL}"
 echo ""
 
@@ -430,5 +448,5 @@ echo ""
 /usr/local/pbase-data/pbase-apache/el6/etc-httpd-conf/httpd.conf
 /usr/local/pbase-data/pbase-apache/el7/etc-httpd-conf/httpd.conf
 /usr/local/pbase-data/pbase-apache/fedora/etc-httpd-conf/httpd.conf
-/usr/local/pbase-data/pbase-apache/etc-httpd-conf-d/virtualrecordlabel.net-ssl.conf
 /usr/local/pbase-data/pbase-apache/etc-httpd-conf-d/virtualrecordlabel.net.conf
+/usr/local/pbase-data/pbase-apache/etc-httpd-conf-d-subdomain/virtualrecordlabel.net.conf

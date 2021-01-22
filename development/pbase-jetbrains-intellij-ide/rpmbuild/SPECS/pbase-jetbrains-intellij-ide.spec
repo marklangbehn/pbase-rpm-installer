@@ -36,9 +36,6 @@ fail() {
 }
 
 ## config is stored in json file with root-only permissions
-## it can be one of two places:
-##     /usr/local/pbase-data/admin-only/pbase_module_config.json
-## or
 ##     /usr/local/pbase-data/admin-only/module-config.d/pbase_apache.json
 
 
@@ -51,8 +48,6 @@ locateConfigFile() {
   PBASE_CONFIG_DIR="${PBASE_CONFIG_BASE}/module-config.d"
 
   ## Look for config .json file in one of two places.
-  ##     /usr/local/pbase-data/admin-only/pbase_module_config.json
-  ## or
   ##     /usr/local/pbase-data/admin-only/module-config.d/pbase_apache.json
 
   PBASE_CONFIG_SEPARATE="${PBASE_CONFIG_DIR}/${PBASE_CONFIG_FILENAME}"
@@ -124,7 +119,7 @@ echo ""
 MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
 PBASE_DEFAULTS_FILENAME="pbase_repo.json"
 
-## look for either separate config file like "pbase_repo.json" or all-in-one file: "pbase_module_config.json"
+## look for config file like "pbase_repo.json"
 PBASE_CONFIG_FILENAME="$PBASE_DEFAULTS_FILENAME"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"

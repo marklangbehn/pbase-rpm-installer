@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-gitea
-Requires: git, curl, xz
+Requires: pbase-apache, git, curl, xz
 
 %description
 PBase Gitea service
@@ -134,7 +134,7 @@ parseConfig() {
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
 
-## look for either separate config file "pbase_gitea.json" or all-in-one file: "pbase_module_config.json"
+## look for config file "pbase_gitea.json"
 PBASE_CONFIG_FILENAME="pbase_gitea.json"
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 

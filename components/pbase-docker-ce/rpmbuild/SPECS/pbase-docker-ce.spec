@@ -48,9 +48,6 @@ append_bashrc_alias() {
 echo "PBase Docker CE and Docker Compose installation"
 
 ## config is stored in json file with root-only permissions
-## it can be one of two places:
-##     /usr/local/pbase-data/admin-only/pbase_module_config.json
-## or
 ##     /usr/local/pbase-data/admin-only/module-config.d/pbase_docker_ce.json
 
 locateConfigFile() {
@@ -101,7 +98,7 @@ parseConfig() {
 }
 
 
-## look for either separate config file "pbase_docker_ce.json" or all-in-one file: "pbase_module_config.json"
+## look for config file "pbase_docker_ce.json"
 PBASE_CONFIG_FILENAME="pbase_docker_ce.json"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"

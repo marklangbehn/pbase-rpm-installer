@@ -114,9 +114,6 @@ copy_if_not_exists() {
 echo "PBase NextCloud installer"
 
 ## config is stored in json file with root-only permissions
-## it can be one of two places:
-##     /usr/local/pbase-data/admin-only/pbase_module_config.json
-## or
 ##     /usr/local/pbase-data/admin-only/module-config.d/pbase_nextcloud.json
 
 
@@ -171,17 +168,17 @@ parseConfig() {
 check_linux_version
 echo ""
 
-## look for either separate config file "pbase_gitea.json" or all-in-one file: "pbase_module_config.json"
+## look for config file "pbase_gitea.json"
 PBASE_CONFIG_FILENAME="pbase_nextcloud.json"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config value from JSON file
-parseConfig "CONFIG_DATABASE" ".pbase_nextcloud.database" ""
+parseConfig "DATABASE" ".pbase_nextcloud.database" ""
 parseConfig "CONFIG_URLSUBPATH" ".pbase_nextcloud.urlSubPath" ""
 parseConfig "CONFIG_SUBDOMAIN_NAME" ".pbase_nextcloud.urlSubDomain" "nextcloud"
 
-echo "CONFIG_DATABASE:         $CONFIG_DATABASE"
+echo "DATABASE:                $DATABASE"
 echo "CONFIG_URLSUBPATH:       $CONFIG_URLSUBPATH"
 echo "CONFIG_SUBDOMAIN_NAME:   $CONFIG_SUBDOMAIN_NAME"
 
@@ -200,10 +197,38 @@ THISDOMAINNAME="$(hostname -d)"
 ## FULLDOMAINNAME is the subdomain if declared plus the domain
 FULLDOMAINNAME="${THISDOMAINNAME}"
 
-if [[ "$CONFIG_SUBDOMAIN_NAME" != "" ]] ; then
+if [[ "${CONFIG_SUBDOMAIN_NAME}" != "" ]] ; then
   FULLDOMAINNAME="${CONFIG_SUBDOMAIN_NAME}.${THISDOMAINNAME}"
   echo "Using subdomain:         ${FULLDOMAINNAME}"
 fi
+
+## ----------------
+
+## when DB_PSWD is populated below that means DB config has been defined
+DB_PSWD=""
+
+if [[ $DATABASE == "postgres" ]]; then
+  PBASE_CONFIG_FILENAME="pbase_postgres.json"
+  locateConfigFile "$PBASE_CONFIG_FILENAME"
+  parseConfig "DB_HOSTNAME" ".pbase_postgres[0].default.hostName" "localhost"
+  parseConfig "DB_PORT"     ".pbase_postgres[0].default.port" "5432"
+  parseConfig "DB_NAME"     ".pbase_postgres[0].default.database[0].name" "gitea"
+  parseConfig "DB_USER"     ".pbase_postgres[0].default.database[0].user" "gitea"
+  parseConfig "DB_CHARSET"  ".pbase_postgres[0].default.database[0].characterSet" "UTF8"
+  parseConfig "DB_PSWD"     ".pbase_postgres[0].default.database[0].password" ""
+
+elif [[ $DATABASE == "mysql" ]]; then
+  PBASE_CONFIG_FILENAME="pbase_mysql.json"
+  locateConfigFile "$PBASE_CONFIG_FILENAME"
+  parseConfig "DB_HOSTNAME" ".pbase_mysql[0].default.hostName" "localhost"
+  parseConfig "DB_PORT"     ".pbase_mysql[0].default.port" "3306"
+  parseConfig "DB_NAME"     ".pbase_mysql[0].default.database[0].name" "gitea"
+  parseConfig "DB_USER"     ".pbase_mysql[0].default.database[0].user" "gitea"
+  parseConfig "DB_CHARSET"  ".pbase_mysql[0].default.characterSet" "utf8mb48"
+  parseConfig "DB_PSWD"     ".pbase_mysql[0].default.database[0].password" ""
+fi
+
+PATH_TO_DBCONFIG="/usr/local/pbase-data/admin-only/module-config.d/${PBASE_CONFIG_FILENAME}"
 
 
 echo "Downloading NextCloud server binary from download.nextcloud.com"
@@ -298,13 +323,16 @@ else
 fi
 
 echo "Default PBase module configuration directory:"
-echo "                        /usr/local/pbase-data/admin-only/module-config.d/"
+echo "                         /usr/local/pbase-data/admin-only/module-config.d/"
 
 INSTALLED_DOMAIN_URI="${THISDOMAINNAME}${SLASH_NEXTCLOUD_URLSUBPATH}"
 
 if [[ "$CONFIG_SUBDOMAIN_NAME" != "" ]] ; then
   INSTALLED_DOMAIN_URI="${FULLDOMAINNAME}"
 fi
+
+echo "Configured database:     $PATH_TO_DBCONFIG"
+cat $PATH_TO_DBCONFIG
 
 echo ""
 echo "NextCloud web application is running."

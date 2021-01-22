@@ -9,7 +9,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-lets-encrypt
-Requires: pbase-lets-encrypt-transitive-dep, jq
+Requires: pbase-lets-encrypt-transitive-dep, pbase-epel, jq
 
 %description
 Configure Let's Encrypt
@@ -139,7 +139,7 @@ THISDOMAINNAME="$(hostname -d)"
 
 check_linux_version
 
-## look for either separate config file "pbase_lets_encrypt.json" or all-in-one file: "pbase_module_config.json"
+## look for config file "pbase_lets_encrypt.json"
 PBASE_CONFIG_FILENAME="pbase_lets_encrypt.json"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"
@@ -189,8 +189,8 @@ echo "RAND_MINUTE:             $RAND_MINUTE"
 
 ## line to add to crontab
 if [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]] || [[ "${REDHAT_RELEASE_DIGIT}" == "8" ]]; then
-  CRONJOB_LINE="47 2 * * * root /usr/local/bin/certbot-auto renew >> $CRONJOB_LOGFILE"
-  ##CRONJOB_LINE="$RAND_MINUTE 2 * * * root /usr/local/bin/certbot-auto renew >> $CRONJOB_LOGFILE"
+  CRONJOB_LINE="47 2 * * * root certbot renew >> $CRONJOB_LOGFILE"
+  ##CRONJOB_LINE="$RAND_MINUTE 2 * * * root certbot renew >> $CRONJOB_LOGFILE"
 else
   ##CRONJOB_LINE="$RAND_MINUTE 2 * * * root /usr/bin/certbot renew >> $CRONJOB_LOGFILE"
   CRONJOB_LINE="47 2 * * * root /usr/bin/certbot renew >> $CRONJOB_LOGFILE"
@@ -235,23 +235,23 @@ if [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]]; then
   /sbin/chkconfig httpd --level 345 on || fail "chkconfig failed to enable httpd service"
   /sbin/service httpd restart || fail "failed to restart httpd service"
 
-  if [[ -e "/usr/local/bin/certbot-auto" ]] ; then
-    echo "Existing certbot:        /usr/local/bin/certbot-auto"
+  if [[ -e "certbot" ]] ; then
+    echo "Existing certbot:        certbot"
   else
-    echo "Fetch certbot:           wget -P /usr/local/bin https://dl.eff.org/certbot-auto"
-    wget -P /usr/local/bin https://dl.eff.org/certbot-auto
-    chown root:root /usr/local/bin/certbot-auto
-    chmod 0755 /usr/local/bin/certbot-auto
+    echo "Fetch certbot:           wget -P /usr/local/bin https://dl.eff.org/certbot"
+    wget -P /usr/local/bin https://dl.eff.org/certbot
+    chown root:root certbot
+    chmod 0755 certbot
 
     mkdir /var/lib/letsencrypt
   fi
 
   ## get SSL cert, may add file in /etc/httpd/conf...
-  ## for example:   /usr/local/bin/certbot-auto --apache --agree-tos --email yoursysadmin@yourrealmail.com  -d pbase-foundation.com -d www.pbase-foundation.com -n
+  ## for example:   certbot --apache --agree-tos --email yoursysadmin@yourrealmail.com  -d pbase-foundation.com -d www.pbase-foundation.com -n
 
-  echo "Invoke certbot:          /usr/local/bin/certbot-auto --apache --agree-tos --email ${EMAIL_ADDR} -d ${FULLDOMAINNAME} $DASH_D_ADDITIONAL_SUBDOMAIN -n"
+  echo "Invoke certbot:          certbot --apache --agree-tos --email ${EMAIL_ADDR} -d ${FULLDOMAINNAME} $DASH_D_ADDITIONAL_SUBDOMAIN -n"
   echo ""
-  /usr/local/bin/certbot-auto --apache --agree-tos --email ${EMAIL_ADDR} -d ${FULLDOMAINNAME} $DASH_D_ADDITIONAL_SUBDOMAIN -n
+  certbot --apache --agree-tos --email ${EMAIL_ADDR} -d ${FULLDOMAINNAME} $DASH_D_ADDITIONAL_SUBDOMAIN -n
 
   echo "Restarting service:      httpd"
   /sbin/chkconfig httpd --level 345 on || fail "chkconfig failed to enable httpd service"
@@ -280,20 +280,20 @@ elif [[ "${REDHAT_RELEASE_DIGIT}" == "7" ]]; then
 
 elif [[ "${REDHAT_RELEASE_DIGIT}" == "8" ]]; then
 
-  if [[ -e "/usr/local/bin/certbot-auto" ]] ; then
-    echo "Existing certbot:        /usr/local/bin/certbot-auto"
+  if [[ -e "certbot" ]] ; then
+    echo "Existing certbot:        certbot"
   else
-    echo "Fetch certbot:           wget -P /usr/local/bin https://dl.eff.org/certbot-auto"
-    wget -P /usr/local/bin https://dl.eff.org/certbot-auto
-    chown root:root /usr/local/bin/certbot-auto
-    chmod 0755 /usr/local/bin/certbot-auto
+    echo "Fetch certbot:           wget -P /usr/local/bin https://dl.eff.org/certbot"
+    wget -P /usr/local/bin https://dl.eff.org/certbot
+    chown root:root certbot
+    chmod 0755 certbot
   fi
 
-  echo "Invoke certbot:          /usr/local/bin/certbot-auto --no-bootstrap --apache --agree-tos --email ${EMAIL_ADDR}  -d ${FULLDOMAINNAME} $DASH_D_ADDITIONAL_SUBDOMAIN -n"
+  echo "Invoke certbot:          certbot --no-bootstrap --apache --agree-tos --email ${EMAIL_ADDR}  -d ${FULLDOMAINNAME} $DASH_D_ADDITIONAL_SUBDOMAIN -n"
   echo ""
 
   if [[ $EXECUTE_CERTBOT_CMD == "true" ]] ; then
-    /usr/local/bin/certbot-auto --no-bootstrap --apache --agree-tos --email ${EMAIL_ADDR}  -d ${FULLDOMAINNAME} $DASH_D_ADDITIONAL_SUBDOMAIN -n
+    certbot --no-bootstrap --apache --agree-tos --email ${EMAIL_ADDR}  -d ${FULLDOMAINNAME} $DASH_D_ADDITIONAL_SUBDOMAIN -n
 
     echo "Restarting service:      httpd"
     /bin/systemctl daemon-reload

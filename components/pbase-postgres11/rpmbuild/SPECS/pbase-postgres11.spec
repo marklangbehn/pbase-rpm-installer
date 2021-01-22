@@ -87,9 +87,6 @@ check_linux_version() {
 echo "PBase Postgres 11 server"
 
 ## config is stored in json file with root-only permissions
-## it can be one of two places:
-##     /usr/local/pbase-data/admin-only/pbase_module_config.json
-## or
 ##     /usr/local/pbase-data/admin-only/module-config.d/pbase_postgres.json
 
 
@@ -145,7 +142,7 @@ RAND_PW_USER="u$(date +%s | sha256sum | base64 | head -c 8)"
 
 #echo "RAND_PW_USER:            $RAND_PW_USER"
 
-## look for either separate config file "pbase_postgres.json" or all-in-one file: "pbase_module_config.json"
+## look for config file "pbase_postgres.json"
 PBASE_CONFIG_FILENAME="pbase_postgres11.json"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"

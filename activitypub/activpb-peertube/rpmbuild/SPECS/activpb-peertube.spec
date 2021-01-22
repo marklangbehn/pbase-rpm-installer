@@ -51,11 +51,7 @@ append_bashrc_alias() {
 }
 
 ## config is stored in json file with root-only permissions
-## it can be one of two places:
-##     /usr/local/pbase-data/admin-only/pbase_module_config.json
-## or
 ##     /usr/local/pbase-data/admin-only/module-config.d/activpb_peertube.json
-
 
 locateConfigFile() {
   ## name of config file is passed in param $1 - for example "activpb_peertube.json"
@@ -121,7 +117,7 @@ echo "Hostname:                $THISHOSTNAME"
 echo "Domainname:              $THISDOMAINNAME"
 
 ## Peertube config
-## look for either separate config file "activpb_peertube.json" or all-in-one file: "pbase_module_config.json"
+## look for config file "activpb_peertube.json"
 PBASE_CONFIG_FILENAME="activpb_peertube.json"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"
@@ -347,26 +343,29 @@ echo "Updating config in production.yaml"
 chown peertube:peertube /var/www/peertube/config/production.yaml
 chmod 0600 /var/www/peertube/config/production.yaml
 
-## 3.0 preliminary template substitution
+## 3.0 template substitution
 ## variables to be substituted in nginx conf.d file
-#export WEBSERVER_HOST="${FULLDOMAINNAME}"
-#export PEERTUBE_HOST="localhost"
-#envsubst '${WEBSERVER_HOST},${PEERTUBE_HOST}' < /var/www/peertube/peertube-latest/support/nginx/peertube > /etc/nginx/conf.d/peertube.conf
-#
+export WEBSERVER_HOST="${FULLDOMAINNAME}"
+export PEERTUBE_HOST="localhost"
+envsubst '${WEBSERVER_HOST},${PEERTUBE_HOST}' < /var/www/peertube/peertube-latest/support/nginx/peertube > /etc/nginx/conf.d/peertube.conf
+
 ## template cert path changed for v3.0rc
 #sed -i "s|peertube/fullchain.pem|${FULLDOMAINNAME}/fullchain.pem|g" /etc/nginx/conf.d/peertube.conf
 #sed -i "s|peertube/privkey.pem|${FULLDOMAINNAME}/privkey.pem|g" /etc/nginx/conf.d/peertube.conf
 #
 ##  how enable aio on nginx? turn off 'aio threads' for now
-#sed -i "s/aio threads/##aio threads/g" /etc/nginx/conf.d/peertube.conf
+sed -i "s/aio threads/##aio threads/g" /etc/nginx/conf.d/peertube.conf
+
+
+## replace proxy_pass backend with:  http://127.0.0.1:9000
+sed -i "s|proxy_pass http://backend|proxy_pass http://127.0.0.1:9000|g" /etc/nginx/conf.d/peertube.conf
 
 
 ## 2.4 template substitution
 ## /bin/cp -f --no-clobber /var/www/peertube/peertube-latest/support/nginx/peertube /etc/nginx/conf.d/peertube.conf
-
 ## replace domain name
-/bin/cp -f --no-clobber /usr/local/pbase-data/activpb-peertube/etc-nginx-conf-d/peertube.conf /etc/nginx/conf.d/peertube.conf
-sed -i "s/peertube.example.com/${FULLDOMAINNAME}/g" /etc/nginx/conf.d/peertube.conf
+##/bin/cp -f --no-clobber /usr/local/pbase-data/activpb-peertube/etc-nginx-conf-d/peertube.conf /etc/nginx/conf.d/peertube.conf
+##sed -i "s/peertube.example.com/${FULLDOMAINNAME}/g" /etc/nginx/conf.d/peertube.conf
 
 echo "Configuration updated:   /etc/nginx/conf.d/peertube.conf"
 
@@ -468,8 +467,8 @@ systemctl start peertube
 systemctl status peertube
 
 
-## capture journalctl output to file after waiting 15 seconds for peertube to launch
-sleep 15
+## capture journalctl output to file after waiting 20 seconds for peertube to launch
+sleep 20
 mkdir -p /usr/local/pbase-data/admin-only/activpb-peertube/
 journalctl -u peertube > /usr/local/pbase-data/admin-only/activpb-peertube/journalctl-output.txt
 

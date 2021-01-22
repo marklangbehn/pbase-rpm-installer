@@ -167,19 +167,31 @@ yum provides nodejs
 yum -y install nodejs-12.19
 ```
 
+#### GoTTY
+#### Terminal shell webapp - gotty
+The gotty service is written in Go and implements a webpage that with a terminal login shell.
+```
+echo "pbase.foundation@gmail.com" > /root/DEFAULT_EMAIL_ADDRESS.txt
+echo "shell" > /root/DEFAULT_SUB_DOMAIN.txt
+echo "mark" > /root/DEFAULT_DESKTOP_USERNAME.txt
+yum -y install https://pbase-foundation.com/pbase-repo.rpm
+yum -y install pbase-preconfig-gotty
+yum -y install pbase-golang-tools
+yum -y install pbase-gotty
+```
+
 #### Gatsby JS
 #### Build Gatsby JS website
 The static site generator Gatsby JS depends on Node JS and a few image procesing libraries to build websites.
-Here's how to build from the site's resources and code on a Git repository.  
+Here's how to build from the site's resources and code on a Git repository.
 ```
 yum -y install https://pbase-foundation.com/pbase-repo.rpm
 yum -y install pbase-preconfig-nodejs12
 yum -y install nodejs  
 yum -y install pbase-gatsby-tools
-
 ```
-As a regular user, create a file `~/.netrc` and fill it with your Git source info.
 
+As a regular user, create a file `~/.netrc` and fill it with your Git source info.
 ```
 machine gitlab.com
 login myrealgitusername
@@ -435,7 +447,6 @@ Postgres
 yum -y install https://pbase-foundation.com/pbase-repo.rpm
 yum -y install pbase-preconfig-postgres-gitea
 yum -y install pbase-postgres
-yum -y install pbase-apache
 yum -y install pbase-gitea
 ```
 
@@ -444,7 +455,6 @@ MySQL
 yum -y install https://pbase-foundation.com/pbase-repo.rpm
 yum -y install pbase-preconfig-mysql-gitea
 yum -y install pbase-mysql
-yum -y install pbase-apache
 yum -y install pbase-gitea
 ```
 

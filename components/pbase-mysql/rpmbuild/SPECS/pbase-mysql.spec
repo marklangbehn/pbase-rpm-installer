@@ -85,9 +85,6 @@ check_linux_version() {
 echo "PBase MySQL server"
 
 ## config is stored in json file with root-only permissions
-## it can be one of two places:
-##     /usr/local/pbase-data/admin-only/pbase_module_config.json
-## or
 ##     /usr/local/pbase-data/admin-only/module-config.d/pbase_mysql.json
 
 
@@ -145,7 +142,7 @@ RAND_PW_ROOT="r$(date +%s | sha256sum | base64 | head -c 16 | tail -c 8)"
 #echo "RAND_PW_USER:            $RAND_PW_USER"
 #echo "RAND_PW_ROOT:            $RAND_PW_ROOT"
 
-## look for either separate config file "pbase_mysql.json" or all-in-one file: "pbase_module_config.json"
+## look for config file "pbase_mysql.json"
 PBASE_CONFIG_FILENAME="pbase_mysql.json"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"

@@ -168,7 +168,7 @@ echo ""
 echo "Default PBase module configuration directory:"
 echo "                        /usr/local/pbase-data/admin-only/module-config.d/"
 
-## look for either separate config file "pbase_gitea.json" or all-in-one file: "pbase_module_config.json"
+## look for config file "pbase_gitea.json"
 PBASE_CONFIG_FILENAME="pbase_node_solid_server.json"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"

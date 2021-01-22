@@ -126,13 +126,13 @@ parseConfig() {
 }
 
 
-## look for either separate config file "pbase_gitlab_ce.json" or all-in-one file: "pbase_module_config.json"
+## look for config file "pbase_gitlab_ce.json"
 PBASE_CONFIG_FILENAME="pbase_gitlab_ce.json"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config value from JSON file
-parseConfig "EXTERN_URL_SUBDOMAIN" ".pbase_gitlab_ce.externalUrlSubdomain" "git"
+parseConfig "EXTERN_URL_SUBDOMAIN" ".pbase_gitlab_ce.urlSubDomain" "git"
 parseConfig "EXTERN_URL_IS_HTTPS" ".pbase_gitlab_ce.externalUrlIsHttps" "true"
 parseConfig "LETS_ENCRYPT_ENABLE" ".pbase_gitlab_ce.letsEncryptEnable" "true"
 
@@ -156,7 +156,6 @@ if [[ "${EXTERN_URL_SUBDOMAIN}" != "" ]] ; then
   echo "Using subdomain:         ${FULLDOMAINNAME}"
 fi
 
-
 if [[ $EXTERN_URL_IS_HTTPS == "true" ]]; then
   EXTERNALURL="https://${FULLDOMAINNAME}"
 else
@@ -167,12 +166,6 @@ QT="'"
 EXTERNALURLQUOTED=${QT}${EXTERNALURL}${QT}
 LE_EMAILADDRQUOTED=${QT}${LETS_ENCRYPT_EMAILADDR}${QT}
 
-
-## check if already installed
-#if [[ -d "/var/lib/gitea" ]]; then
-#  echo "/var/lib/gitea directory already exists - exiting"
-#  exit 0
-#fi
 
 if [[ ! -e /etc/gitlab/gitlab.rb ]] ; then
   echo "Cannot configure:        /etc/gitlab/gitlab.rb"
@@ -213,12 +206,18 @@ gitlab-ctl reconfigure
 
 echo ""
 ## add shell aliases
-append_bashrc_alias restartgitlab "gitlab-ctl restart"
 append_bashrc_alias tailgitlab "gitlab-ctl tail"
+append_bashrc_alias startgitlab "gitlab-ctl start"
+append_bashrc_alias restartgitlab "gitlab-ctl restart"
+append_bashrc_alias stopgitlab "gitlab-ctl stop"
+append_bashrc_alias statusgitlab "gitlab-ctl status"
+
+append_bashrc_alias statusallgitlab "systemctl status gitlab-runsvdir"
 append_bashrc_alias editgitlabconf "vi /etc/gitlab/gitlab.rb"
 
-echo "GitLab service running. Open this URL to complete the install."
-echo "Next step - required - login to setup the password for the root account"
+echo "GitLab service ready"
+echo "Next step - required - Open this URL to create the password for "
+echo "                       the GitLab 'root' account."
 echo "                         ${EXTERNALURL}"
 echo ""
 

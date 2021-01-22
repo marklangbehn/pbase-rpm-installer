@@ -85,9 +85,6 @@ check_linux_version() {
 echo "PBase SSH fail2ban"
 
 ## config is stored in json file with root-only permissions
-## it can be one of two places:
-##     /usr/local/pbase-data/admin-only/pbase_module_config.json
-## or
 ##     /usr/local/pbase-data/admin-only/module-config.d/pbase_ssh_fail2ban.json
 
 
@@ -139,7 +136,7 @@ parseConfig() {
 }
 
 
-## look for either separate config file "pbase_ssh_fail2ban.json" or all-in-one file: "pbase_module_config.json"
+## look for config file "pbase_ssh_fail2ban.json"
 PBASE_CONFIG_FILENAME="pbase_ssh_fail2ban.json"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"

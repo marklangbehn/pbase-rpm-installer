@@ -169,7 +169,7 @@ yum -y install nodejs-12.19
 
 #### GoTTY
 #### Terminal shell webapp - gotty
-The gotty service is written in Go and implements a webpage that with a terminal login shell.
+The gotty service is written in Go and implements a webpage for a terminal login shell.
 ```
 echo "pbase.foundation@gmail.com" > /root/DEFAULT_EMAIL_ADDRESS.txt
 echo "shell" > /root/DEFAULT_SUB_DOMAIN.txt
@@ -365,6 +365,7 @@ Install the Nextcloud PHP based application.
 Either PostgreSQL or MySQL 8.0 community can be used.  
 First create the default email text file.  
 `echo "pbase.foundation@gmail.com" > /root/DEFAULT_EMAIL_ADDRESS.txt`
+`echo "nextcloud" > /root/DEFAULT_SUB_DOMAIN.txt`
 
 To install Nextcloud with a Postgres database for storage  
 Use these steps:  

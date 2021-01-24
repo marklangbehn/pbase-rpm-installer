@@ -160,7 +160,7 @@ MODULE_SAMPLES_DIR="/usr/local/pbase-data/pbase-preconfig-lets-encrypt/module-co
 
 PBASE_DEFAULTS_FILENAME="pbase_repo.json"
 
-## look for either separate config file like "pbase_repo.json" or all-in-one file: "pbase_module_config.json"
+## look for config file like "pbase_repo.json"
 PBASE_CONFIG_FILENAME="$PBASE_DEFAULTS_FILENAME"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"
@@ -177,9 +177,11 @@ if [[ "${DEFAULT_EMAIL_ADDRESS}" != "" ]] ; then
   setFieldInJsonModuleConfig ${DEFAULT_EMAIL_ADDRESS} pbase_lets_encrypt emailAddress
 fi
 
-if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] ; then
+if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] && [[ "${DEFAULT_SUB_DOMAIN}" != null ]] ; then
   echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN}"
   setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_lets_encrypt urlSubDomain
+else
+  echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN}"
 fi
 
 

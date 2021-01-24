@@ -137,7 +137,7 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config values from JSON file
 parseConfig "CROWDSEC_VERSION" ".pbase_crowdsec.crowdsecVersion" ""
-parseConfig "UNATTENDED_INSTALL" ".pbase_crowdsec.unattendedInstall" "true"
+parseConfig "UNATTENDED_INSTALL" ".pbase_crowdsec.unattendedInstall" "false"
 
 
 echo "Downloading binary:      crowdsec-release.tgz"
@@ -149,20 +149,33 @@ tar xzf crowdsec-release.tgz
 echo "Done"
 ls -l
 
-echo "Executing Crowdsec unattended setup..."
-echo "  cd /opt/crowdsec*"
-echo "  ./wizard.sh --unattended"
-echo ""
+if [[ "${UNATTENDED_INSTALL}" == "true"  ]] ; then
+  echo "Executing Crowdsec unattended setup..."
+  echo "  cd /opt/crowdsec*"
+  echo "  ./wizard.sh --unattended"
+  echo ""
 
-cd /opt/crowdsec*
-./wizard.sh --unattended
+  cd /opt/crowdsec*
+  ./wizard.sh --unattended
+else
+  echo "Next step - required - execute these manual Crowdsec setup commands."
+  echo "  cd /opt/crowdsec*"
+  echo "  ./wizard.sh --install"
+  echo ""
+fi
 
 echo ""
-echo "Starting crowdsec service"
+echo "Enabling crowdsec service"
 /bin/systemctl daemon-reload
-
 /bin/systemctl enable crowdsec
-/bin/systemctl start crowdsec
+
+if [[ "${UNATTENDED_INSTALL}" == "true"  ]] ; then
+  echo "Starting crowdsec service"
+  /bin/systemctl start crowdsec
+else
+  echo "After completing crowdsec setup it must be started with 'systemctl start crowdsec'"
+fi
+
 /bin/systemctl status crowdsec
 
 ## Add aliases helpful for admin tasks to .bashrc

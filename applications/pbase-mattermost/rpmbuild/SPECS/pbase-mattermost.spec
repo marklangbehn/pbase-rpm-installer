@@ -50,29 +50,6 @@ append_bashrc_alias() {
   fi
 }
 
-copy_if_not_exists() {
-  if [ -z "$1" ]  ||  [ -z "$2" ]  ||  [ -z "$3" ]; then
-    echo "All 3 params must be passed to copy_if_not_exists function"
-    exit 1
-  fi
-
-  FILENAME="$1"
-  SOURCE_DIR="$2"
-  DEST_DIR="$3"
-
-  SOURCE_FILE_PATH=$SOURCE_DIR/$FILENAME
-  DEST_FILE_PATH=$DEST_DIR/$FILENAME
-
-  if [[ -f "$DEST_FILE_PATH" ]] ; then
-    echo "Already exists:          $DEST_FILE_PATH"
-    return 0
-  else
-    echo "Copying file:            $DEST_FILE_PATH"
-    /bin/cp -rf --no-clobber $SOURCE_FILE_PATH  $DEST_DIR
-    return 1
-  fi
-}
-
 
 ## config is stored in json file with root-only permissions
 ##     /usr/local/pbase-data/admin-only/module-config.d/pbase_mattermost.json
@@ -165,6 +142,8 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 URL_SUBDOMAIN=""
 
 QT="'"
+URL_SUBDOMAIN_QUOTED="${QT}${QT}"
+
 
 if [[ -e "/usr/local/pbase-data/admin-only/module-config.d/pbase_lets_encrypt.json" ]] ; then
   parseConfig "URL_SUBDOMAIN" ".pbase_lets_encrypt.urlSubDomain" ""
@@ -277,7 +256,7 @@ if [[ $PBASE_CONFIG_NAME == "pbase_postgres" ]] ; then
   sed -i -e "s/mysqld.service/postgresql.service/" /etc/systemd/system/mattermost.service
 
   sed -i -e "s/mysql/postgres/" /opt/mattermost/config/config.json
-  ##sed -i -e "s/mmuser\:mostest/postgres:\/\/mmuser:mostest/" /opt/mattermost/config/config.json
+  sed -i -e "s/\"mmuser/\"postgres:\/\/mmuser/" /opt/mattermost/config/config.json
   sed -i -e "s/charset\=utf8mb4\,utf8/sslmode=disable\&connect_timeout=10/" /opt/mattermost/config/config.json
   sed -i -e "s/tcp(localhost\:3306)/localhost:5432/" /opt/mattermost/config/config.json
   sed -i -e "s/\\\u0026readTimeout=30s//" /opt/mattermost/config/config.json
@@ -317,12 +296,24 @@ append_bashrc_alias restartmattermost "/bin/systemctl restart mattermost"
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
 
-if [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
-  echo "Disabling previous:      /etc/httpd/conf.d/${THISDOMAINNAME}.conf"
-  mv "/etc/httpd/conf.d/${THISDOMAINNAME}.conf"  "/etc/httpd/conf.d/${THISDOMAINNAME}.conf-DISABLED"
+## check for subdomain
+FULLDOMAINNAME="$THISDOMAINNAME"
+
+if [[ ${URL_SUBDOMAIN} == "" ]] || [[ ${URL_SUBDOMAIN} == null ]] ; then
+  FULLDOMAINNAME="${THISDOMAINNAME}"
+  echo "Using root domain:       ${FULLDOMAINNAME}"
+else
+  FULLDOMAINNAME="${URL_SUBDOMAIN}.${THISDOMAINNAME}"
+  echo "Using subdomain:         ${FULLDOMAINNAME}"
 fi
 
-MATTERMOST_READY_MSG="Next Step - Open URL to complete install"
+
+if [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
+  echo "Disabling previous:      /etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
+  mv "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"  "/etc/httpd/conf.d/${THISDOMAINNAME}.conf-DISABLED"
+fi
+
+MATTERMOST_READY_MSG="Next Step - required open this URL to complete install"
 
 if [[ "$URL_SUBDOMAIN" != "" ]] && [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
   PROXY_CONF="/etc/httpd/conf.d/mattermost-proxy-subdomain.conf"
@@ -331,13 +322,13 @@ if [[ "$URL_SUBDOMAIN" != "" ]] && [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
   /bin/cp --no-clobber /usr/local/pbase-data/pbase-mattermost/root-uri/etc-httpd-confd/mattermost-proxy-subdomain.conf /etc/httpd/conf.d/
 
   echo "Updating config file:    ${PROXY_CONF}"
-  sed -i "s/mysubdomain.mydomain.com/${URL_SUBDOMAIN}.${THISDOMAINNAME}/" $PROXY_CONF
+  sed -i "s/mysubdomain.mydomain.com/${FULLDOMAINNAME}/" $PROXY_CONF
   sed -i "s/hostmaster@mydomain.com/${APACHE_SERVER_ADMIN}/" $PROXY_CONF
   systemctl daemon-reload
   systemctl restart httpd
 
   echo "$MATTERMOST_READY_MSG"
-  echo "                         http://${URL_SUBDOMAIN}.${THISDOMAINNAME}/install"
+  echo "                         http://${FULLDOMAINNAME}/install"
   echo "  or"
   echo "                         http://localhost/install"
 elif [[ "$ADD_APACHE_PROXY" == "true" ]] ; then

@@ -235,18 +235,7 @@ if [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]]; then
   /sbin/chkconfig httpd --level 345 on || fail "chkconfig failed to enable httpd service"
   /sbin/service httpd restart || fail "failed to restart httpd service"
 
-  if [[ -e "certbot" ]] ; then
-    echo "Existing certbot:        certbot"
-  else
-    echo "Fetch certbot:           wget -P /usr/local/bin https://dl.eff.org/certbot"
-    wget -P /usr/local/bin https://dl.eff.org/certbot
-    chown root:root certbot
-    chmod 0755 certbot
-
-    mkdir /var/lib/letsencrypt
-  fi
-
-  ## get SSL cert, may add file in /etc/httpd/conf...
+  ## get SSL cert, will add file in /etc/httpd/conf...
   ## for example:   certbot --apache --agree-tos --email yoursysadmin@yourrealmail.com  -d pbase-foundation.com -d www.pbase-foundation.com -n
 
   echo "Invoke certbot:          certbot --apache --agree-tos --email ${EMAIL_ADDR} -d ${FULLDOMAINNAME} $DASH_D_ADDITIONAL_SUBDOMAIN -n"
@@ -279,15 +268,6 @@ elif [[ "${REDHAT_RELEASE_DIGIT}" == "7" ]]; then
   fi
 
 elif [[ "${REDHAT_RELEASE_DIGIT}" == "8" ]]; then
-
-  if [[ -e "certbot" ]] ; then
-    echo "Existing certbot:        certbot"
-  else
-    echo "Fetch certbot:           wget -P /usr/local/bin https://dl.eff.org/certbot"
-    wget -P /usr/local/bin https://dl.eff.org/certbot
-    chown root:root certbot
-    chmod 0755 certbot
-  fi
 
   echo "Invoke certbot:          certbot --no-bootstrap --apache --agree-tos --email ${EMAIL_ADDR}  -d ${FULLDOMAINNAME} $DASH_D_ADDITIONAL_SUBDOMAIN -n"
   echo ""

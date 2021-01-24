@@ -87,29 +87,6 @@ append_bashrc_alias() {
   fi
 }
 
-copy_if_not_exists() {
-  if [ -z "$1" ]  ||  [ -z "$2" ]  ||  [ -z "$3" ]; then
-    echo "All 3 params must be passed to copy_if_not_exists function"
-    exit 1
-  fi
-
-  FILENAME="$1"
-  SOURCE_DIR="$2"
-  DEST_DIR="$3"
-
-  SOURCE_FILE_PATH=$SOURCE_DIR/$FILENAME
-  DEST_FILE_PATH=$DEST_DIR/$FILENAME
-
-  if [[ -f "$DEST_FILE_PATH" ]] ; then
-    echo "Already exists:          $DEST_FILE_PATH"
-    return 0
-  else
-    echo "Copying file:            $DEST_FILE_PATH"
-    /bin/cp -rf --no-clobber $SOURCE_FILE_PATH  $DEST_DIR
-    return 1
-  fi
-}
-
 
 echo "PBase NextCloud installer"
 
@@ -170,7 +147,6 @@ echo ""
 
 ## look for config file "pbase_gitea.json"
 PBASE_CONFIG_FILENAME="pbase_nextcloud.json"
-
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config value from JSON file
@@ -180,7 +156,7 @@ parseConfig "CONFIG_SUBDOMAIN_NAME" ".pbase_nextcloud.urlSubDomain" "nextcloud"
 
 echo "DATABASE:                $DATABASE"
 echo "CONFIG_URLSUBPATH:       $CONFIG_URLSUBPATH"
-echo "CONFIG_SUBDOMAIN_NAME:   $CONFIG_SUBDOMAIN_NAME"
+#echo "CONFIG_SUBDOMAIN_NAME:   $CONFIG_SUBDOMAIN_NAME"
 
 SLASH_NEXTCLOUD_URLSUBPATH=""
 
@@ -196,13 +172,17 @@ THISDOMAINNAME="$(hostname -d)"
 
 ## FULLDOMAINNAME is the subdomain if declared plus the domain
 FULLDOMAINNAME="${THISDOMAINNAME}"
+QT="'"
+URL_SUBDOMAIN_QUOTED="${QT}${QT}"
 
 if [[ "${CONFIG_SUBDOMAIN_NAME}" != "" ]] ; then
   FULLDOMAINNAME="${CONFIG_SUBDOMAIN_NAME}.${THISDOMAINNAME}"
+  URL_SUBDOMAIN_QUOTED=${QT}${CONFIG_SUBDOMAIN_NAME}${QT}
   echo "Using subdomain:         ${FULLDOMAINNAME}"
 fi
 
-## ----------------
+echo "CONFIG_SUBDOMAIN_NAME:   ${URL_SUBDOMAIN_QUOTED}"
+
 
 ## when DB_PSWD is populated below that means DB config has been defined
 DB_PSWD=""
@@ -258,9 +238,9 @@ echo "Apache vhost config:     /etc/httpd/conf.d/nextcloud-vhost.conf"
 echo "FULLDOMAINNAME:          $FULLDOMAINNAME"
 /bin/cp --no-clobber /usr/local/pbase-data/pbase-nextcloud/etc-httpd-confd/nextcloud-vhost.conf /etc/httpd/conf.d/
 
-if [[ -e "/etc/httpd/conf.d/${THISDOMAINNAME}.conf"  ]] ; then
-  echo "Removing existing:       /etc/httpd/conf.d/${THISDOMAINNAME}.conf"
-  mv "/etc/httpd/conf.d/${THISDOMAINNAME}.conf"  "/etc/httpd/conf.d/${THISDOMAINNAME}.conf-DISABLED"
+if [[ -e "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"  ]] ; then
+  echo "Removing existing:       /etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
+  mv "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"  "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf-DISABLED"
 fi
 
 ## replace your.server.com in template conf

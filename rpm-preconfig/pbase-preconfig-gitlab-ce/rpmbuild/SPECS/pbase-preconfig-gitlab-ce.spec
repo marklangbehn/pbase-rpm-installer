@@ -34,6 +34,7 @@ fail() {
     echo "ERROR: $1"
     exit 1
 }
+
 ## config is stored in json file with root-only permissions
 ## it can be one of two places:
 ##     /usr/local/pbase-data/admin-only/pbase_module_config.json
@@ -125,31 +126,76 @@ check_linux_version() {
   fi
 }
 
+setFieldInJsonModuleConfig() {
+  NEWVALUE="$1"
+  MODULE="$2"
+  FULLFIELDNAME="$3"
+  MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
+
+  SOURCE_DIR="$4"
+  if [[ "$SOURCE_DIR" == "" ]]; then
+    SOURCE_DIR="$MODULE_CONFIG_DIR"
+  fi
+
+  CONFIG_FILE_NAME="${MODULE}.json"
+  TEMPLATE_JSON_FILE="${SOURCE_DIR}/${CONFIG_FILE_NAME}"
+  /bin/cp -f "${TEMPLATE_JSON_FILE}" "/tmp/${CONFIG_FILE_NAME}"
+
+  ## set a value in the json file
+  PREFIX="jq '.${MODULE}.${FULLFIELDNAME}= \""
+  SUFFIX="\"'"
+  JQ_COMMAND="${PREFIX}${NEWVALUE}${SUFFIX} /tmp/${CONFIG_FILE_NAME} > ${MODULE_CONFIG_DIR}/${CONFIG_FILE_NAME}"
+
+  ##echo "Executing:  eval $JQ_COMMAND"
+  eval $JQ_COMMAND
+
+  /bin/rm -f "/tmp/${CONFIG_FILE_NAME}"
+}
 
 echo "PBase GitLab CE yum repos and dependencies pre-configuration"
-echo ""
+
+THISHOSTNAME="$(hostname)"
+THISDOMAINNAME="$(hostname -d)"
+
+echo "Hostname:                $THISHOSTNAME"
+echo "Domainname:              $THISDOMAINNAME"
+
+check_linux_version
 
 MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
-MODULE_SAMPLES_DIR="/usr/local/pbase-data/pbase-preconfig-postgres-gitea/module-config-samples"
+MODULE_SAMPLES_DIR="/usr/local/pbase-data/pbase-preconfig-gitlab-ce/module-config-samples"
 
 PBASE_DEFAULTS_FILENAME="pbase_repo.json"
 
-## look for either separate config file like "pbase_repo.json" or all-in-one file: "pbase_module_config.json"
+## look for config file like "pbase_repo.json"
 PBASE_CONFIG_FILENAME="$PBASE_DEFAULTS_FILENAME"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config values from JSON file
 parseConfig "DEFAULT_EMAIL_ADDRESS" ".pbase_repo.defaultEmailAddress" ""
+parseConfig "DEFAULT_SMTP_SERVER" ".pbase_repo.defaultSmtpServer" ""
+parseConfig "DEFAULT_SMTP_USERNAME" ".pbase_repo.defaultSmtpUsername" ""
+parseConfig "DEFAULT_SMTP_PASSWORD" ".pbase_repo.defaultSmtpPassword" ""
+parseConfig "DEFAULT_SUB_DOMAIN" ".pbase_repo.defaultSubDomain" ""
+
+## when DEFAULT_SUB_DOMAIN.txt file is not present
+if [[ $DEFAULT_SUB_DOMAIN == null ]] ; then
+  echo "No DEFAULT_SUB_DOMAIN override file found, using 'git' for defaultSubDomain"
+  DEFAULT_SUB_DOMAIN="git"
+fi
+
+
+## when smtp password was given, but not server then assume mailgun
+if [[ "${DEFAULT_SMTP_SERVER}" == "" ]] && [[ "${DEFAULT_SMTP_PASSWORD}" != "" ]] ; then
+  DEFAULT_SMTP_SERVER="smtp.mailgun.org"
+fi
 
 GITLAB_CONFIG_FILENAME="pbase_gitlab_ce.json"
 echo "Gitea config:            ${MODULE_CONFIG_DIR}/${GITLAB_CONFIG_FILENAME}"
 
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${GITLAB_CONFIG_FILENAME}  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_smtp.json  ${MODULE_CONFIG_DIR}/
-
-## check which version of Linux is installed
-check_linux_version
 
 ## default repo path
 YUM_REPO_PATH="/usr/local/pbase-data/pbase-preconfig-gitlab-ce/etc-yum-repos-d/el8/gitlab_gitlab-ce.repo"
@@ -177,18 +223,52 @@ else
   /bin/cp -f $YUM_REPO_PATH /etc/yum.repos.d/
 fi
 
-## when defined in pbase_repo.json use that to provide the Let's Encrypt email address
-if [[ $DEFAULT_EMAIL_ADDRESS != "" ]]; then
-  echo "Setting 'defaultEmailAddress' in pbase_gitlab_ce.json"
-  echo "                         ${DEFAULT_EMAIL_ADDRESS}"
-  sed -i "s/yoursysadmin@yourrealmail.com/${DEFAULT_EMAIL_ADDRESS}/" "${MODULE_CONFIG_DIR}/pbase_gitlab_ce.json"
+if [[ "${DEFAULT_EMAIL_ADDRESS}" != "" ]] ; then
+  echo "letsEncryptEmailAddress: ${DEFAULT_EMAIL_ADDRESS}"
+  setFieldInJsonModuleConfig ${DEFAULT_EMAIL_ADDRESS} pbase_gitlab_ce letsEncryptEmailAddress
+fi
+
+QT="'"
+DEFAULT_SUB_DOMAIN_QUOTED=${QT}${DEFAULT_SUB_DOMAIN}${QT}
+
+#echo "DEFAULT_SUB_DOMAIN:      ${DEFAULT_SUB_DOMAIN_QUOTED}"
+
+if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] ; then
+  echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN_QUOTED}"
+  setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_gitlab_ce urlSubDomain
+else
+  echo "Setting empty urlSubDomain, Gitlab will be root level of domain"
+  echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN_QUOTED}"
+  setFieldInJsonModuleConfig "" pbase_gitlab_ce urlSubDomain
+fi
+
+echo "SMTP defaults:           ${MODULE_CONFIG_DIR}/pbase_smtp.json"
+
+## replace domainname in smtp config template file
+if [[ -e "${MODULE_CONFIG_DIR}/pbase_smtp.json" ]]; then
+  sed -i "s/example.com/${THISDOMAINNAME}/" "${MODULE_CONFIG_DIR}/pbase_smtp.json"
+fi
+
+if [[ "${DEFAULT_SMTP_SERVER}" != "" ]] ; then
+  echo "defaultSmtpServer:       ${DEFAULT_SMTP_SERVER}"
+  setFieldInJsonModuleConfig ${DEFAULT_SMTP_SERVER} pbase_smtp server
+fi
+
+if [[ "${DEFAULT_SMTP_USERNAME}" != "" ]] ; then
+  echo "defaultSmtpUsername:     ${DEFAULT_SMTP_USERNAME}"
+  setFieldInJsonModuleConfig ${DEFAULT_SMTP_USERNAME} pbase_smtp login
+fi
+
+if [[ "${DEFAULT_SMTP_PASSWORD}" != "" ]] ; then
+  echo "defaultSmtpPassword:     ${DEFAULT_SMTP_PASSWORD}"
+  setFieldInJsonModuleConfig ${DEFAULT_SMTP_PASSWORD} pbase_smtp password
 fi
 
 
 echo ""
 echo "GitLab CE repo configured."
 echo "Next step - optional - change the default GitLab setup by editing"
-echo "    pbase_gitlab_ce.json. For example:"
+echo "    the pbase_gitlab_ce.json file. For example:"
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
 echo "  vi pbase_gitlab_ce.json"
 
@@ -210,5 +290,5 @@ echo "rpm preuninstall"
 /usr/local/pbase-data/pbase-preconfig-gitlab-ce/etc-yum-repos-d/el7/gitlab_gitlab-ce.repo
 /usr/local/pbase-data/pbase-preconfig-gitlab-ce/etc-yum-repos-d/el8/gitlab_gitlab-ce.repo
 /usr/local/pbase-data/pbase-preconfig-gitlab-ce/etc-yum-repos-d/fedora/gitlab_gitlab-ce.repo
-/usr/local/pbase-data/pbase-preconfig-postgres-gitea/module-config-samples/pbase_gitlab_ce.json
-/usr/local/pbase-data/pbase-preconfig-postgres-gitea/module-config-samples/pbase_smtp.json
+/usr/local/pbase-data/pbase-preconfig-gitlab-ce/module-config-samples/pbase_gitlab_ce.json
+/usr/local/pbase-data/pbase-preconfig-gitlab-ce/module-config-samples/pbase_smtp.json

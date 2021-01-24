@@ -81,29 +81,6 @@ append_bashrc_alias() {
   fi
 }
 
-copy_if_not_exists() {
-  if [ -z "$1" ]  ||  [ -z "$2" ]  ||  [ -z "$3" ]; then
-    echo "All 3 params must be passed to copy_if_not_exists function"
-    exit 1
-  fi
-
-  FILENAME="$1"
-  SOURCE_DIR="$2"
-  DEST_DIR="$3"
-
-  SOURCE_FILE_PATH=$SOURCE_DIR/$FILENAME
-  DEST_FILE_PATH=$DEST_DIR/$FILENAME
-
-  if [[ -f "$DEST_FILE_PATH" ]] ; then
-    echo "Already exists:          $DEST_FILE_PATH"
-    return 0
-  else
-    echo "Copying file:            $DEST_FILE_PATH"
-    /bin/cp -rf --no-clobber $SOURCE_FILE_PATH  $DEST_DIR
-    return 1
-  fi
-}
-
 
 echo "PBase WordPress all-in-one application installer"
 
@@ -209,7 +186,8 @@ PBASE_CONFIG_FILENAME="pbase_wordpress.json"
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config value from JSON file
-parseConfig "WORDPRESS_URI_BASE"  ".pbase_wordpress.wordpressUriBase" "wordpress"
+parseConfig "WORDPRESS_URI_BASE"  ".pbase_wordpress.wordpressUriBase" ""
+parseConfig "CONFIG_SUBDOMAIN_NAME" ".pbase_wordpress.urlSubDomain" ""
 
 echo "WORDPRESS_URI_BASE:      $WORDPRESS_URI_BASE"
 SLASH_WORDPRESS_URI_BASE=""
@@ -224,13 +202,26 @@ echo ""
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
 
-## check for htdocs location
-WWW_ROOT="/var/www/html/${THISDOMAINNAME}/public"
+## FULLDOMAINNAME is the subdomain if declared plus the domain
+FULLDOMAINNAME="${THISDOMAINNAME}"
+QT="'"
+URL_SUBDOMAIN_QUOTED="${QT}${QT}"
 
-if [[ -d "/var/www/html/${THISDOMAINNAME}/public" ]]; then
-  WWW_ROOT="/var/www/html/${THISDOMAINNAME}/public"
-elif [[ -d "/var/www/${THISDOMAINNAME}/html" ]]; then
-  WWW_ROOT="/var/www/${THISDOMAINNAME}/html"
+if [[ "${CONFIG_SUBDOMAIN_NAME}" != "" ]] ; then
+  FULLDOMAINNAME="${CONFIG_SUBDOMAIN_NAME}.${THISDOMAINNAME}"
+  URL_SUBDOMAIN_QUOTED=${QT}${CONFIG_SUBDOMAIN_NAME}${QT}
+  echo "Using subdomain:         ${FULLDOMAINNAME}"
+fi
+
+echo "CONFIG_SUBDOMAIN_NAME:   ${URL_SUBDOMAIN_QUOTED}"
+
+## check for htdocs location
+WWW_ROOT="/var/www/html/${FULLDOMAINNAME}/public"
+
+if [[ -d "/var/www/html/${FULLDOMAINNAME}/public" ]]; then
+  WWW_ROOT="/var/www/html/${FULLDOMAINNAME}/public"
+elif [[ -d "/var/www/${FULLDOMAINNAME}/html" ]]; then
+  WWW_ROOT="/var/www/${FULLDOMAINNAME}/html"
 elif [[ -d "/var/www/html" ]]; then
   WWW_ROOT="/var/www/html"
 fi
@@ -350,9 +341,9 @@ echo "Next step - required - Open this URL to complete the install."
 echo "if locally installed"
 echo "                         http://localhost${SLASH_WORDPRESS_URI_BASE}"
 echo "if hostname is accessible"
-echo "                         http://${THISHOSTNAME}${SLASH_WORDPRESS_URI_BASE}"
+echo "                         http://${FULLDOMAINNAME}${SLASH_WORDPRESS_URI_BASE}"
 echo "or if your domain is registered in DNS and has HTTPS enabled"
-echo "                         https://${THISDOMAINNAME}${SLASH_WORDPRESS_URI_BASE}"
+echo "                         https://${FULLDOMAINNAME}${SLASH_WORDPRESS_URI_BASE}"
 echo ""
 
 %files

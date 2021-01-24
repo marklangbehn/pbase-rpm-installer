@@ -133,7 +133,7 @@ echo "PBase VirtualBox pre-configuration"
 MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
 PBASE_DEFAULTS_FILENAME="pbase_repo.json"
 
-## look for either separate config file like "pbase_repo.json" or all-in-one file: "pbase_module_config.json"
+## look for config file like "pbase_repo.json"
 PBASE_CONFIG_FILENAME="$PBASE_DEFAULTS_FILENAME"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"

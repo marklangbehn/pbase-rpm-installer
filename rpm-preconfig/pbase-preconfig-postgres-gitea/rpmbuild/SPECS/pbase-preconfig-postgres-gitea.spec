@@ -165,7 +165,7 @@ MODULE_SAMPLES_DIR="/usr/local/pbase-data/pbase-preconfig-postgres-gitea/module-
 
 PBASE_DEFAULTS_FILENAME="pbase_repo.json"
 
-## look for either separate config file like "pbase_repo.json" or all-in-one file: "pbase_module_config.json"
+## look for config file like "pbase_repo.json"
 PBASE_CONFIG_FILENAME="$PBASE_DEFAULTS_FILENAME"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"
@@ -217,6 +217,7 @@ echo "DEFAULT_SUB_DOMAIN:      ${DEFAULT_SUB_DOMAIN_QUOTED}"
 if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] ; then
   echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN}"
   setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_lets_encrypt urlSubDomain
+  setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_apache urlSubDomain
 else
   echo "Setting empty urlSubDomain, Gitea will be root level of domain"
   setFieldInJsonModuleConfig "" pbase_lets_encrypt urlSubDomain
@@ -268,6 +269,7 @@ echo "Next step - optional - review the configuration defaults provided"
 echo "    under 'module-config.d' by editing their JSON text files. For example:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
+echo "  vi pbase_apache.json"
 echo "  vi pbase_lets_encrypt.json"
 echo "  vi pbase_postgres.json"
 echo "  vi pbase_smtp.json"
@@ -277,7 +279,6 @@ echo ""
 echo "Next step - install Postgres, Apache and Gitea application with:"
 echo ""
 echo "  yum -y install pbase-postgres"
-echo "  yum -y install pbase-apache"
 echo "  yum -y install pbase-gitea"
 echo ""
 

@@ -1,6 +1,6 @@
 {
   "pbase_crowdsec" : {
     "crowdsecVersion": "",
-    "unattendedInstall": true
+    "unattendedInstall": false
   }
 }

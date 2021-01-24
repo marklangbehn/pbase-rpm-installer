@@ -50,28 +50,6 @@ append_bashrc_alias() {
   fi
 }
 
-copy_if_not_exists() {
-  if [ -z "$1" ]  ||  [ -z "$2" ]  ||  [ -z "$3" ]; then
-    echo "All 3 params must be passed to copy_if_not_exists function"
-    exit 1
-  fi
-
-  FILENAME="$1"
-  SOURCE_DIR="$2"
-  DEST_DIR="$3"
-
-  SOURCE_FILE_PATH=$SOURCE_DIR/$FILENAME
-  DEST_FILE_PATH=$DEST_DIR/$FILENAME
-
-  if [[ -f "$DEST_FILE_PATH" ]] ; then
-    echo "Already exists:          $DEST_FILE_PATH"
-    return 0
-  else
-    echo "Copying file:            $DEST_FILE_PATH"
-    /bin/cp -rf --no-clobber $SOURCE_FILE_PATH  $DEST_DIR
-    return 1
-  fi
-}
 
 check_linux_version() {
   AMAZON1_RELEASE=""

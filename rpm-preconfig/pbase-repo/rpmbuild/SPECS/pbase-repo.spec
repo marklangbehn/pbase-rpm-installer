@@ -190,7 +190,7 @@ THISDOMAINNAME="$(hostname -d)"
 
 check_linux_version
 
-## look for either separate config file "pbase_apache.json" or all-in-one file: "pbase_module_config.json"
+## look for config file "pbase_apache.json"
 PBASE_CONFIG_FILENAME="pbase_repo.json"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"
@@ -428,7 +428,7 @@ echo "    ...  or samples to be copied to 'module-config.d' in:"
 echo "        /usr/local/pbase-data/pbase-*/module-config-samples/"
 
 if [[ ${ROOT_DEFAULT_TEXTFILE_USED} == "true" ]] ; then
-  echo "    Populated from text files:  /root/DEFAULT-*"
+  echo "    Populated from text files:  /root/DEFAULT_*"
   echo "        /usr/local/pbase-data/admin-only/module-config.d/pbase_repo.json"
 else
   echo "Next step - optional - set the defaultEmailAddress in pbase_repo.json"

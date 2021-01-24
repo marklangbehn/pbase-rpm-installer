@@ -50,36 +50,10 @@ append_bashrc_alias() {
   fi
 }
 
-copy_if_not_exists() {
-  if [ -z "$1" ]  ||  [ -z "$2" ]  ||  [ -z "$3" ]; then
-    echo "All 3 params must be passed to copy_if_not_exists function"
-    exit 1
-  fi
-
-  FILENAME="$1"
-  SOURCE_DIR="$2"
-  DEST_DIR="$3"
-
-  SOURCE_FILE_PATH=$SOURCE_DIR/$FILENAME
-  DEST_FILE_PATH=$DEST_DIR/$FILENAME
-
-  if [[ -f "$DEST_FILE_PATH" ]] ; then
-    echo "Already exists:          $DEST_FILE_PATH"
-    return 0
-  else
-    echo "Copying file:            $DEST_FILE_PATH"
-    /bin/cp -rf --no-clobber $SOURCE_FILE_PATH  $DEST_DIR
-    return 1
-  fi
-}
-
 
 echo "PBase Gitea service"
 
 ## config is stored in json file with root-only permissions
-## it can be one of two places:
-##     /usr/local/pbase-data/admin-only/pbase_module_config.json
-## or
 ##     /usr/local/pbase-data/admin-only/module-config.d/pbase_apache.json
 
 
@@ -158,9 +132,12 @@ PBASE_CONFIG_FILENAME="pbase_lets_encrypt.json"
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 URL_SUBDOMAIN=""
 
+QT="'"
+
 if [[ -e "/usr/local/pbase-data/admin-only/module-config.d/pbase_lets_encrypt.json" ]] ; then
   parseConfig "URL_SUBDOMAIN" ".pbase_lets_encrypt.urlSubDomain" ""
-  echo "URL_SUBDOMAIN:           ${URL_SUBDOMAIN}"
+  URL_SUBDOMAIN_QUOTED=${QT}${URL_SUBDOMAIN}${QT}
+  echo "URL_SUBDOMAIN:           ${URL_SUBDOMAIN_QUOTED}"
 else
   echo "No subdomain config:     pbase_lets_encrypt.json"
 fi
@@ -345,7 +322,7 @@ if [[ ${URL_SUBPATH} != "" ]] ; then
   SUBPATH_URI="/${URL_SUBPATH}"
   echo "Using SUBPATH_URI:       $SUBPATH_URI"
 else
-  if [[ ${URL_SUBDOMAIN} == "" ]] ; then
+  if [[ ${URL_SUBDOMAIN} == "" ]] || [[ ${URL_SUBDOMAIN} == null ]] ; then
     PROXY_CONF_FILE="gitea-proxy-subdomain.conf"
     FULLDOMAINNAME="${THISDOMAINNAME}"
     echo "Using root domain:       $FULLDOMAINNAME"
@@ -367,8 +344,8 @@ if [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
     exit 0
   fi
 
-  echo "Disabling previous:      /etc/httpd/conf.d/${THISDOMAINNAME}.conf"
-  mv "/etc/httpd/conf.d/${THISDOMAINNAME}.conf"  "/etc/httpd/conf.d/${THISDOMAINNAME}.conf-DISABLED"
+  echo "Disabling previous:      /etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
+  mv "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"  "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf-DISABLED"
 
   /bin/cp --no-clobber /usr/local/pbase-data/pbase-gitea/etc-httpd-confd/${PROXY_CONF_FILE} /etc/httpd/conf.d/
   CONF_FILE="/etc/httpd/conf.d/${PROXY_CONF_FILE}"
@@ -400,12 +377,13 @@ else
 fi
 
 ## add shell aliases
-append_bashrc_alias tailgitea "tail -f /var/lib/gitea/log/gitea.log"
 append_bashrc_alias editgiteaconf "vi /etc/gitea/app.ini"
 append_bashrc_alias stopgitea "/bin/systemctl stop gitea"
 append_bashrc_alias startgitea "/bin/systemctl start gitea"
 append_bashrc_alias statusgitea "/bin/systemctl status gitea"
 append_bashrc_alias restartgitea "/bin/systemctl restart gitea"
+append_bashrc_alias tailgitea "journalctl -xf -u gitea"
+## append_bashrc_alias tailgitea "tail -f /var/lib/gitea/log/gitea.log"
 
 
 echo ""

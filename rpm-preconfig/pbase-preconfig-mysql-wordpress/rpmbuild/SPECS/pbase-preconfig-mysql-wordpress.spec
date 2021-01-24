@@ -167,7 +167,7 @@ MODULE_SAMPLES_DIR="/usr/local/pbase-data/pbase-preconfig-mysql-wordpress/module
 
 PBASE_DEFAULTS_FILENAME="pbase_repo.json"
 
-## look for either separate config file like "pbase_repo.json" or all-in-one file: "pbase_module_config.json"
+## look for config file like "pbase_repo.json"
 PBASE_CONFIG_FILENAME="$PBASE_DEFAULTS_FILENAME"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"
@@ -217,16 +217,16 @@ fi
 QT="'"
 DEFAULT_SUB_DOMAIN_QUOTED=${QT}${DEFAULT_SUB_DOMAIN}${QT}
 
-echo "DEFAULT_SUB_DOMAIN:      ${DEFAULT_SUB_DOMAIN_QUOTED}"
-
 if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] ; then
-  echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN}"
+  echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN_QUOTED}"
   setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_lets_encrypt urlSubDomain
-  setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_wordpress wordpressUriBase
+  setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_wordpress urlSubDomain
+  setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_apache urlSubDomain
 else
   echo "Setting empty urlSubDomain, Wordpress will be root level of domain"
   setFieldInJsonModuleConfig "" pbase_lets_encrypt urlSubDomain
   setFieldInJsonModuleConfig "" pbase_wordpress urlSubDomain
+  setFieldInJsonModuleConfig "" pbase_apache urlSubDomain
 fi
 
 echo "SMTP defaults:           ${MODULE_CONFIG_DIR}/pbase_smtp.json"
@@ -273,6 +273,7 @@ echo "Next step - optional - review the configuration defaults provided"
 echo "    under 'module-config.d' by editing their JSON text files. For example:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
+echo "  vi pbase_apache.json"
 echo "  vi pbase_wordpress.json"
 echo "  vi pbase_lets_encrypt.json"
 echo "  vi pbase_apache.json"

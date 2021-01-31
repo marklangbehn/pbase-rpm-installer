@@ -1,0 +1,8 @@
+{
+  "pbase_firewall_enable" :  {
+    "enableSSH": true,
+    "enableHTTP": true,
+    "enableHTTPS": true,
+    "additionalPorts": [ 29900 ]
+  }
+}

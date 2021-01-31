@@ -33,15 +33,6 @@ echo "rpm postinstall $1"
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
 
-## check for htdocs location
-
-if [[ -d "/var/www/html/${THISDOMAINNAME}/public" ]]; then
-  ALT_ROOT="/var/www/html/${THISDOMAINNAME}/public"
-elif [[ -d "/var/www/${THISDOMAINNAME}/html" ]]; then
-  ALT_ROOT="/var/www/${THISDOMAINNAME}/html"
-elif [[ -d "/var/www/html" ]]; then
-  ALT_ROOT="/var/www/html"
-fi
 
 echo "VirtualRecordLabel.net website content:"
 echo "                         /var/www/html/${THISDOMAINNAME}/public/"
@@ -58,21 +49,30 @@ chown -R root:root /var/www/mp3/
 ## links
 cd /var/www/html/${THISDOMAINNAME}/public/
 
-echo "Creating link to media:  /var/www/mp3"
-ln -s /var/www/mp3 mp3
-#ln -s /var/www/wav wav
+if [[ -e /var/www/html/${THISDOMAINNAME}/public/mp3 ]] ; then
+  echo "Already exists:          /var/www/html/${THISDOMAINNAME}/public/mp3"
+else
+  echo "Creating links to media: /var/www/mp3"
+  ln -s /var/www/mp3 mp3
+  #ln -s /var/www/mark mark
+  #ln -s /var/www/wav wav
 
-## yum
-#ln -s /var/www/yum-repo yum-repo
-#ln -s /var/www/yum-repo/pbase-components/1.0/RPMS/pbase-preconfig-1.0-0.noarch.rpm pbase-repo.rpm
-#ln -s /var/www/yum-static/ yum-static
+  ## yum
+  #ln -s /var/www/yum-repo yum-repo
+  #ln -s /var/www/yum-repo/pbase-components/1.0/RPMS/pbase-preconfig-1.0-0.noarch.rpm pbase-repo.rpm
+  #ln -s /var/www/yum-static/ yum-static
+fi
 
-echo "Copying .abba/ and .htaccess resources"
-cd /usr/local/pbase-data/vrl-website-content/build-deploy/resources/
 
-tar xf DOT.abba.tar -C /var/www/html/${THISDOMAINNAME}/public/
-/bin/cp --no-clobber DOT.htaccess /var/www/html/${THISDOMAINNAME}/public/.htaccess
+if [[ -e /var/www/html/${THISDOMAINNAME}/public/.abba ]] ; then
+  echo "Already exists:          .abba"
+else
+  echo "Copying .abba/ and .htaccess resources"
+  cd /usr/local/pbase-data/vrl-website-content/build-deploy/resources/
 
+  tar xf DOT.abba.tar -C /var/www/html/${THISDOMAINNAME}/public/
+  /bin/cp --no-clobber DOT.htaccess /var/www/html/${THISDOMAINNAME}/public/.htaccess
+fi
 
 WEBSITE_URL1="http://${THISHOSTNAME}"
 WEBSITE_URL2="http://${THISDOMAINNAME}"
@@ -92,5 +92,3 @@ echo ""
 /usr/local/pbase-data/vrl-website-content/build-deploy/build-notes.txt
 /usr/local/pbase-data/vrl-website-content/build-deploy/virtualrecordlabel-build.sh
 /usr/local/pbase-data/vrl-website-content/build-deploy/virtualrecordlabel-deploy.sh
-/usr/local/pbase-data/vrl-website-content/build-deploy/resources/httpd.conf
-/usr/local/pbase-data/vrl-website-content/build-deploy/resources/virtualrecordlabel.net.conf

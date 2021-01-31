@@ -23,7 +23,7 @@ PBase Kubernetes Tools Install
 %pre
 
 %post
-echo "rpm postinstall $1"
+# echo "rpm postinstall $1"
 
 fail() {
     echo "ERROR: $1"
@@ -31,7 +31,7 @@ fail() {
 }
 
 ## config is stored in json file with root-only permissions
-##     /usr/local/pbase-data/admin-only/module-config.d/pbase_apache.json
+##     in the directory: /usr/local/pbase-data/admin-only/module-config.d/
 
 
 locateConfigFile() {
@@ -41,11 +41,6 @@ locateConfigFile() {
   PBASE_CONFIG_BASE="/usr/local/pbase-data/admin-only"
   PBASE_ALL_IN_ONE_CONFIG_FILENAME="pbase_module_config.json"
   PBASE_CONFIG_DIR="${PBASE_CONFIG_BASE}/module-config.d"
-
-  ## Look for config .json file in one of two places.
-  ##     /usr/local/pbase-data/admin-only/pbase_module_config.json
-  ## or
-  ##     /usr/local/pbase-data/admin-only/module-config.d/pbase_apache.json
 
   PBASE_CONFIG_SEPARATE="${PBASE_CONFIG_DIR}/${PBASE_CONFIG_FILENAME}"
   PBASE_CONFIG_ALLINONE="${PBASE_CONFIG_BASE}/${PBASE_ALL_IN_ONE_CONFIG_FILENAME}"
@@ -102,9 +97,10 @@ parseConfig "DEFAULT_DESKTOP_USER_NAME" ".pbase_repo.defaultDesktopUsername" ""
 
 DESKTOP_USER_NAME="mydesktopusername"
 if [[ "$DEFAULT_DESKTOP_USER_NAME" != "" ]] && [[ "$DEFAULT_DESKTOP_USER_NAME" != null ]]; then
-  echo "defaultDesktopUsername:  $DEFAULT_DESKTOP_USER_NAME"
   DESKTOP_USER_NAME="$DEFAULT_DESKTOP_USER_NAME"
 fi
+
+echo "defaultDesktopUsername:  $DESKTOP_USER_NAME"
 
 ## download minikube and place it /usr/local/bin
 cd /tmp
@@ -124,9 +120,9 @@ mv kubectl  /usr/local/bin/
 
 
 ## set permission for desktop user
-if [[ "$DEFAULT_DESKTOP_USER_NAME" != "" ]]; then
-  echo "Setting ownership:       usermod -a -G libvirt $DEFAULT_DESKTOP_USER_NAME"
-  usermod -a -G libvirt $DEFAULT_DESKTOP_USER_NAME
+if [[ "$DESKTOP_USER_NAME" != "" ]] && [[ "$DESKTOP_USER_NAME" != "null" ]] && [[ "$DESKTOP_USER_NAME" != "mydesktopusername" ]] ; then
+  echo "Setting ownership:       usermod -a -G libvirt $DESKTOP_USER_NAME"
+  usermod -a -G libvirt $DESKTOP_USER_NAME
 fi
 
 echo "Next step:               Install a KVM 'driver' such as:"

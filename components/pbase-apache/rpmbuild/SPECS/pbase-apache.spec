@@ -85,7 +85,7 @@ check_linux_version() {
 echo "PBase Apache"
 
 ## config may be stored in json file with root-only permissions
-##     /usr/local/pbase-data/admin-only/module-config.d/pbase_apache.json
+##     in the directory: /usr/local/pbase-data/admin-only/module-config.d/
 
 
 locateConfigFile() {
@@ -407,6 +407,8 @@ if [[ $RESTRICT_HTTP_METHODS == "true" ]] ; then
   echo "" >> "/etc/httpd/conf/httpd.conf"
 fi
 
+echo "Log directory:           /var/log/httpd/${FULLDOMAINNAME}/"
+mkdir "/var/log/httpd/${FULLDOMAINNAME}/"
 
 # Enable httpd service at boot-time, and start httpd service
 echo "Enabling service:        httpd"
@@ -422,10 +424,10 @@ fi
 
 ## Add aliases helpful for admin tasks to .bashrc
 echo "" >> /root/.bashrc
-append_bashrc_alias tailhttp "tail -f /var/log/httpd/error_log /var/log/httpd/access_log"
-append_bashrc_alias tailhttpd "tail -f /var/log/httpd/error_log /var/log/httpd/access_log"
-append_bashrc_alias tailhttpderr "tail -f -n100 /var/log/httpd/error_log"
-append_bashrc_alias tailhttpdaccess "tail -f -n100 /var/log/httpd/access_log"
+append_bashrc_alias tailhttp "tail -f /var/log/httpd/${FULLDOMAINNAME}/error.log /var/log/httpd/${FULLDOMAINNAME}/access.log"
+append_bashrc_alias tailhttpd "tail -f /var/log/httpd/${FULLDOMAINNAME}/error.log /var/log/httpd/${FULLDOMAINNAME}/access.log"
+append_bashrc_alias tailhttpderr "tail -f -n100 /var/log/httpd/${FULLDOMAINNAME}/error.log"
+append_bashrc_alias tailhttpdaccess "tail -f -n100 /var/log/httpd/${FULLDOMAINNAME}/access.log"
 
 if [[ "$REDHAT_RELEASE_DIGIT" == "6" ]]; then
   append_bashrc_alias stophttpd "service httpd stop"

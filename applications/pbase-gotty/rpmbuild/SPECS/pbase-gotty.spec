@@ -52,8 +52,6 @@ append_bashrc_alias() {
 
 ## config is stored in json file with root-only permissions
 ## it can be one of two places:
-##     /usr/local/pbase-data/admin-only/pbase_module_config.json
-## or
 ##     /usr/local/pbase-data/admin-only/module-config.d/activpb_peertube.json
 
 

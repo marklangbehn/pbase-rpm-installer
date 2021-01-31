@@ -1,5 +1,6 @@
 {
   "pbase_wordpress": {
-      "wordpressUriBase": ""
+    "wordpressUriBase": "",
+    "urlSubDomain": ""
   }
 }

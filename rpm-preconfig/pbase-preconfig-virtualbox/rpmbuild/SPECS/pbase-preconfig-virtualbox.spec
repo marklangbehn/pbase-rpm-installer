@@ -37,10 +37,7 @@ fail() {
 }
 
 ## config is stored in json file with root-only permissions
-## it can be one of two places:
-##     /usr/local/pbase-data/admin-only/pbase_module_config.json
-## or
-##     /usr/local/pbase-data/admin-only/module-config.d/pbase_apache.json
+##     in the directory: /usr/local/pbase-data/admin-only/module-config.d/
 
 
 locateConfigFile() {
@@ -51,10 +48,8 @@ locateConfigFile() {
   PBASE_ALL_IN_ONE_CONFIG_FILENAME="pbase_module_config.json"
   PBASE_CONFIG_DIR="${PBASE_CONFIG_BASE}/module-config.d"
 
-  ## Look for config .json file in one of two places.
-  ##     /usr/local/pbase-data/admin-only/pbase_module_config.json
-  ## or
-  ##     /usr/local/pbase-data/admin-only/module-config.d/pbase_apache.json
+  ## config is stored in json file with root-only permissions
+  ##     in the directory: /usr/local/pbase-data/admin-only/module-config.d/
 
   PBASE_CONFIG_SEPARATE="${PBASE_CONFIG_DIR}/${PBASE_CONFIG_FILENAME}"
   PBASE_CONFIG_ALLINONE="${PBASE_CONFIG_BASE}/${PBASE_ALL_IN_ONE_CONFIG_FILENAME}"
@@ -139,11 +134,13 @@ PBASE_CONFIG_FILENAME="$PBASE_DEFAULTS_FILENAME"
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config values from JSON file
-parseConfig "DEFAULT_DESKTOP_USER_NAME" ".pbase_repo.defaultDesktopUsername" ""
+parseConfig "DEFAULT_DESKTOP_USER_NAME" ".pbase_repo.defaultDesktopUsername" "mydesktopusername"
 
-if [[ "$DEFAULT_DESKTOP_USER_NAME" != "" ]] && [[ "$DEFAULT_DESKTOP_USER_NAME" != null ]]; then
-  echo "defaultDesktopUsername:  $DEFAULT_DESKTOP_USER_NAME"
+if [[ "$DEFAULT_DESKTOP_USER_NAME" == "" ]] || [[ "$DEFAULT_DESKTOP_USER_NAME" == null ]]; then
+  DEFAULT_DESKTOP_USER_NAME="mydesktopusername"
 fi
+
+echo "defaultDesktopUsername:  $DEFAULT_DESKTOP_USER_NAME"
 
 ## check which version of Linux is installed
 check_linux_version

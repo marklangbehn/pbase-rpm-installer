@@ -9,7 +9,6 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-php-transitive-dep
-##Requires: pbase-preconfig-remi-php72
 
 %description
 PBase PHP 7 transitive dependency for EL8 and higher, no 'Requires' needed because base OS has PHP 7.x

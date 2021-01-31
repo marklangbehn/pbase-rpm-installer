@@ -1,5 +1,6 @@
 {
   "pbase_vault" : {
+    "vaultVersion": "1.6.2",
     "httpPort": 8200,
     "firewallEnableExternalAccess": true,
     "addApacheProxy": false,

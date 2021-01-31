@@ -9,7 +9,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-terraform
-Requires: git,wget
+Requires: wget
 
 %description
 PBase Terraform executable download
@@ -49,10 +49,7 @@ append_bashrc_alias() {
 echo "PBase Terraform executable download"
 
 ## config is stored in json file with root-only permissions
-## it can be one of two places:
-##     /usr/local/pbase-data/admin-only/pbase_module_config.json
-## or
-##     /usr/local/pbase-data/admin-only/module-config.d/pbase_apache.json
+##     in the directory: /usr/local/pbase-data/admin-only/module-config.d/
 
 
 locateConfigFile() {
@@ -102,19 +99,32 @@ parseConfig() {
   eval "$1"="$PARSED_VALUE"
 }
 
+check_linux_version
+
+## look for config file "pbase_terraform.json"
+PBASE_CONFIG_FILENAME="pbase_terraform.json"
+
+locateConfigFile "$PBASE_CONFIG_FILENAME"
+
+## fetch config value from JSON file
+## version to download
+parseConfig "VERSION_CONFIG" ".pbase_terraform.terraformVersion" "0.14.5"
+
+echo "VERSION_CONFIG:          $VERSION_CONFIG"
 
 ## check if already installed
 if [[ -e "/usr/local/bin/terraform" ]]; then
-  echo "/usr/local/bin/terraform already exists - exiting"
+  echo "Terraform executable /usr/local/bin/terraform already exists - exiting"
   exit 0
 fi
 
 echo "Downloading Terraform binary from releases.hashicorp.com"
 
+mkdir -p /usr/local/pbase-data/pbase-terraform
 cd /usr/local/pbase-data/pbase-terraform
 /bin/rm -f *.zip
 
-TERRAFORM_VERS="0.14.0"
+TERRAFORM_VERS="$VERSION_CONFIG"
 wget -q https://releases.hashicorp.com/terraform/${TERRAFORM_VERS}/terraform_${TERRAFORM_VERS}_linux_amd64.zip
 
 ls -l *.zip
@@ -122,7 +132,7 @@ ls -l *.zip
 unzip terraform*.zip -d /usr/local/bin/
 chmod +x /usr/local/bin/terraform
 
-echo "Downloaded and unzipped file:"
+echo "Terraform executable ready:"
 
 ls -l /usr/local/bin/terraform
 

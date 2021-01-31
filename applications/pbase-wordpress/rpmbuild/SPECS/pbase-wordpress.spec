@@ -92,9 +92,6 @@ echo "RAND_PW_USER:            $RAND_PW_USER"
 echo "RAND_PW_ROOT:            $RAND_PW_ROOT"
 
 ## config is stored in json file with root-only permissions
-## it can be one of two places:
-##     /usr/local/pbase-data/admin-only/pbase_module_config.json
-## or
 ##     /usr/local/pbase-data/admin-only/module-config.d/pbase_wordpress.json
 
 

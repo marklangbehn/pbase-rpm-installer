@@ -80,7 +80,7 @@ echo "PBase Crowdsec Install"
 echo ""
 
 ## config may be stored in json file with root-only permissions
-##     /usr/local/pbase-data/admin-only/module-config.d/pbase_apache.json
+##     in the directory: /usr/local/pbase-data/admin-only/module-config.d/
 
 
 locateConfigFile() {

@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-vault
-Requires: unzip,wget,jq
+Requires: unzip, wget, jq
 
 %description
 PBase Vault service
@@ -86,7 +86,7 @@ check_linux_version() {
 echo "PBase Vault service"
 
 ## config is stored in json file with root-only permissions
-##     /usr/local/pbase-data/admin-only/module-config.d/pbase_apache.json
+##     in the directory: /usr/local/pbase-data/admin-only/module-config.d/
 
 
 locateConfigFile() {
@@ -144,6 +144,8 @@ PBASE_CONFIG_FILENAME="pbase_vault.json"
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config value from JSON file
+## version to download
+parseConfig "VERSION_CONFIG" ".pbase_vault.vaultVersion" "1.6.2"
 parseConfig "DEV_MODE" ".pbase_vault.devMode" "false"
 parseConfig "HTTP_PORT" ".pbase_vault.httpPort" "8200"
 parseConfig "ENABLE_EXTERNAL_ACCESS" ".pbase_vault.firewallEnableExternalAccess" "true"
@@ -151,6 +153,7 @@ parseConfig "ENABLE_EXTERNAL_ACCESS" ".pbase_vault.firewallEnableExternalAccess"
 parseConfig "ADD_APACHE_PROXY" ".pbase_vault.addApacheProxy" "false"
 parseConfig "STORAGE_FILE_PATH" ".pbase_vault.storageFilePath" "true"
 
+echo "VERSION_CONFIG:          $VERSION_CONFIG"
 echo "HTTP_PORT:               $HTTP_PORT"
 echo "DEV_MODE:                $DEV_MODE"
 ##echo "ADD_APACHE_PROXY:        $ADD_APACHE_PROXY"
@@ -179,11 +182,11 @@ echo "Downloading Vault server binary"
 
 cd /usr/local/pbase-data/pbase-vault
 
-VAULT_VERS="1.6.0"
+VAULT_VERS="$VERSION_CONFIG"
 wget -q -O vault.zip https://releases.hashicorp.com/vault/${VAULT_VERS}/vault_${VAULT_VERS}_linux_amd64.zip
 unzip vault.zip -d /usr/local/bin
 
-echo "Downloaded file from hashicorp.com:"
+echo "Downloaded file from hashicorp.com - version: ${VAULT_VERS}"
 ls -lh /usr/local/bin/vault
 
 #echo "Config file:             /etc/vault/config.json"

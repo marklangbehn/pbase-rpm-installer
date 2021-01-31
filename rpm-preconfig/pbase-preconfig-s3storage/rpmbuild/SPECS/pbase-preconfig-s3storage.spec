@@ -37,13 +37,20 @@ fail() {
 
 echo "PBase S3 Storage dependencies and pre-config file"
 
+MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
+MODULE_SAMPLES_DIR="/usr/local/pbase-data/pbase-preconfig-s3storage/module-config-samples"
+CONFIG_FILENAME="pbase_s3storage.json"
+
+echo "S3 storage config:        ${MODULE_CONFIG_DIR}/${CONFIG_FILENAME}"
+
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${CONFIG_FILENAME}  ${MODULE_CONFIG_DIR}/
+
 echo ""
-echo "Next step - change the default config by making"
-echo "    a copy of the config sample file and editing it. For example:"
+echo "Next step - required - customize the S3 configuration defaults provided"
+echo "    under 'module-config.d' by editing the JSON text file. For example:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
-echo "  cp /usr/local/pbase-data/pbase-preconfig-s3storage/module-config-samples/pbase_s3storage.json ."
-echo "  vi pbase_s3storage.json"
+echo "  vi ${CONFIG_FILENAME}"
 echo ""
 echo "Next step - finish S3 configuration with:"
 echo ""

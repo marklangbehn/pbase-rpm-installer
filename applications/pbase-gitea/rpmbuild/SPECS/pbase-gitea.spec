@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-gitea
-Requires: pbase-apache, git, curl, xz
+Requires: pbase-apache, git, curl, xz, jq
 
 %description
 PBase Gitea service
@@ -54,7 +54,7 @@ append_bashrc_alias() {
 echo "PBase Gitea service"
 
 ## config is stored in json file with root-only permissions
-##     /usr/local/pbase-data/admin-only/module-config.d/pbase_apache.json
+##     in the directory: /usr/local/pbase-data/admin-only/module-config.d/
 
 
 locateConfigFile() {

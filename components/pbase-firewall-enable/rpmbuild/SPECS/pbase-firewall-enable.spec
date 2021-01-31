@@ -137,7 +137,10 @@ PBASE_CONFIG_FILENAME="pbase_firewall_enable.json"
 
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
-ADDITIONAL_PORT="29900"
+ADDITIONAL_PORT0="29900"
+
+parseConfig "ADDITIONAL_PORT0" ".pbase_firewall_enable.additionalPorts[0]" "29900"
+
 
 ## check which version of Linux is installed
 check_linux_version
@@ -155,7 +158,7 @@ if [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]]; then
   iptables -A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
   iptables -A INPUT -p tcp -m tcp --dport 80 -j ACCEPT
   iptables -A INPUT -p tcp -m tcp --dport 443 -j ACCEPT
-  iptables -A INPUT -p tcp -m tcp --dport ${ADDITIONAL_PORT} -j ACCEPT
+  iptables -A INPUT -p tcp -m tcp --dport ${ADDITIONAL_PORT0} -j ACCEPT
 
   iptables -P INPUT DROP
   iptables -P FORWARD DROP
@@ -186,8 +189,8 @@ else
   echo "Open ssh port 22"
   /bin/firewall-cmd --zone=${DEFAULT_ZONE} --add-service=ssh --permanent
 
-  echo "Open additional port ${ADDITIONAL_PORT}"
-  /bin/firewall-cmd --zone=${DEFAULT_ZONE} --add-port=${ADDITIONAL_PORT}/tcp --permanent
+  echo "Open additional port ${ADDITIONAL_PORT0}"
+  /bin/firewall-cmd --zone=${DEFAULT_ZONE} --add-port=${ADDITIONAL_PORT0}/tcp --permanent
 
   /bin/firewall-cmd --reload
 fi
@@ -196,6 +199,6 @@ fi
 echo "        allow HTTP"
 echo "        allow HTTPS"
 echo "        allow SSH"
-echo "        allow ${ADDITIONAL_PORT}"
+echo "        allow ${ADDITIONAL_PORT0}"
 
 %files

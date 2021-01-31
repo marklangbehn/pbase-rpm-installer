@@ -23,6 +23,7 @@ yum -y install pbase-lets-encrypt
 Additionally, you may want to lock down SSH access and enable the firewall.
 ```jsx
 yum -y install pbase-ssh-fail2ban
+yum -y install pbase-preconfig-firewall-enable
 yum -y install pbase-firewall-enable
 ```
 
@@ -81,6 +82,7 @@ Once that bootstrapping step is done, all the other pbase application components
 #### Install apache standard RPM
 ```
 yum -y install pbase-preconfig-apache
+yum -y install pbase-preconfig-firewall-enable
 yum -y install pbase-apache
 yum -y install pbase-lets-encrypt
 yum -y install pbase-firewall-enable
@@ -98,6 +100,7 @@ tailhttpd
 For sophisticated access monitoring of SSH login attempts use Fail2Ban.
 It requires that firewalld service be installed and enabled.
 ```
+yum -y install pbase-preconfig-firewall-enable
 yum -y install pbase-firewall-enable
 yum -y install pbase-preconfig-ssh-fail2ban
 yum -y install pbase-ssh-fail2ban
@@ -116,11 +119,11 @@ Use Vault to securely manage your configuration and secrets.
 ```
 yum -y install pbase-preconfig-vault
 yum -y install pbase-vault
-yum -y install pbase-terraform
 ``` 
 
 Use Terraform to manage your servers and infrastructure.
 ```
+yum -y install pbase-preconfig-terraform
 yum -y install pbase-terraform
 ``` 
 
@@ -130,11 +133,15 @@ Depending on your OS version select the appropriate preconfig rpm
 to install the NodeSource repository for Node JS version 10, 12 or 14.
 
 EL8/CentOS 8 - requires passing `--disablerepo=appstream` to point to the NodeSource repo
-```  
+```
+yum -y install pbase-preconfig-yarn
+
 yum -y install pbase-preconfig-nodejs12
 ## or
 yum -y install pbase-preconfig-nodejs14
+yum -y install --enablerepo=appstream python3
 yum -y install --disablerepo=appstream nodejs
+yum -y install yarn
 ```
 
 EL7/CentOS 7
@@ -167,28 +174,23 @@ yum provides nodejs
 yum -y install nodejs-12.19
 ```
 
-#### GoTTY
-#### Terminal shell webapp - gotty
-The gotty service is written in Go and implements a webpage for a terminal login shell.
-```
-echo "pbase.foundation@gmail.com" > /root/DEFAULT_EMAIL_ADDRESS.txt
-echo "shell" > /root/DEFAULT_SUB_DOMAIN.txt
-echo "mark" > /root/DEFAULT_DESKTOP_USERNAME.txt
-yum -y install https://pbase-foundation.com/pbase-repo.rpm
-yum -y install pbase-preconfig-gotty
-yum -y install pbase-golang-tools
-yum -y install pbase-gotty
-```
-
 #### Gatsby JS
 #### Build Gatsby JS website
 The static site generator Gatsby JS depends on Node JS and a few image procesing libraries to build websites.
 Here's how to build from the site's resources and code on a Git repository.
 ```
 yum -y install https://pbase-foundation.com/pbase-repo.rpm
-yum -y install pbase-preconfig-nodejs12
-yum -y install nodejs  
+yum -y install pbase-preconfig-nodejs14
+
+## if on CentOS 8 Stream
+yum -y install --enablerepo=appstream python3
+yum -y install --disablerepo=appstream nodejs
+
+## other EL version
+yum -y install nodejs
+
 yum -y install pbase-gatsby-tools
+yum -y install yarn
 ```
 
 As a regular user, create a file `~/.netrc` and fill it with your Git source info.
@@ -201,7 +203,7 @@ Then clone the website source, and build it.
 ```
 git clone https://gitlab.com/mlangbehn/emosonic-site.git
 cd emosonic-site
-npm install
+yarn
 gatsby build
 ```
 Finally, copy the `public` directory that was built to your website root.
@@ -513,14 +515,12 @@ yum -y install pbase-timesync-enable
 ```
 
 #### VirtualBox dependencies
-Install the EPEL repo first to provide the 'dkms' library.
 Then install the pbase-preconfig-virtualbox the package and reboot to activate the VirtualBox environment variables.
 Select the host VirtualBox application's menu item: Devices > Insert the Guest Additions CD Image. 
 This will bring up the "Run" dialog in the guest.
 Follow the prompts to complete the kernel rebuild.
 Finally, reboot your VirtualBox guest VM to see the Guest Additions running.
 ```
-yum -y install pbase-epel
 yum -y install pbase-preconfig-virtualbox
 ```
 
@@ -572,19 +572,6 @@ yum -y install https://pbase-foundation.com/pbase-repo.rpm
 yum -y install activpb-preconfig-postgres-peertube
 yum -y install pbase-postgres
 yum -y install activpb-peertube
-```
-
-
-#### SOLID NSS: Node Solid Server
-
-```
-yum -y install https://pbase-foundation.com/pbase-repo.rpm
-yum -y install pbase-preconfig-node-solid-server
-yum -y install --enablerepo=AppStream python3
-yum -y install --disablerepo=appstream nodejs
-yum -y install pbase-apache
-yum -y install pbase-lets-encrypt
-yum -y install pbase-node-solid-server
 ```
 
 

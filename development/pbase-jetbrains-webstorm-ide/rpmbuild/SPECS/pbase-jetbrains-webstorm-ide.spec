@@ -36,7 +36,7 @@ fail() {
 }
 
 ## config is stored in json file with root-only permissions
-##     /usr/local/pbase-data/admin-only/module-config.d/pbase_apache.json
+##     in the directory: /usr/local/pbase-data/admin-only/module-config.d/
 
 
 locateConfigFile() {
@@ -47,10 +47,8 @@ locateConfigFile() {
   PBASE_ALL_IN_ONE_CONFIG_FILENAME="pbase_module_config.json"
   PBASE_CONFIG_DIR="${PBASE_CONFIG_BASE}/module-config.d"
 
-  ## Look for config .json file in one of two places.
-  ##     /usr/local/pbase-data/admin-only/pbase_module_config.json
-  ## or
-  ##     /usr/local/pbase-data/admin-only/module-config.d/pbase_apache.json
+  ## config is stored in json file with root-only permissions
+  ##     in the directory: /usr/local/pbase-data/admin-only/module-config.d/
 
   PBASE_CONFIG_SEPARATE="${PBASE_CONFIG_DIR}/${PBASE_CONFIG_FILENAME}"
   PBASE_CONFIG_ALLINONE="${PBASE_CONFIG_BASE}/${PBASE_ALL_IN_ONE_CONFIG_FILENAME}"
@@ -161,7 +159,7 @@ echo "Downloading Webstorm from jetbrains.com"
 
 cd /usr/local/pbase-data/pbase-jetbrains-webstorm-ide
 
-wget -q https://download.jetbrains.com/webstorm/WebStorm-2020.3.1.tar.gz
+wget -q https://download.jetbrains.com/webstorm/WebStorm-2020.3.2.tar.gz
 
 echo "Downloaded file from jetbrains.com:"
 ls -lh /usr/local/pbase-data/pbase-jetbrains-webstorm-ide/*.gz

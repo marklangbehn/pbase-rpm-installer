@@ -1,6 +1,6 @@
 Name: pbase-elasticsearch
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase Elasticsearch server rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -81,6 +81,11 @@ check_linux_version() {
 
 
 echo "PBase Elasticsearch server"
+
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
 
 ## config is stored in json file with root-only permissions
 ##     /usr/local/pbase-data/admin-only/module-config.d/pbase_elasticsearch.json

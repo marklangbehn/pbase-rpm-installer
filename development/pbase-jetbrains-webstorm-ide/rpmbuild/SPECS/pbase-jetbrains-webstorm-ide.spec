@@ -1,6 +1,6 @@
 Name: pbase-jetbrains-webstorm-ide
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase Jetbrains Webstorm JavaScript IDE download rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -114,6 +114,12 @@ copy_if_not_exists() {
 
 
 echo "PBase JetBrains Webstorm IDE download"
+
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
+
 echo ""
 
 MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
@@ -158,8 +164,10 @@ fi
 echo "Downloading Webstorm from jetbrains.com"
 
 cd /usr/local/pbase-data/pbase-jetbrains-webstorm-ide
+/bin/rm -f WebStorm-latest.tar.gz
 
-wget -q https://download.jetbrains.com/webstorm/WebStorm-2020.3.2.tar.gz
+## fetch latest release
+curl -L -s -o WebStorm-latest.tar.gz "https://download.jetbrains.com/product?code=WS&latest&distribution=linux"
 
 echo "Downloaded file from jetbrains.com:"
 ls -lh /usr/local/pbase-data/pbase-jetbrains-webstorm-ide/*.gz
@@ -170,16 +178,16 @@ echo "Unzipped into /opt"
 cd /opt
 mv /opt/WebStorm-* /opt/WebStorm
 
+PRODUCT_INFO_FILE="/opt/WebStorm/product-info.json"
+echo "Product info:            ${PRODUCT_INFO_FILE}"
+cat "${PRODUCT_INFO_FILE}"
+echo ""
+
 ## set permission for desktop user
 if [[ "$DEFAULT_DESKTOP_USER_NAME" != "" ]] && [[ "$DEFAULT_DESKTOP_USER_NAME" != null ]]; then
   echo "chown -R $DEFAULT_DESKTOP_USER_NAME:$DEFAULT_DESKTOP_USER_NAME /opt/WebStorm"
   chown -R $DEFAULT_DESKTOP_USER_NAME:$DEFAULT_DESKTOP_USER_NAME /opt/WebStorm
 fi
-
-#echo "Adding env-variables:    /etc/profile.d/pbase-webstorm.sh"
-#/bin/cp -rf /usr/local/pbase-data/pbase-jetbrains-webstorm-ide/etc-profile-d/*.sh /etc/profile.d
-#echo "To re-load now:          source /etc/profile.d/pbase-webstorm.sh"
-#echo ""
 
 echo "Next step - if needed - as root, change the owner of the IDE directory:"
 echo "       '/opt/WebStorm' to the desktop user"

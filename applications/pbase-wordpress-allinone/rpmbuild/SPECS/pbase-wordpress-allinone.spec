@@ -1,6 +1,7 @@
 Name: pbase-wordpress-allinone
+Name: pbase-wordpress-allinone
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase WordPress all-in-one application stack rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -81,18 +82,8 @@ append_bashrc_alias() {
   fi
 }
 
-
-echo "PBase WordPress all-in-one application installer"
-
-## use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars
-RAND_PW_USER="u$(date +%s | sha256sum | base64 | head -c 8)"
-RAND_PW_ROOT="r$(date +%s | sha256sum | base64 | head -c 16 | tail -c 8)"
-
-echo "RAND_PW_USER:            $RAND_PW_USER"
-echo "RAND_PW_ROOT:            $RAND_PW_ROOT"
-
 ## config is stored in json file with root-only permissions
-##     /usr/local/pbase-data/admin-only/module-config.d/pbase_wordpress.json
+##     in the directory: /usr/local/pbase-data/admin-only/module-config.d/
 
 
 locateConfigFile() {
@@ -142,6 +133,35 @@ parseConfig() {
   eval "$1"="$PARSED_VALUE"
 }
 
+echo "PBase WordPress all-in-one application installer"
+
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
+
+## Let's Encrypt config
+PBASE_CONFIG_FILENAME="pbase_lets_encrypt.json"
+locateConfigFile "$PBASE_CONFIG_FILENAME"
+URL_SUBDOMAIN=""
+QT="'"
+URL_SUBDOMAIN_QUOTED="${QT}${QT}"
+
+if [[ -e "/usr/local/pbase-data/admin-only/module-config.d/pbase_lets_encrypt.json" ]] ; then
+  parseConfig "URL_SUBDOMAIN" ".pbase_lets_encrypt.urlSubDomain" ""
+  URL_SUBDOMAIN_QUOTED=${QT}${URL_SUBDOMAIN}${QT}
+  echo "URL_SUBDOMAIN:           ${URL_SUBDOMAIN_QUOTED}"
+else
+  echo "No subdomain config:     pbase_lets_encrypt.json"
+fi
+
+## use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars
+RAND_PW_USER="u$(date +%s | sha256sum | base64 | head -c 8)"
+RAND_PW_ROOT="r$(date +%s | sha256sum | base64 | head -c 16 | tail -c 8)"
+
+echo "RAND_PW_USER:            $RAND_PW_USER"
+echo "RAND_PW_ROOT:            $RAND_PW_ROOT"
+
 
 check_linux_version
 echo ""
@@ -186,6 +206,8 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 parseConfig "WORDPRESS_URI_BASE"  ".pbase_wordpress.wordpressUriBase" ""
 parseConfig "CONFIG_SUBDOMAIN_NAME" ".pbase_wordpress.urlSubDomain" ""
 
+URL_SUBDOMAIN=$CONFIG_SUBDOMAIN_NAME
+
 echo "WORDPRESS_URI_BASE:      $WORDPRESS_URI_BASE"
 SLASH_WORDPRESS_URI_BASE=""
 
@@ -196,21 +218,75 @@ fi
 ##echo "SLASH_WORDPRESS_URI_BASE: ${SLASH_WORDPRESS_URI_BASE}"
 echo ""
 
+## make sure certbot is installed
+HAS_CERTBOT_INSTALLED="$(which certbot)"
+
+if [[ -z "${HAS_CERTBOT_INSTALLED}" ]] ; then
+  echo "Certbot not installed"
+  EXECUTE_CERTBOT_CMD="false"
+else
+  echo "Certbot is installed     ${HAS_CERTBOT_INSTALLED}"
+fi
+
+
+HAS_APACHE_ROOTDOMAIN_CONF=""
+ROOTDOMAIN_HTTP_CONF_FILE="/etc/httpd/conf.d/${THISDOMAINNAME}.conf"
+
+if [[ -e "${ROOTDOMAIN_HTTP_CONF_FILE}" ]] ; then
+  echo "Found existing Apache root domain .conf file "
+  HAS_APACHE_ROOTDOMAIN_CONF="true"
+fi
+
+
+## fetch previously registered domain names
+DOMAIN_NAME_LIST=""
+SAVE_CMD_DIR="/usr/local/pbase-data/admin-only"
+
+read -r DOMAIN_NAME_LIST < "${SAVE_CMD_DIR}/domain-name-list.txt"
+
+echo "Saved domain names:      ${SAVE_CMD_DIR}/domain-name-list.txt"
+echo "Found domain-name-list:  ${DOMAIN_NAME_LIST}"
+
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
 
 ## FULLDOMAINNAME is the subdomain if declared plus the domain
 FULLDOMAINNAME="${THISDOMAINNAME}"
-QT="'"
-URL_SUBDOMAIN_QUOTED="${QT}${QT}"
 
-if [[ "${CONFIG_SUBDOMAIN_NAME}" != "" ]] ; then
-  FULLDOMAINNAME="${CONFIG_SUBDOMAIN_NAME}.${THISDOMAINNAME}"
-  URL_SUBDOMAIN_QUOTED=${QT}${CONFIG_SUBDOMAIN_NAME}${QT}
+if [[ ${URL_SUBDOMAIN} == "" ]] || [[ ${URL_SUBDOMAIN} == null ]] ; then
+  FULLDOMAINNAME="${THISDOMAINNAME}"
+  echo "Using root domain:       ${FULLDOMAINNAME}"
+else
+  FULLDOMAINNAME="${URL_SUBDOMAIN}.${THISDOMAINNAME}"
   echo "Using subdomain:         ${FULLDOMAINNAME}"
 fi
 
-echo "CONFIG_SUBDOMAIN_NAME:   ${URL_SUBDOMAIN_QUOTED}"
+
+DOMAIN_NAME_LIST_NEW=""
+DOMAIN_NAME_PARAM=""
+
+if [[ "${DOMAIN_NAME_LIST}" == "" ]] ; then
+  DOMAIN_NAME_LIST_NEW="${FULLDOMAINNAME}"
+  DOMAIN_NAME_PARAM="${FULLDOMAINNAME}"
+else
+    ## use cut to grab first name from comma delimited list
+    FIRSTDOMAINNREGISTERED=$(cut -f1 -d "," ${SAVE_CMD_DIR}/domain-name-list.txt)
+    echo "FIRSTDOMAINNREGISTERED:  ${FIRSTDOMAINNREGISTERED}"
+
+  if [[ "${DOMAIN_NAME_LIST}" == *"${FULLDOMAINNAME}"* ]]; then
+    echo "Already has ${FULLDOMAINNAME}"
+    DOMAIN_NAME_LIST_NEW="${DOMAIN_NAME_LIST}"
+    DOMAIN_NAME_PARAM="${DOMAIN_NAME_LIST}"
+  else
+    echo "Adding ${FULLDOMAINNAME}"
+    DOMAIN_NAME_LIST_NEW="${DOMAIN_NAME_LIST},${FULLDOMAINNAME}"
+    DOMAIN_NAME_PARAM="${DOMAIN_NAME_LIST},${FULLDOMAINNAME} --expand"
+  fi
+fi
+
+echo "${DOMAIN_NAME_LIST_NEW}" > ${SAVE_CMD_DIR}/domain-name-list.txt
+echo "Saved domain names:      ${SAVE_CMD_DIR}/domain-name-list.txt"
+
 
 ## check for htdocs location
 WWW_ROOT="/var/www/html/${FULLDOMAINNAME}/public"

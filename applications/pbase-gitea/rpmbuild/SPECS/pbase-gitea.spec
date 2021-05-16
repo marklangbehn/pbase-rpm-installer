@@ -1,6 +1,6 @@
 Name: pbase-gitea
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase Gitea service rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -50,15 +50,12 @@ append_bashrc_alias() {
   fi
 }
 
-
-echo "PBase Gitea service"
-
 ## config is stored in json file with root-only permissions
 ##     in the directory: /usr/local/pbase-data/admin-only/module-config.d/
 
 
 locateConfigFile() {
-  ## name of config file is passed in param $1 - for example "pbase_apache.json"
+  ## name of config file is passed in param $1 - for example "pbase_gitea.json"
   PBASE_CONFIG_FILENAME="$1"
 
   PBASE_CONFIG_BASE="/usr/local/pbase-data/admin-only"
@@ -104,10 +101,28 @@ parseConfig() {
   eval "$1"="$PARSED_VALUE"
 }
 
+echo "PBase Gitea service"
+
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
+
+## check if already installed
+if [[ -d "/var/lib/gitea" ]]; then
+  echo "/var/lib/gitea directory already exists - exiting"
+  exit 0
+fi
+
 
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
 
+echo ""
+echo "Hostname:                $THISHOSTNAME"
+echo "Domainname:              $THISDOMAINNAME"
+
+## Gitea config
 ## look for config file "pbase_gitea.json"
 PBASE_CONFIG_FILENAME="pbase_gitea.json"
 locateConfigFile "$PBASE_CONFIG_FILENAME"
@@ -127,12 +142,20 @@ echo "DATABASE:                $DATABASE"
 echo "URL_SUBPATH:             $URL_SUBPATH"
 
 
+## look for config file "pbase_apache.json"
+PBASE_CONFIG_FILENAME="pbase_apache.json"
+locateConfigFile "$PBASE_CONFIG_FILENAME"
+parseConfig "ENABLE_CHECK_FOR_WWW" ".pbase_apache.enableCheckForWww" "true"
+
+echo "ENABLE_CHECK_FOR_WWW:    $ENABLE_CHECK_FOR_WWW"
+
+
 ## Let's Encrypt config
 PBASE_CONFIG_FILENAME="pbase_lets_encrypt.json"
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 URL_SUBDOMAIN=""
-
 QT="'"
+URL_SUBDOMAIN_QUOTED="${QT}${QT}"
 
 if [[ -e "/usr/local/pbase-data/admin-only/module-config.d/pbase_lets_encrypt.json" ]] ; then
   parseConfig "URL_SUBDOMAIN" ".pbase_lets_encrypt.urlSubDomain" ""
@@ -140,12 +163,6 @@ if [[ -e "/usr/local/pbase-data/admin-only/module-config.d/pbase_lets_encrypt.js
   echo "URL_SUBDOMAIN:           ${URL_SUBDOMAIN_QUOTED}"
 else
   echo "No subdomain config:     pbase_lets_encrypt.json"
-fi
-
-## check if already installed
-if [[ -d "/var/lib/gitea" ]]; then
-  echo "/var/lib/gitea directory already exists - exiting"
-  exit 0
 fi
 
 echo "Downloading Gitea server binary from gitea.io"
@@ -264,6 +281,51 @@ if [[ $DATABASE == "" ]]; then
 fi
 
 
+PBASE_CONFIG_FILENAME="pbase_lets_encrypt.json"
+locateConfigFile "$PBASE_CONFIG_FILENAME"
+
+## fetch config value from JSON file
+parseConfig "CONFIG_ENABLE_AUTORENEW" ".pbase_lets_encrypt.enableAutoRenew" "true"
+parseConfig "EXECUTE_CERTBOT_CMD" ".pbase_lets_encrypt.executeCertbotCmd" "true"
+
+parseConfig "EMAIL_ADDR" ".pbase_lets_encrypt.emailAddress" "yoursysadmin@yourrealmail.com"
+parseConfig "ADDITIONAL_SUBDOMAIN" ".pbase_lets_encrypt.additionalSubDomain" ""
+
+echo "CONFIG_ENABLE_AUTORENEW: $CONFIG_ENABLE_AUTORENEW"
+echo "EXECUTE_CERTBOT_CMD:     $EXECUTE_CERTBOT_CMD"
+echo "EMAIL_ADDR:              $EMAIL_ADDR"
+echo "ADDITIONAL_SUBDOMAIN:    $ADDITIONAL_SUBDOMAIN"
+
+## make sure certbot is installed
+HAS_CERTBOT_INSTALLED="$(which certbot)"
+
+if [[ -z "${HAS_CERTBOT_INSTALLED}" ]] ; then
+  echo "Certbot not installed"
+  EXECUTE_CERTBOT_CMD="false"
+else
+  echo "Certbot is installed     ${HAS_CERTBOT_INSTALLED}"
+fi
+
+
+HAS_APACHE_ROOTDOMAIN_CONF=""
+ROOTDOMAIN_HTTP_CONF_FILE="/etc/httpd/conf.d/${THISDOMAINNAME}.conf"
+
+if [[ -e "${ROOTDOMAIN_HTTP_CONF_FILE}" ]] ; then
+  echo "Found existing Apache root domain .conf file "
+  HAS_APACHE_ROOTDOMAIN_CONF="true"
+fi
+
+
+## fetch previously registered domain names
+HAS_WWW_SUBDOMAIN="false"
+DOMAIN_NAME_LIST=""
+SAVE_CMD_DIR="/usr/local/pbase-data/admin-only"
+
+read -r DOMAIN_NAME_LIST < "${SAVE_CMD_DIR}/domain-name-list.txt"
+
+echo "Saved domain names:      ${SAVE_CMD_DIR}/domain-name-list.txt"
+echo "Found domain-name-list:  ${DOMAIN_NAME_LIST}"
+
 ## configure SMTP email
 PBASE_CONFIG_FILENAME="pbase_smtp.json"
 PBASE_CONFIG_NAME="pbase_smtp"
@@ -301,14 +363,6 @@ else
 fi
 
 
-echo "Starting service:        /etc/systemd/system/gitea"
-
-systemctl daemon-reload
-systemctl enable gitea
-systemctl start gitea
-
-systemctl status gitea
-
 ## check for subdomain
 FULLDOMAINNAME="$THISDOMAINNAME"
 
@@ -322,16 +376,42 @@ if [[ ${URL_SUBPATH} != "" ]] ; then
   SUBPATH_URI="/${URL_SUBPATH}"
   echo "Using SUBPATH_URI:       $SUBPATH_URI"
 else
+  PROXY_CONF_FILE="gitea-proxy-subdomain.conf"
   if [[ ${URL_SUBDOMAIN} == "" ]] || [[ ${URL_SUBDOMAIN} == null ]] ; then
-    PROXY_CONF_FILE="gitea-proxy-subdomain.conf"
     FULLDOMAINNAME="${THISDOMAINNAME}"
-    echo "Using root domain:       $FULLDOMAINNAME"
+    echo "Using root domain:       ${FULLDOMAINNAME}"
   else
-    PROXY_CONF_FILE="gitea-proxy-subdomain.conf"
     FULLDOMAINNAME="${URL_SUBDOMAIN}.${THISDOMAINNAME}"
-    echo "Using subdomain:         $FULLDOMAINNAME"
+    echo "Using subdomain:         ${FULLDOMAINNAME}"
   fi
 fi
+
+
+DOMAIN_NAME_LIST_NEW=""
+DOMAIN_NAME_PARAM=""
+
+if [[ "${DOMAIN_NAME_LIST}" == "" ]] ; then
+  DOMAIN_NAME_LIST_NEW="${FULLDOMAINNAME}"
+  DOMAIN_NAME_PARAM="${FULLDOMAINNAME}"
+else
+    ## use cut to grab first name from comma delimited list
+    FIRSTDOMAINNREGISTERED=$(cut -f1 -d "," ${SAVE_CMD_DIR}/domain-name-list.txt)
+    echo "FIRSTDOMAINNREGISTERED:  ${FIRSTDOMAINNREGISTERED}"
+
+  if [[ "${DOMAIN_NAME_LIST}" == *"${FULLDOMAINNAME}"* ]]; then
+    echo "Already has ${FULLDOMAINNAME}"
+    DOMAIN_NAME_LIST_NEW="${DOMAIN_NAME_LIST}"
+    DOMAIN_NAME_PARAM="${DOMAIN_NAME_LIST}"
+  else
+    echo "Adding ${FULLDOMAINNAME}"
+    DOMAIN_NAME_LIST_NEW="${DOMAIN_NAME_LIST},${FULLDOMAINNAME}"
+    DOMAIN_NAME_PARAM="${DOMAIN_NAME_LIST},${FULLDOMAINNAME} --expand"
+  fi
+fi
+
+echo "${DOMAIN_NAME_LIST_NEW}" > ${SAVE_CMD_DIR}/domain-name-list.txt
+echo "Saved domain names:      ${SAVE_CMD_DIR}/domain-name-list.txt"
+
 
 echo "FULLDOMAINNAME:          $FULLDOMAINNAME"
 echo "SUBPATH_URI:             $SUBPATH_URI"
@@ -344,11 +424,16 @@ if [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
     exit 0
   fi
 
-  echo "Disabling previous:      /etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
-  mv "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"  "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf-DISABLED"
+  PREV_CONF_FILE="/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
+  if [[ -e "${PREV_CONF_FILE}" ]] ; then
+    echo "Disabling previous:      ${PREV_CONF_FILE}"
+    mv "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf-DISABLED"
+  fi
 
   /bin/cp --no-clobber /usr/local/pbase-data/pbase-gitea/etc-httpd-confd/${PROXY_CONF_FILE} /etc/httpd/conf.d/
-  CONF_FILE="/etc/httpd/conf.d/${PROXY_CONF_FILE}"
+
+  mv "/etc/httpd/conf.d/${PROXY_CONF_FILE}" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
+  CONF_FILE="/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
 
   if [[ ${URL_SUBDOMAIN} != "" ]] ; then
     echo "Setting subdomain:       ${CONF_FILE}"
@@ -366,12 +451,41 @@ if [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
   echo "[server]" >> "/etc/gitea/app.ini"
   echo "ROOT_URL = http://${FULLDOMAINNAME}${SUBPATH_URI}/" >> "/etc/gitea/app.ini"
 
-  systemctl restart gitea
+  echo ""
+  echo "Starting service:        /etc/systemd/system/gitea"
+  systemctl daemon-reload
+  systemctl enable gitea
+
+  systemctl start gitea
+  systemctl status gitea
+
   systemctl restart httpd
+
+  ## LETS ENCRYPT - HTTPS CERTIFICATE
+  echo ""
+  CERTBOT_CMD="certbot --apache --agree-tos --email ${EMAIL_ADDR} -n -d ${DOMAIN_NAME_PARAM}"
+
+  ## save command line in file
+  echo "Saving command line:     ${SAVE_CMD_DIR}/certbot-cmd.sh"
+  echo ${CERTBOT_CMD} > ${SAVE_CMD_DIR}/certbot-cmd.sh
+
+  if [[ $EXECUTE_CERTBOT_CMD == "true" ]] ; then
+    echo "Executing:               ${CERTBOT_CMD}"
+    eval "${CERTBOT_CMD}"
+  else
+    echo "Skipping execute:        EXECUTE_CERTBOT_CMD=false"
+    echo "                         ${CERTBOT_CMD}"
+  fi
 
   echo "Gitea service running. Open this URL to complete install."
   echo "                         http://${FULLDOMAINNAME}${SUBPATH_URI}/install"
 else
+  echo "Starting service:        /etc/systemd/system/gitea"
+  systemctl daemon-reload
+  systemctl enable gitea
+  systemctl start gitea
+  systemctl status gitea
+
   echo "Gitea service running. Open this URL to complete install."
   echo "                         http://localhost:3000/install"
 fi

@@ -1,6 +1,6 @@
 Name: pbase-lets-encrypt
 Version: 1.0
-Release: 0
+Release: 2
 Summary: PBase Let's Encrypt configure
 Group: System Environment/Base
 License: Apache-2.0
@@ -23,7 +23,7 @@ Configure Let's Encrypt
 %pre
 
 %post
-echo "rpm postinstall $1"
+#echo "rpm postinstall $1"
 
 fail() {
     echo "ERROR: $1"
@@ -48,7 +48,12 @@ append_bashrc_alias() {
 
 echo "PBase Let's Encrypt certbot setup and issue HTTPS certificate"
 
-## config is stored in json file with root-only permissions
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
+
+## config may be stored in json file with root-only permissions
 ##     /usr/local/pbase-data/admin-only/module-config.d/pbase_lets_encrypt.json
 
 
@@ -145,33 +150,77 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 parseConfig "CONFIG_ENABLE_AUTORENEW" ".pbase_lets_encrypt.enableAutoRenew" "true"
 parseConfig "EXECUTE_CERTBOT_CMD" ".pbase_lets_encrypt.executeCertbotCmd" "true"
 
-parseConfig "EMAIL_ADDR" ".pbase_lets_encrypt.emailAddress" "yoursysadmin@yourrealmail.com"
+## check for default email text file
+DEFAULT_EMAIL="yoursysadmin@yourrealmail.com"
+if [[ -e /root/DEFAULT_EMAIL_ADDRESS.txt ]] ; then
+  read -r DEFAULT_EMAIL < /root/DEFAULT_EMAIL_ADDRESS.txt
+fi
+
+parseConfig "EMAIL_ADDR" ".pbase_lets_encrypt.emailAddress" "${DEFAULT_EMAIL}"
 parseConfig "URL_SUBDOMAIN" ".pbase_lets_encrypt.urlSubDomain" ""
 parseConfig "ADDITIONAL_SUBDOMAIN" ".pbase_lets_encrypt.additionalSubDomain" ""
 
+
+PBASE_CONFIG_FILENAME="pbase_apache.json"
+locateConfigFile "$PBASE_CONFIG_FILENAME"
+parseConfig "ENABLE_CHECK_FOR_WWW" ".pbase_apache.enableCheckForWww" "true"
+
 echo "CONFIG_ENABLE_AUTORENEW: $CONFIG_ENABLE_AUTORENEW"
+echo "ENABLE_CHECK_FOR_WWW:    $ENABLE_CHECK_FOR_WWW"
 echo "EXECUTE_CERTBOT_CMD:     $EXECUTE_CERTBOT_CMD"
 echo "EMAIL_ADDR:              $EMAIL_ADDR"
 echo "URL_SUBDOMAIN:           $URL_SUBDOMAIN"
 echo "ADDITIONAL_SUBDOMAIN:    $ADDITIONAL_SUBDOMAIN"
 
-
 echo ""
-echo "hostname:                $THISHOSTNAME"
-echo "domainname:              $THISDOMAINNAME"
+echo "Hostname:                $THISHOSTNAME"
+echo "Domainname:              $THISDOMAINNAME"
 
-## when doing additonal domain like www.example.com
-DASH_D_ADDITIONAL_SUBDOMAIN=""
-if [[ $ADDITIONAL_SUBDOMAIN != "" ]] ; then
-  DASH_D_ADDITIONAL_SUBDOMAIN="-d $ADDITIONAL_SUBDOMAIN.$THISDOMAINNAME"
-  echo "additional subdomain:    $DASH_D_ADDITIONAL_SUBDOMAIN"
-fi
 
-## when doing subdomain only like mattermost.example.com
-FULLDOMAINNAME="$THISDOMAINNAME"
-if [[ $URL_SUBDOMAIN != "" ]] ; then
-  FULLDOMAINNAME="$URL_SUBDOMAIN.$THISDOMAINNAME"
-  echo "exclusive subdomain:     $FULLDOMAINNAME"
+## determine which domain(s) to register
+FULLDOMAINNAME="${THISDOMAINNAME}"
+WWWDOMAINNAME="www.${THISDOMAINNAME}"
+HAS_WWW_SUBDOMAIN="false"
+DOMAIN_NAME_LIST=""
+
+if [[ "${URL_SUBDOMAIN}" != "" ]] ; then
+  ## when doing subdomain only like myapp.example.com (not registering root domain)
+  FULLDOMAINNAME="${URL_SUBDOMAIN}.${THISDOMAINNAME}"
+  DOMAIN_NAME_LIST="${FULLDOMAINNAME}"
+  echo "Exclusive subdomain:     ${FULLDOMAINNAME}"
+else
+  ## when doing root domain, check if www is also ping-able
+  if [[ $ENABLE_CHECK_FOR_WWW == "true" ]] ; then
+    ping -c 1 "${WWWDOMAINNAME}" &> /dev/null
+
+    if [[ "$?" == 0 ]] ; then
+      echo "host responded:          ${WWWDOMAINNAME}"
+      HAS_WWW_SUBDOMAIN="true"
+    else
+      echo "no response:             ${WWWDOMAINNAME}"
+    fi
+  fi
+
+  ## start with root domain first on list
+  DOMAIN_NAME_LIST="${THISDOMAINNAME}"
+
+  ## may add www subdomain to list
+  if [[ "${HAS_WWW_SUBDOMAIN}" == "true" ]] ; then
+    if [[ "${DOMAIN_NAME_LIST}" != "" ]] ; then
+      ## add comma to end of list
+      DOMAIN_NAME_LIST="${DOMAIN_NAME_LIST},"
+    fi
+    DOMAIN_NAME_LIST="${DOMAIN_NAME_LIST}www.${THISDOMAINNAME}"
+  fi
+
+  ## may add additional subdomain to list
+  if [[ "${ADDITIONAL_SUBDOMAIN}" != "" ]] ; then
+    if [[ "${DOMAIN_NAME_LIST}" != "" ]] ; then
+      ## add comma to end of list
+      DOMAIN_NAME_LIST="${DOMAIN_NAME_LIST},"
+    fi
+    DOMAIN_NAME_LIST="${DOMAIN_NAME_LIST}${ADDITIONAL_SUBDOMAIN}.${THISDOMAINNAME}"
+  fi
 fi
 
 
@@ -182,15 +231,16 @@ CRONJOB_SCRIPT="/usr/bin/certbot"
 CRONJOB_LOGFILE="/var/log/letsencrypt-sslrenew.log"
 
 RAND_MINUTE="$((2 + RANDOM % 57))"
+RAND_HOUR="$((2 + RANDOM % 23))"
+
 echo "RAND_MINUTE:             $RAND_MINUTE"
+echo "RAND_HOUR:               $RAND_HOUR"
 
 ## line to add to crontab
 if [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]] || [[ "${REDHAT_RELEASE_DIGIT}" == "8" ]]; then
-  CRONJOB_LINE="47 2 * * * root certbot renew >> $CRONJOB_LOGFILE"
-  ##CRONJOB_LINE="$RAND_MINUTE 2 * * * root certbot renew >> $CRONJOB_LOGFILE"
+  CRONJOB_LINE="$RAND_MINUTE $RAND_HOUR * * * root certbot renew >> $CRONJOB_LOGFILE"
 else
-  ##CRONJOB_LINE="$RAND_MINUTE 2 * * * root /usr/bin/certbot renew >> $CRONJOB_LOGFILE"
-  CRONJOB_LINE="47 2 * * * root /usr/bin/certbot renew >> $CRONJOB_LOGFILE"
+  CRONJOB_LINE="$RAND_MINUTE $RAND_HOUR * * * root /usr/bin/certbot renew >> $CRONJOB_LOGFILE"
 fi
 
 if [[ ${CONFIG_ENABLE_AUTORENEW} == "false" ]] ; then
@@ -202,11 +252,10 @@ if [[ -e "$CRONJOB_SCRIPT" ]]; then
   if [[ "$PREEXISTING_CRONJOB" == "" ]]; then
     echo "Adding certbot renew:    /etc/crontab"
     echo "                         $CRONJOB_LINE"
-    echo "Next Step:"
-##  echo "cronjob MUST be manually enabled: vim /etc/crontab"
-    echo "  check for renewal certbot logfile: $CRONJOB_LOGFILE"
+    echo "Renewal output saved to: $CRONJOB_LOGFILE"
     echo ""
 
+    ## add renewal cron job
     echo ""                                                 >>  /etc/crontab
     echo "## Added by pbase-lets-encrypt RPM ##"            >>  /etc/crontab
     echo ""                                                 >>  /etc/crontab
@@ -228,67 +277,62 @@ fi
 # Enable httpd service at boot-time, and start httpd service
 echo "Restarting service:      httpd"
 
+
 if [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]]; then
   /sbin/chkconfig httpd --level 345 on || fail "chkconfig failed to enable httpd service"
   /sbin/service httpd restart || fail "failed to restart httpd service"
-
-  ## get SSL cert, will add file in /etc/httpd/conf...
-  ## for example:   certbot --apache --agree-tos --email yoursysadmin@yourrealmail.com  -d pbase-foundation.com -d www.pbase-foundation.com -n
-
-  echo "Invoke certbot:          certbot --apache --agree-tos --email ${EMAIL_ADDR} -d ${FULLDOMAINNAME} $DASH_D_ADDITIONAL_SUBDOMAIN -n"
-  echo ""
-  certbot --apache --agree-tos --email ${EMAIL_ADDR} -d ${FULLDOMAINNAME} $DASH_D_ADDITIONAL_SUBDOMAIN -n
-
-  echo "Restarting service:      httpd"
-  /sbin/chkconfig httpd --level 345 on || fail "chkconfig failed to enable httpd service"
-  /sbin/service httpd restart || fail "failed to restart httpd service"
-
-elif [[ "${REDHAT_RELEASE_DIGIT}" == "7" ]]; then
+else
   /bin/systemctl daemon-reload
   /bin/systemctl enable httpd.service || fail "systemctl failed to enable httpd service"
   /bin/systemctl restart httpd || fail "failed to restart httpd service"
-
-  ## get SSL cert, may add file in /etc/httpd/conf...
-  echo "Invoke certbot:          certbot --apache -d ${FULLDOMAINNAME} $DASH_D_ADDITIONAL_SUBDOMAIN -m ${EMAIL_ADDR} --agree-tos -n"
-  echo ""
-
-  if [[ $EXECUTE_CERTBOT_CMD == "true" ]] ; then
-     certbot --apache -d ${FULLDOMAINNAME} $DASH_D_ADDITIONAL_SUBDOMAIN -m ${EMAIL_ADDR} --agree-tos -n
-
-     echo "Restarting service:      httpd"
-     /bin/systemctl daemon-reload
-     /bin/systemctl enable httpd.service || fail "systemctl failed to enable httpd service"
-     /bin/systemctl restart httpd || fail "failed to restart httpd service"
-     /bin/systemctl status httpd
-  else
-     echo "EXECUTE_CERTBOT_CMD override: $EXECUTE_CERTBOT_CMD"
-  fi
-
-elif [[ "${REDHAT_RELEASE_DIGIT}" == "8" ]]; then
-
-  echo "Invoke certbot:          certbot --no-bootstrap --apache --agree-tos --email ${EMAIL_ADDR}  -d ${FULLDOMAINNAME} $DASH_D_ADDITIONAL_SUBDOMAIN -n"
-  echo ""
-
-  if [[ $EXECUTE_CERTBOT_CMD == "true" ]] ; then
-    certbot --no-bootstrap --apache --agree-tos --email ${EMAIL_ADDR}  -d ${FULLDOMAINNAME} $DASH_D_ADDITIONAL_SUBDOMAIN -n
-
-    echo "Restarting service:      httpd"
-    /bin/systemctl daemon-reload
-    /bin/systemctl enable httpd.service || fail "systemctl failed to enable httpd service"
-    /bin/systemctl restart httpd || fail "failed to stop httpd service"
-  else
-    echo "EXECUTE_CERTBOT_CMD override: $EXECUTE_CERTBOT_CMD"
-  fi
-else
-  echo "Not supported REDHAT_RELEASE_DIGIT: ${REDHAT_RELEASE_DIGIT}"
 fi
 
+CERTBOT_CMD="certbot --apache --agree-tos --email ${EMAIL_ADDR} -n -d ${DOMAIN_NAME_LIST}"
 
-echo "/etc/httpd/conf.d/"
-ls -l /etc/httpd/conf.d/
+## save the command line and domain names used
+SAVE_CMD_DIR="/usr/local/pbase-data/admin-only"
+mkdir -p ${SAVE_CMD_DIR}
+
+if [[ -e "${SAVE_CMD_DIR}/certbot-cmd.sh" ]] ; then
+  echo "Already saved command:   ${SAVE_CMD_DIR}/certbot-cmd.sh"
+else
+  echo "Saving command line:     ${SAVE_CMD_DIR}/certbot-cmd.sh"
+  echo ${CERTBOT_CMD} > ${SAVE_CMD_DIR}/certbot-cmd.sh
+fi
+
+if [[ -e "${SAVE_CMD_DIR}/domain-name-list.txt" ]] ; then
+  echo "Already saved domains:   ${SAVE_CMD_DIR}/domain-name-list.txt"
+else
+  echo "Saving domain name list: ${SAVE_CMD_DIR}/domain-name-list.txt"
+  echo "Domain name list:        ${DOMAIN_NAME_LIST}"
+  echo "${DOMAIN_NAME_LIST}" > ${SAVE_CMD_DIR}/domain-name-list.txt
+fi
+
+## show the domains to be registered
+echo "                         $(cat ${SAVE_CMD_DIR}/domain-name-list.txt)"
+echo ""
+
+if [[ $EXECUTE_CERTBOT_CMD == "true" ]] ; then
+  echo "Invoke certbot:          $CERTBOT_CMD"
+  echo ""
+
+  ## call Let's Encrypt to get SSL cert, will add file in /etc/httpd/conf...
+  eval $CERTBOT_CMD
+
+  if [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]]; then
+    /sbin/service httpd restart || fail "failed to restart httpd service"
+  else
+    /bin/systemctl restart httpd || fail "failed to restart httpd service"
+  fi
+else
+  echo "Not invoking certbot:    $CERTBOT_CMD"
+fi
+
+echo ""
+echo "Apache config files:     /etc/httpd/conf.d/"
+ls -l /etc/httpd/conf.d/*.conf
 
 append_bashrc_alias taillecronjoblog "tail -f $CRONJOB_LOGFILE"
 append_bashrc_alias editcrontab "vi /etc/crontab"
-exit 0
 
 %files

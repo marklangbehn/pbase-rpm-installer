@@ -1,6 +1,6 @@
 Name: pbase-preconfig-mysql-nextcloud
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase MySQL preconfigure rpm, preset user and DB name for use by pbase-nextcloud
 Group: System Environment/Base
 License: Apache-2.0
@@ -134,20 +134,30 @@ setFieldInJsonModuleConfig() {
 
   CONFIG_FILE_NAME="${MODULE}.json"
   TEMPLATE_JSON_FILE="${SOURCE_DIR}/${CONFIG_FILE_NAME}"
-  /bin/cp -f "${TEMPLATE_JSON_FILE}" "/tmp/${CONFIG_FILE_NAME}"
 
-  ## set a value in the json file
-  PREFIX="jq '.${MODULE}.${FULLFIELDNAME}= \""
-  SUFFIX="\"'"
-  JQ_COMMAND="${PREFIX}${NEWVALUE}${SUFFIX} /tmp/${CONFIG_FILE_NAME} > ${MODULE_CONFIG_DIR}/${CONFIG_FILE_NAME}"
+  if [[ -e "${TEMPLATE_JSON_FILE}" ]] ; then
+    /bin/cp -f "${TEMPLATE_JSON_FILE}" "/tmp/${CONFIG_FILE_NAME}"
 
-  ##echo "Executing:  eval $JQ_COMMAND"
-  eval $JQ_COMMAND
+    ## set a value in the json file
+    PREFIX="jq '.${MODULE}.${FULLFIELDNAME}= \""
+    SUFFIX="\"'"
+    JQ_COMMAND="${PREFIX}${NEWVALUE}${SUFFIX} /tmp/${CONFIG_FILE_NAME} > ${MODULE_CONFIG_DIR}/${CONFIG_FILE_NAME}"
 
-  /bin/rm -f "/tmp/${CONFIG_FILE_NAME}"
+    ##echo "Executing:  eval $JQ_COMMAND"
+    eval $JQ_COMMAND
+
+    /bin/rm -f "/tmp/${CONFIG_FILE_NAME}"
+  else
+    echo "Pre-config not present:   ${TEMPLATE_JSON_FILE}"
+  fi
 }
 
 echo "PBase MySQL 8.0 community create config preset user and DB name for use by pbase-nextcloud"
+
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
 
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
@@ -183,6 +193,25 @@ fi
 #echo "DEFAULT_SUB_DOMAIN:      ${DEFAULT_SUB_DOMAIN}"
 
 
+## check if subdomain declared in pbase_repo.json needs to be updated
+## handle case of new app running in a subdomain being overlaid on an existing apache running the root domain
+## this is done by adding apache proxy instead of nginx proxy
+
+PREVIOUS_SUB_DOMAIN="${DEFAULT_SUB_DOMAIN}"
+DEFAULT_SUB_DOMAIN=""
+PBASE_REPO_JSON_PATH="/usr/local/pbase-data/admin-only/module-config.d/pbase_repo.json"
+
+if [[ -e "/root/DEFAULT_SUB_DOMAIN.txt" ]] ; then
+  read -r DEFAULT_SUB_DOMAIN < /root/DEFAULT_SUB_DOMAIN.txt
+
+  if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] && [[ "${PREVIOUS_SUB_DOMAIN}" == "" ]] ; then
+    echo "Adding subdomain name:   pbase_repo.json"
+    sed -i "s/defaultSubDomain\": null/defaultSubDomain\": \"${DEFAULT_SUB_DOMAIN}\"/" ${PBASE_REPO_JSON_PATH}
+    sed -i "s/defaultSubDomain\": \"\"/defaultSubDomain\": \"${DEFAULT_SUB_DOMAIN}\"/" ${PBASE_REPO_JSON_PATH}
+  fi
+fi
+
+
 ## when smtp password was given, but not server then assume mailgun
 if [[ "${DEFAULT_SMTP_SERVER}" == "" ]] && [[ "${DEFAULT_SMTP_PASSWORD}" != "" ]] ; then
   DEFAULT_SMTP_SERVER="smtp.mailgun.org"
@@ -209,15 +238,16 @@ fi
 QT="'"
 DEFAULT_SUB_DOMAIN_QUOTED=${QT}${DEFAULT_SUB_DOMAIN}${QT}
 
-echo "DEFAULT_SUB_DOMAIN:      ${DEFAULT_SUB_DOMAIN_QUOTED}"
+##echo "DEFAULT_SUB_DOMAIN:      ${DEFAULT_SUB_DOMAIN_QUOTED}"
 
 if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] ; then
-  echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN}"
+  echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN_QUOTED}"
   setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_lets_encrypt urlSubDomain
   setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_nextcloud urlSubDomain
   setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_apache urlSubDomain
 else
   echo "Setting empty urlSubDomain, Nextcloud will be root level of domain"
+  echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN_QUOTED}"
   setFieldInJsonModuleConfig "" pbase_lets_encrypt urlSubDomain
   setFieldInJsonModuleConfig "" pbase_nextcloud urlSubDomain
   setFieldInJsonModuleConfig "" pbase_apache urlSubDomain

@@ -11,7 +11,6 @@ BuildRoot: %{_tmppath}/%{name}-buildroot
 Provides: pbase-preconfig-virtualbox-transitive-dep
 Requires: elfutils-libelf-devel
 
-
 %description
 PBase VirtualBox transitive dependencies for EL8 and higher
 

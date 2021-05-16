@@ -1,6 +1,6 @@
 Name: pbase-terraform
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase Terraform download rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -47,6 +47,11 @@ append_bashrc_alias() {
 
 
 echo "PBase Terraform executable download"
+
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
 
 ## config is stored in json file with root-only permissions
 ##     in the directory: /usr/local/pbase-data/admin-only/module-config.d/

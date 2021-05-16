@@ -1,6 +1,6 @@
 Name: pbase-mattermost
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase Mattermost service rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -50,9 +50,8 @@ append_bashrc_alias() {
   fi
 }
 
-
 ## config is stored in json file with root-only permissions
-##     /usr/local/pbase-data/admin-only/module-config.d/pbase_mattermost.json
+##     in the directory: /usr/local/pbase-data/admin-only/module-config.d/
 
 
 locateConfigFile() {
@@ -102,7 +101,12 @@ parseConfig() {
   eval "$1"="$PARSED_VALUE"
 }
 
-echo "PBase Mattermost server install"
+echo "PBase Mattermost service"
+
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
 
 ## check if already installed
 if [[ -d "/opt/mattermost" ]]; then
@@ -140,10 +144,8 @@ fi
 PBASE_CONFIG_FILENAME="pbase_lets_encrypt.json"
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 URL_SUBDOMAIN=""
-
 QT="'"
 URL_SUBDOMAIN_QUOTED="${QT}${QT}"
-
 
 if [[ -e "/usr/local/pbase-data/admin-only/module-config.d/pbase_lets_encrypt.json" ]] ; then
   parseConfig "URL_SUBDOMAIN" ".pbase_lets_encrypt.urlSubDomain" ""
@@ -205,7 +207,51 @@ echo ""
 echo "CONFIG_DB_NAME:          $CONFIG_DB_NAME"
 echo "CONFIG_DB_USER:          $CONFIG_DB_USER"
 echo "CONFIG_DB_PSWD:          $CONFIG_DB_PSWD"
+echo ""
 
+PBASE_CONFIG_FILENAME="pbase_lets_encrypt.json"
+locateConfigFile "$PBASE_CONFIG_FILENAME"
+
+## fetch config value from JSON file
+parseConfig "CONFIG_ENABLE_AUTORENEW" ".pbase_lets_encrypt.enableAutoRenew" "true"
+parseConfig "EXECUTE_CERTBOT_CMD" ".pbase_lets_encrypt.executeCertbotCmd" "true"
+
+parseConfig "EMAIL_ADDR" ".pbase_lets_encrypt.emailAddress" "yoursysadmin@yourrealmail.com"
+parseConfig "ADDITIONAL_SUBDOMAIN" ".pbase_lets_encrypt.additionalSubDomain" ""
+
+echo "CONFIG_ENABLE_AUTORENEW: $CONFIG_ENABLE_AUTORENEW"
+echo "EXECUTE_CERTBOT_CMD:     $EXECUTE_CERTBOT_CMD"
+echo "EMAIL_ADDR:              $EMAIL_ADDR"
+echo "ADDITIONAL_SUBDOMAIN:    $ADDITIONAL_SUBDOMAIN"
+
+## make sure certbot is installed
+HAS_CERTBOT_INSTALLED="$(which certbot)"
+
+if [[ -z "${HAS_CERTBOT_INSTALLED}" ]] ; then
+  echo "Certbot not installed"
+  EXECUTE_CERTBOT_CMD="false"
+else
+  echo "Certbot is installed     ${HAS_CERTBOT_INSTALLED}"
+fi
+
+
+HAS_APACHE_ROOTDOMAIN_CONF=""
+ROOTDOMAIN_HTTP_CONF_FILE="/etc/httpd/conf.d/${THISDOMAINNAME}.conf"
+
+if [[ -e "${ROOTDOMAIN_HTTP_CONF_FILE}" ]] ; then
+  echo "Found existing Apache root domain .conf file "
+  HAS_APACHE_ROOTDOMAIN_CONF="true"
+fi
+
+
+## fetch previously registered domain names
+DOMAIN_NAME_LIST=""
+SAVE_CMD_DIR="/usr/local/pbase-data/admin-only"
+
+read -r DOMAIN_NAME_LIST < "${SAVE_CMD_DIR}/domain-name-list.txt"
+
+echo "Saved domain names:      ${SAVE_CMD_DIR}/domain-name-list.txt"
+echo "Found domain-name-list:  ${DOMAIN_NAME_LIST}"
 
 echo "Downloading Mattermost server binary from releases.mattermost.com"
 VERSION="$(curl -s https://api.github.com/repos/mattermost/mattermost-server/releases/latest | grep tag_name | cut -d '"' -f 4 | sed s/^v//)"
@@ -296,8 +342,8 @@ append_bashrc_alias restartmattermost "/bin/systemctl restart mattermost"
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
 
-## check for subdomain
-FULLDOMAINNAME="$THISDOMAINNAME"
+## FULLDOMAINNAME is the subdomain if declared plus the domain
+FULLDOMAINNAME="${THISDOMAINNAME}"
 
 if [[ ${URL_SUBDOMAIN} == "" ]] || [[ ${URL_SUBDOMAIN} == null ]] ; then
   FULLDOMAINNAME="${THISDOMAINNAME}"
@@ -308,24 +354,83 @@ else
 fi
 
 
-if [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
-  echo "Disabling previous:      /etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
-  mv "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"  "/etc/httpd/conf.d/${THISDOMAINNAME}.conf-DISABLED"
+DOMAIN_NAME_LIST_NEW=""
+DOMAIN_NAME_PARAM=""
+
+if [[ "${DOMAIN_NAME_LIST}" == "" ]] ; then
+  DOMAIN_NAME_LIST_NEW="${FULLDOMAINNAME}"
+  DOMAIN_NAME_PARAM="${FULLDOMAINNAME}"
+else
+    ## use cut to grab first name from comma delimited list
+    FIRSTDOMAINNREGISTERED=$(cut -f1 -d "," ${SAVE_CMD_DIR}/domain-name-list.txt)
+    echo "FIRSTDOMAINNREGISTERED:  ${FIRSTDOMAINNREGISTERED}"
+
+  if [[ "${DOMAIN_NAME_LIST}" == *"${FULLDOMAINNAME}"* ]]; then
+    echo "Already has ${FULLDOMAINNAME}"
+    DOMAIN_NAME_LIST_NEW="${DOMAIN_NAME_LIST}"
+    DOMAIN_NAME_PARAM="${DOMAIN_NAME_LIST}"
+  else
+    echo "Adding ${FULLDOMAINNAME}"
+    DOMAIN_NAME_LIST_NEW="${DOMAIN_NAME_LIST},${FULLDOMAINNAME}"
+    DOMAIN_NAME_PARAM="${DOMAIN_NAME_LIST},${FULLDOMAINNAME} --expand"
+  fi
 fi
+
+echo "${DOMAIN_NAME_LIST_NEW}" > ${SAVE_CMD_DIR}/domain-name-list.txt
+echo "Saved domain names:      ${SAVE_CMD_DIR}/domain-name-list.txt"
+
+
+echo "FULLDOMAINNAME:          $FULLDOMAINNAME"
+echo "SUBPATH_URI:             $SUBPATH_URI"
+echo "PROXY_CONF_FILE:         $PROXY_CONF_FILE"
+
+if [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
+  ## must install apache first
+  if [[ ! -d "/etc/httpd/conf.d/" ]] ; then
+    echo "Apache not found:        /etc/httpd/conf.d/"
+    exit 0
+  fi
+
+  PREV_CONF_FILE="/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
+  if [[ -e "${PREV_CONF_FILE}" ]] ; then
+    echo "Disabling previous:      ${PREV_CONF_FILE}"
+    mv "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf-DISABLED"
+  fi
 
 MATTERMOST_READY_MSG="Next Step - required open this URL to complete install"
 
 if [[ "$URL_SUBDOMAIN" != "" ]] && [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
   PROXY_CONF="/etc/httpd/conf.d/mattermost-proxy-subdomain.conf"
+  PROXY_CONF_FULLDOMAINNAME="/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
+
   echo "Adding ${URL_SUBDOMAIN} subdomain proxy to mattermost application"
 
   /bin/cp --no-clobber /usr/local/pbase-data/pbase-mattermost/root-uri/etc-httpd-confd/mattermost-proxy-subdomain.conf /etc/httpd/conf.d/
 
-  echo "Updating config file:    ${PROXY_CONF}"
   sed -i "s/mysubdomain.mydomain.com/${FULLDOMAINNAME}/" $PROXY_CONF
   sed -i "s/hostmaster@mydomain.com/${APACHE_SERVER_ADMIN}/" $PROXY_CONF
+
+  echo "Configured Apache proxy:   ${PROXY_CONF_FULLDOMAINNAME}"
+  mv "{$PROXY_CONF}" "${PROXY_CONF_FULLDOMAINNAME}"
+
   systemctl daemon-reload
   systemctl restart httpd
+
+  ## LETS ENCRYPT - HTTPS CERTIFICATE
+  echo ""
+  CERTBOT_CMD="certbot --apache --agree-tos --email ${EMAIL_ADDR} -n -d ${DOMAIN_NAME_PARAM}"
+
+  ## save command line in file
+  echo "Saving command line:     ${SAVE_CMD_DIR}/certbot-cmd.sh"
+  echo ${CERTBOT_CMD} > ${SAVE_CMD_DIR}/certbot-cmd.sh
+
+  if [[ $EXECUTE_CERTBOT_CMD == "true" ]] ; then
+    echo "Executing:               ${CERTBOT_CMD}"
+    eval "${CERTBOT_CMD}"
+  else
+    echo "Skipping execute:        EXECUTE_CERTBOT_CMD=false"
+    echo "                         ${CERTBOT_CMD}"
+  fi
 
   echo "$MATTERMOST_READY_MSG"
   echo "                         http://${FULLDOMAINNAME}/install"
@@ -352,8 +457,12 @@ else
   echo "                         http://localhost:8065/install"
 fi
 
-echo ""
 
+  echo "Mattermost service running. Open this URL to complete install."
+  echo "                         http://${FULLDOMAINNAME}${SUBPATH_URI}/install"
+fi
+
+echo ""
 
 %files
 %defattr(-,root,root,-)

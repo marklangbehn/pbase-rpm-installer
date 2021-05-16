@@ -10,8 +10,6 @@ BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-phpmysql-transitive-dep
 Requires: php72, php72-common, php72-mysqlnd, php72-gd, php72-fpm, php72-opcache, php72-pdo, php72-mbstring, php72-mcrypt, php72-pecl-apcu, php72-pecl-imagick
-## php >= 7.2,php-mbstring,php-gd,php-zip,php-bz2,php-curl,php-xml,php-json,php-intl,php-fpm,php-opcache,php-mysqlnd >= 7.2,php-pdo >= 7.2
-
 
 %description
 PBase PHP application libraries and php-mysql transitive dependencies for Amazon Linux AMI

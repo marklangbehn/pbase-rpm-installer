@@ -1,6 +1,6 @@
 Name: vrl-assetinfo-app
 Version: 1.0
-Release: 0
+Release: 1
 Summary: VRL Asset Info editor Node JS service
 Group: System Environment/Base
 License: Apache-2.0
@@ -52,6 +52,12 @@ append_bashrc_alias() {
 }
 
 echo "AssetInfo Web App"
+
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
+
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
 

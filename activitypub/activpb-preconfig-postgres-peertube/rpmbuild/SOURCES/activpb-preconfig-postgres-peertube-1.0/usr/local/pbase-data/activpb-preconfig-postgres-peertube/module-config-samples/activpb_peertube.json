@@ -3,6 +3,7 @@
     "peertubeVersion": "",
     "port": 9000,
     "addNgnixProxy": true,
+    "addApacheProxy": false,
     "urlSubDomain": "peertube"
   }
 }

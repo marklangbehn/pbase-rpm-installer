@@ -1,6 +1,6 @@
 Name: pbase-kubernetes-tools
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase Kubernetes Tools
 Group: System Environment/Base
 License: Apache-2.0
@@ -82,6 +82,12 @@ parseConfig() {
 }
 
 echo "PBase Kubernetes Tools Install"
+
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
+
 echo ""
 
 MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"

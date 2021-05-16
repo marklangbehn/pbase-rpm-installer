@@ -1,6 +1,6 @@
 Name: pbase-website-sample
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase sample website rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -30,6 +30,13 @@ rm -rf "$RPM_BUILD_ROOT"
 %post
 echo "rpm postinstall $1"
 
+echo "pbase-foundation.com sample website content"
+
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
+
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
 
@@ -43,7 +50,6 @@ elif [[ -d "/var/www/html" ]]; then
   ALT_ROOT="/var/www/html"
 fi
 
-echo "Sample website content - starter template:"
 echo "                         /var/www/html/${THISDOMAINNAME}/public/"
 /bin/rm -rf /var/www/html/${THISDOMAINNAME}/public
 
@@ -97,6 +103,6 @@ echo ""
 /usr/local/pbase-data/pbase-website-sample/public.tgz
 /usr/local/pbase-data/pbase-website-sample/build-deploy/resources/DOT.abba.tar
 /usr/local/pbase-data/pbase-website-sample/build-deploy/resources/DOT.htaccess
-/usr/local/pbase-data/pbase-website-sample/build-deploy/build-notes.txt
-/usr/local/pbase-data/pbase-website-sample/build-deploy/pbase-foundation-build.sh
-/usr/local/pbase-data/pbase-website-sample/build-deploy/pbase-foundation-deploy.sh
+%attr(0600,root,root) /usr/local/pbase-data/pbase-website-sample/build-deploy/build-notes.txt
+%attr(0600,root,root) /usr/local/pbase-data/pbase-website-sample/build-deploy/pbase-foundation-build.sh
+%attr(0600,root,root) /usr/local/pbase-data/pbase-website-sample/build-deploy/pbase-foundation-deploy.sh

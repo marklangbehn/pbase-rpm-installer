@@ -1,6 +1,6 @@
 Name: pbase-epel-amzn1-dep
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase EPEL repo transitive dependencies for Amazon Linux AMI
 Group: System Environment/Base
 License: Apache-2.0
@@ -32,6 +32,12 @@ fail() {
 }
 
 echo "EPEL repo transitive dependencies for Amazon Linux AMI"
+
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
+
 echo "Executing:               yum-config-manager --enable epel"
 
 yum-config-manager --enable epel

@@ -1,6 +1,6 @@
 Name: pbase-apache
 Version: 1.0
-Release: 0
+Release: 2
 Summary: PBase Apache rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -10,10 +10,10 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-apache
-Requires: httpd,apr,apr-util,mod_proxy_html,jq
+Requires: httpd, apr, apr-util, mod_proxy_html, jq, pbase-epel
 
 %description
-Configures and start basic Apache httpd service and page
+Configures and starts basic Apache httpd service and stub index page
 
 %prep
 %setup -q
@@ -28,7 +28,7 @@ rm -rf "$RPM_BUILD_ROOT"
 %pre
 
 %post
-echo "rpm postinstall $1"
+#echo "rpm postinstall $1"
 
 fail() {
     echo "ERROR: $1"
@@ -81,8 +81,12 @@ check_linux_version() {
   fi
 }
 
-
 echo "PBase Apache"
+
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
 
 ## config may be stored in json file with root-only permissions
 ##     in the directory: /usr/local/pbase-data/admin-only/module-config.d/
@@ -197,8 +201,15 @@ parseConfig "ADD_SECURITY_HEADERS" ".pbase_apache.addSecurityHeaders" "true"
 parseConfig "RESTRICT_HTTP_METHODS" ".pbase_apache.restrictHttpMethods" "false"
 parseConfig "USE_SITES_ENABLED_CONF" ".pbase_apache.useSitesEnabledConf" "false"
 parseConfig "ENABLE_INDEX_PHP" ".pbase_apache.enableIndexPhp" "false"
+parseConfig "ENABLE_CHECK_FOR_WWW" ".pbase_apache.enableCheckForWww" "true"
 
-parseConfig "SERVER_ADMIN_EMAIL" ".pbase_apache.serverAdmin" "nobody@nowhere.nyet"
+## check for default email text file
+DEFAULT_EMAIL="nobody@nowhere.nyet"
+if [[ -e /root/DEFAULT_EMAIL_ADDRESS.txt ]] ; then
+  read -r DEFAULT_EMAIL < /root/DEFAULT_EMAIL_ADDRESS.txt
+fi
+
+parseConfig "SERVER_ADMIN_EMAIL" ".pbase_apache.serverAdmin" "${DEFAULT_EMAIL}"
 parseConfig "SUBDOMAIN_NAME" ".pbase_apache.urlSubDomain" ""
 
 echo "ADD_SELF_TO_ETC_HOSTS:   $ADD_SELF_TO_ETC_HOSTS"
@@ -206,20 +217,14 @@ echo "ADD_SECURITY_HEADERS:    $ADD_SECURITY_HEADERS"
 echo "RESTRICT_HTTP_METHODS:   $RESTRICT_HTTP_METHODS"
 echo "USE_SITES_ENABLED_CONF:  $USE_SITES_ENABLED_CONF"
 echo "ENABLE_INDEX_PHP:        $ENABLE_INDEX_PHP"
+echo "ENABLE_INDEX_PHP:        $ENABLE_INDEX_PHP"
+echo "ENABLE_CHECK_FOR_WWW:    $ENABLE_CHECK_FOR_WWW"
 echo "SERVER_ADMIN_EMAIL:      $SERVER_ADMIN_EMAIL"
 echo "SUBDOMAIN_NAME:          $SUBDOMAIN_NAME"
 
 
 ## check which version of Linux is installed
 check_linux_version
-
-## not if on AWS
-#if [[ $ADD_SELF_TO_ETC_HOSTS == "true" && AMAZON2_RELEASE == "" ]]; then
-if [[ $ADD_SELF_TO_ETC_HOSTS == "true" ]]; then
-  addSelfToEtcHostsFile
-#else
-#  echo "not changing /etc/hosts"
-fi
 
 ## Get hostname to be substituted in template config files
 THISHOSTNAME="$(hostname)"
@@ -262,6 +267,12 @@ else
   DOCROOT="/var/www/html/${FULLDOMAINNAME}/public"
 fi
 
+if [[ -d "${DOCROOT}" ]] ; then
+  echo "Content already exists:  ${DOCROOT}"
+  echo "Exiting"
+  exit 0
+fi
+
 ## create servername file
 echo "Web content root:        ${DOCROOT}"
 mkdir -p "${DOCROOT}"
@@ -269,6 +280,69 @@ mkdir -p "${DOCROOT}"
 echo "Filling with hostname:   ${DOCROOT}/index.html  and  servername.html"
 echo "$THISHOSTNAME" > "${DOCROOT}/index.html"
 echo "$THISHOSTNAME" > "${DOCROOT}/servername.html"
+
+
+## not if on AWS
+#if [[ $ADD_SELF_TO_ETC_HOSTS == "true" && AMAZON2_RELEASE == "" ]]; then
+if [[ $ADD_SELF_TO_ETC_HOSTS == "true" ]]; then
+  addSelfToEtcHostsFile
+#else
+#  echo "not changing /etc/hosts"
+fi
+
+
+## determine which domain(s) to register
+FULLDOMAINNAME="${THISDOMAINNAME}"
+WWWDOMAINNAME="www.${THISDOMAINNAME}"
+HAS_WWW_SUBDOMAIN="false"
+DOMAIN_NAME_LIST=""
+
+if [[ "${URL_SUBDOMAIN}" != "" ]] ; then
+  ## when doing subdomain only like myapp.example.com (not registering root domain)
+  FULLDOMAINNAME="${URL_SUBDOMAIN}.${THISDOMAINNAME}"
+  DOMAIN_NAME_LIST="${FULLDOMAINNAME}"
+  echo "Exclusive subdomain:     ${FULLDOMAINNAME}"
+else
+  ## when doing root domain, check if www is also ping-able
+  if [[ $ENABLE_CHECK_FOR_WWW == "true" ]] ; then
+    ping -c 1 "${WWWDOMAINNAME}" &> /dev/null
+
+    if [[ "$?" == 0 ]] ; then
+      echo "host responded:          ${WWWDOMAINNAME}"
+      HAS_WWW_SUBDOMAIN="true"
+    else
+      echo "no response:             ${WWWDOMAINNAME}"
+    fi
+  fi
+
+  ## start with root domain first on list
+  DOMAIN_NAME_LIST="${THISDOMAINNAME}"
+
+  ## may add www subdomain to list
+  if [[ "${HAS_WWW_SUBDOMAIN}" == "true" ]] ; then
+    if [[ "${DOMAIN_NAME_LIST}" != "" ]] ; then
+      ## add comma to end of list
+      DOMAIN_NAME_LIST="${DOMAIN_NAME_LIST},"
+    fi
+    DOMAIN_NAME_LIST="${DOMAIN_NAME_LIST}www.${THISDOMAINNAME}"
+  fi
+
+  ## may add additional subdomain to list
+  if [[ "${ADDITIONAL_SUBDOMAIN}" != "" ]] ; then
+    if [[ "${DOMAIN_NAME_LIST}" != "" ]] ; then
+      ## add comma to end of list
+      DOMAIN_NAME_LIST="${DOMAIN_NAME_LIST},"
+    fi
+    DOMAIN_NAME_LIST="${DOMAIN_NAME_LIST}${ADDITIONAL_SUBDOMAIN}.${THISDOMAINNAME}"
+  fi
+fi
+
+## save the domain names used
+SAVE_CMD_DIR="/usr/local/pbase-data/admin-only"
+mkdir -p ${SAVE_CMD_DIR}
+echo "${DOMAIN_NAME_LIST}" > ${SAVE_CMD_DIR}/domain-name-list.txt
+
+echo "Domain names saved:      ${SAVE_CMD_DIR}/domain-name-list.txt"
 
 
 echo "Configuring Apache:      /etc/httpd/conf/httpd.conf"
@@ -310,7 +384,6 @@ if [[ $ENABLE_INDEX_PHP == "true" ]] ; then
   echo "ENABLE_INDEX_PHP:        $ENABLE_INDEX_PHP"
   sed -i "s/DirectoryIndex index\.html/DirectoryIndex index.php index.html/" "/etc/httpd/conf/httpd.conf"
 
-## TODO use Augeas
 #cat <<EOF | augtool
 #set /files/etc/httpd/conf/httpd.conf/Directory[arg='\"${DOCROOT}\"']/*[self::directive='AllowOverride']/arg All
 #save
@@ -382,17 +455,28 @@ if [[ "${SUBDOMAIN_NAME}" != "" ]] ; then
   HTTPD_CONF_SRC="/usr/local/pbase-data/pbase-apache/etc-httpd-conf-d-subdomain"
 fi
 
+## set domainname in .conf file template
+DOMAIN_CONF=""
 
 if [[ $USE_SITES_ENABLED_CONF == "true" ]] ; then
-  /bin/cp -f "${HTTPD_CONF_SRC}/virtualrecordlabel.net.conf" "/etc/httpd/sites-available/${FULLDOMAINNAME}.conf"
-
-  echo "    Virtual host:        /etc/httpd/sites-available/${FULLDOMAINNAME}.conf"
-  sed -i "s/virtualrecordlabel.net/${FULLDOMAINNAME}/g" "/etc/httpd/sites-available/${FULLDOMAINNAME}.conf"
+  DOMAIN_CONF="/etc/httpd/sites-available/${FULLDOMAINNAME}.conf"
 else
-  echo "    Virtual host:        /etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
-  /bin/cp -f "${HTTPD_CONF_SRC}/virtualrecordlabel.net.conf" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
-  sed -i "s/virtualrecordlabel.net/${FULLDOMAINNAME}/g" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
+  DOMAIN_CONF="/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
 fi
+
+echo "    Virtual host:        ${DOMAIN_CONF}"
+/bin/cp -f "${HTTPD_CONF_SRC}/virtualrecordlabel.net.conf" "${DOMAIN_CONF}"
+sed -i "s/virtualrecordlabel.net/${FULLDOMAINNAME}/g" "${DOMAIN_CONF}"
+
+
+## depending on HAS_WWW_SUBDOMAIN set ServerAlias for www in .conf file
+if [[ "${HAS_WWW_SUBDOMAIN}" == "true" ]] ; then
+  echo "HAS_WWW_SUBDOMAIN true, ServerAlias configured to handle www subdomain"
+else
+  echo "HAS_WWW_SUBDOMAIN false, no www subdomain for ServerAlias configured"
+  sed -i "s/ServerAlias/#ServerAlias/" "${DOMAIN_CONF}"
+fi
+
 
 if [[ $RESTRICT_HTTP_METHODS == "true" ]] ; then
   echo "Adding Restrict HTTP Methods directives to httpd.conf"

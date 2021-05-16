@@ -1,6 +1,6 @@
 Name: pbase-wordpress
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase WordPress web application rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -83,6 +83,11 @@ append_bashrc_alias() {
 
 
 echo "PBase WordPress installer"
+
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
 
 ## use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars
 RAND_PW_USER="u$(date +%s | sha256sum | base64 | head -c 8)"

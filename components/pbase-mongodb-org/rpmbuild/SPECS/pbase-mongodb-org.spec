@@ -1,6 +1,6 @@
 Name: pbase-mongodb-org
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase MongoDB Install
 Group: System Environment/Base
 License: Apache-2.0
@@ -76,6 +76,13 @@ check_linux_version() {
     echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
   fi
 }
+
+echo "PBase MongoDB service install"
+
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
 
 
 ## check which version of Linux is installed
@@ -159,7 +166,6 @@ fi
 
 echo ""
 
-echo "PBase MongoDB Install complete"
 echo "MongoDB service started, command line ready:"
 echo "                         mongo"
 echo ""

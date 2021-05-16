@@ -1,6 +1,6 @@
 Name: pbase-nextcloud
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase NextCloud service rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-nextcloud
-Requires: pbase-phpmysql-transitive-dep, pbase-apache, unzip, wget, ImageMagick, ImageMagick-devel, php-devel, php-pear, gcc, make
+Requires: pbase-phpmysql-transitive-dep, pbase-apache, unzip, wget, pbase-epel, ImageMagick, ImageMagick-devel, php-devel, php-pear, gcc, make
 
 ## pbase-phpmysql-transitive-dep - has requires for:
 ## php,php-cli,php-json,php-gd,php-mbstring,php-pdo,php-xml,php-pecl-zip,httpd-tools,wget
@@ -87,9 +87,6 @@ append_bashrc_alias() {
   fi
 }
 
-
-echo "PBase NextCloud installer"
-
 ## config is stored in json file with root-only permissions
 ##     /usr/local/pbase-data/admin-only/module-config.d/pbase_nextcloud.json
 
@@ -141,22 +138,30 @@ parseConfig() {
   eval "$1"="$PARSED_VALUE"
 }
 
+echo "PBase NextCloud installer"
+
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
 
 check_linux_version
 echo ""
+echo "Default PBase module configuration directory:"
+echo "                         /usr/local/pbase-data/admin-only/module-config.d/"
 
-## look for config file "pbase_gitea.json"
+## look for config file "pbase_nextcloud.json"
 PBASE_CONFIG_FILENAME="pbase_nextcloud.json"
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config value from JSON file
 parseConfig "DATABASE" ".pbase_nextcloud.database" ""
 parseConfig "CONFIG_URLSUBPATH" ".pbase_nextcloud.urlSubPath" ""
-parseConfig "CONFIG_SUBDOMAIN_NAME" ".pbase_nextcloud.urlSubDomain" "nextcloud"
+parseConfig "URL_SUBDOMAIN" ".pbase_nextcloud.urlSubDomain" "nextcloud"
 
 echo "DATABASE:                $DATABASE"
 echo "CONFIG_URLSUBPATH:       $CONFIG_URLSUBPATH"
-#echo "CONFIG_SUBDOMAIN_NAME:   $CONFIG_SUBDOMAIN_NAME"
+echo "URL_SUBDOMAIN:           $URL_SUBDOMAIN"
 
 SLASH_NEXTCLOUD_URLSUBPATH=""
 
@@ -167,22 +172,95 @@ fi
 echo "SLASH_NEXTCLOUD_URLSUBPATH: ${SLASH_NEXTCLOUD_URLSUBPATH}"
 
 
+PBASE_CONFIG_FILENAME="pbase_lets_encrypt.json"
+locateConfigFile "$PBASE_CONFIG_FILENAME"
+
+## fetch config value from JSON file
+parseConfig "CONFIG_ENABLE_AUTORENEW" ".pbase_lets_encrypt.enableAutoRenew" "true"
+parseConfig "EXECUTE_CERTBOT_CMD" ".pbase_lets_encrypt.executeCertbotCmd" "true"
+
+parseConfig "EMAIL_ADDR" ".pbase_lets_encrypt.emailAddress" "yoursysadmin@yourrealmail.com"
+parseConfig "ADDITIONAL_SUBDOMAIN" ".pbase_lets_encrypt.additionalSubDomain" ""
+
+echo "CONFIG_ENABLE_AUTORENEW: $CONFIG_ENABLE_AUTORENEW"
+echo "EXECUTE_CERTBOT_CMD:     $EXECUTE_CERTBOT_CMD"
+echo "EMAIL_ADDR:              $EMAIL_ADDR"
+echo "ADDITIONAL_SUBDOMAIN:    $ADDITIONAL_SUBDOMAIN"
+
+## make sure certbot is installed
+HAS_CERTBOT_INSTALLED="$(which certbot)"
+
+if [[ -z "${HAS_CERTBOT_INSTALLED}" ]] ; then
+  echo "Certbot not installed"
+  EXECUTE_CERTBOT_CMD="false"
+else
+  echo "Certbot is installed     ${HAS_CERTBOT_INSTALLED}"
+fi
+
+
+HAS_APACHE_ROOTDOMAIN_CONF=""
+ROOTDOMAIN_HTTP_CONF_FILE="/etc/httpd/conf.d/${THISDOMAINNAME}.conf"
+
+if [[ -e "${ROOTDOMAIN_HTTP_CONF_FILE}" ]] ; then
+  echo "Found existing Apache root domain .conf file "
+  HAS_APACHE_ROOTDOMAIN_CONF="true"
+fi
+
+
+## fetch previously registered domain names
+DOMAIN_NAME_LIST=""
+SAVE_CMD_DIR="/usr/local/pbase-data/admin-only"
+
+read -r DOMAIN_NAME_LIST < "${SAVE_CMD_DIR}/domain-name-list.txt"
+
+echo "Saved domain names:      ${SAVE_CMD_DIR}/domain-name-list.txt"
+echo "Found domain-name-list:  ${DOMAIN_NAME_LIST}"
+
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
 
 ## FULLDOMAINNAME is the subdomain if declared plus the domain
 FULLDOMAINNAME="${THISDOMAINNAME}"
-QT="'"
-URL_SUBDOMAIN_QUOTED="${QT}${QT}"
 
-if [[ "${CONFIG_SUBDOMAIN_NAME}" != "" ]] ; then
-  FULLDOMAINNAME="${CONFIG_SUBDOMAIN_NAME}.${THISDOMAINNAME}"
-  URL_SUBDOMAIN_QUOTED=${QT}${CONFIG_SUBDOMAIN_NAME}${QT}
+## FIRSTDOMAINNREGISTERED should match the subdirectory under /etc/letsencrypt/live
+FIRSTDOMAINNREGISTERED="${FULLDOMAINNAME}"
+
+if [[ ${URL_SUBDOMAIN} == "" ]] || [[ ${URL_SUBDOMAIN} == null ]] ; then
+  FULLDOMAINNAME="${THISDOMAINNAME}"
+  echo "Using root domain:       ${FULLDOMAINNAME}"
+else
+  FULLDOMAINNAME="${URL_SUBDOMAIN}.${THISDOMAINNAME}"
   echo "Using subdomain:         ${FULLDOMAINNAME}"
 fi
 
-echo "CONFIG_SUBDOMAIN_NAME:   ${URL_SUBDOMAIN_QUOTED}"
 
+DOMAIN_NAME_LIST_NEW=""
+DOMAIN_NAME_PARAM=""
+
+if [[ "${DOMAIN_NAME_LIST}" == "" ]] ; then
+  DOMAIN_NAME_LIST_NEW="${FULLDOMAINNAME}"
+  DOMAIN_NAME_PARAM="${FULLDOMAINNAME}"
+else
+    ## use cut to grab first name from comma delimited list
+    FIRSTDOMAINNREGISTERED=$(cut -f1 -d "," ${SAVE_CMD_DIR}/domain-name-list.txt)
+    echo "FIRSTDOMAINNREGISTERED:  ${FIRSTDOMAINNREGISTERED}"
+
+  if [[ "${DOMAIN_NAME_LIST}" == *"${FULLDOMAINNAME}"* ]]; then
+    echo "Already has ${FULLDOMAINNAME}"
+    DOMAIN_NAME_LIST_NEW="${DOMAIN_NAME_LIST}"
+    DOMAIN_NAME_PARAM="${DOMAIN_NAME_LIST}"
+  else
+    echo "Adding ${FULLDOMAINNAME}"
+    DOMAIN_NAME_LIST_NEW="${DOMAIN_NAME_LIST},${FULLDOMAINNAME}"
+    DOMAIN_NAME_PARAM="${DOMAIN_NAME_LIST},${FULLDOMAINNAME} --expand"
+  fi
+fi
+
+echo ""
+echo "${DOMAIN_NAME_LIST_NEW}" > ${SAVE_CMD_DIR}/domain-name-list.txt
+echo "Saved domain names:      ${SAVE_CMD_DIR}/domain-name-list.txt"
+echo "                         ${DOMAIN_NAME_LIST_NEW}"
+echo ""
 
 ## when DB_PSWD is populated below that means DB config has been defined
 DB_PSWD=""
@@ -210,7 +288,7 @@ fi
 
 PATH_TO_DBCONFIG="/usr/local/pbase-data/admin-only/module-config.d/${PBASE_CONFIG_FILENAME}"
 
-
+echo ""
 echo "Downloading NextCloud server binary from download.nextcloud.com"
 
 mkdir -p /usr/local/pbase-data/pbase-nextcloud
@@ -230,11 +308,12 @@ unzip -q latest.zip -d "$VAR_WWW_ROOT"
 mkdir $VAR_WWW_ROOT/nextcloud/data
 chown -R apache:apache $VAR_WWW_ROOT/nextcloud/*
 
+echo ""
 echo "Nextcloud base:          ${VAR_WWW_ROOT}/nextcloud"
 #echo "Apache alias config:     /etc/httpd/conf.d/nextcloud.conf"
 #/bin/cp --no-clobber /usr/local/pbase-data/pbase-nextcloud/etc-httpd-confd/nextcloud.conf /etc/httpd/conf.d/
 
-echo "Apache vhost config:     /etc/httpd/conf.d/nextcloud-vhost.conf"
+echo "Apache vhost template:   /etc/httpd/conf.d/nextcloud-vhost.conf"
 echo "FULLDOMAINNAME:          $FULLDOMAINNAME"
 /bin/cp --no-clobber /usr/local/pbase-data/pbase-nextcloud/etc-httpd-confd/nextcloud-vhost.conf /etc/httpd/conf.d/
 
@@ -246,6 +325,9 @@ fi
 ## replace your.server.com in template conf
 sed -i "s/your.server.com/${FULLDOMAINNAME}/" "/etc/httpd/conf.d/nextcloud-vhost.conf"
 
+## rename conf file to match the full domain name
+echo "Nextcloud proxy:         /etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
+mv "/etc/httpd/conf.d/nextcloud-vhost.conf" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
 
 ## adjust php-fpm owners list
 PHP_FPM_CONF="/etc/php-fpm-7.2.d/www.conf"
@@ -278,7 +360,8 @@ if [[ -e "${IMAGEMAGIK_PHP_INI}" ]]; then
   echo "Already exists:          ${IMAGEMAGIK_PHP_INI}"
 else
   echo "Invoking:                pecl install imagick"
-  pecl install imagick
+  pecl channel-update pecl.php.net
+  pecl -q install imagick
 
   echo ""
   echo "Adding PHP extension:    ${IMAGEMAGIK_PHP_INI}"
@@ -302,12 +385,30 @@ else
   /bin/systemctl restart httpd || fail "failed to restart httpd service"
 fi
 
+
+  ## LETS ENCRYPT - HTTPS CERTIFICATE
+  echo ""
+  CERTBOT_CMD="certbot --apache --agree-tos --email ${EMAIL_ADDR} -n -d ${DOMAIN_NAME_PARAM}"
+
+  ## save command line in file
+  echo "Saving command line:     ${SAVE_CMD_DIR}/certbot-cmd.sh"
+  echo ${CERTBOT_CMD} > ${SAVE_CMD_DIR}/certbot-cmd.sh
+
+  if [[ $EXECUTE_CERTBOT_CMD == "true" ]] ; then
+    echo "Executing:               ${CERTBOT_CMD}"
+    echo ""
+    eval "${CERTBOT_CMD}"
+  else
+    echo "Skipping execute:        EXECUTE_CERTBOT_CMD=false"
+    echo "                         ${CERTBOT_CMD}"
+  fi
+
 echo "Default PBase module configuration directory:"
 echo "                         /usr/local/pbase-data/admin-only/module-config.d/"
 
 INSTALLED_DOMAIN_URI="${THISDOMAINNAME}${SLASH_NEXTCLOUD_URLSUBPATH}"
 
-if [[ "$CONFIG_SUBDOMAIN_NAME" != "" ]] ; then
+if [[ "$URL_SUBDOMAIN" != "" ]] ; then
   INSTALLED_DOMAIN_URI="${FULLDOMAINNAME}"
 fi
 

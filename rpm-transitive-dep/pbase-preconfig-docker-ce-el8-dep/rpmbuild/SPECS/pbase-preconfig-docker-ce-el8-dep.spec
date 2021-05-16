@@ -11,7 +11,6 @@ BuildRoot: %{_tmppath}/%{name}-buildroot
 Provides: pbase-preconfig-docker-ce-transitive-dep
 Requires: python3
 
-
 %description
 PBase Docker CE transitive dependencies for EL8 and higher
 

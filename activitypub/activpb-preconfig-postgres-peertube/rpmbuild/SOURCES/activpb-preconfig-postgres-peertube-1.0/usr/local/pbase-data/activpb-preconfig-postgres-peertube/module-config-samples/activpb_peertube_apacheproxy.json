@@ -1,0 +1,9 @@
+{
+  "activpb_peertube" : {
+    "peertubeVersion": "",
+    "port": 9000,
+    "addNgnixProxy": false,
+    "addApacheProxy": true,
+    "urlSubDomain": "peertube"
+  }
+}

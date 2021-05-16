@@ -1,6 +1,6 @@
 Name: pbase-preconfig-mysql-gitea
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase MySQL preconfigure rpm, preset user and DB name for use by pbase-gitea
 Group: System Environment/Base
 License: Apache-2.0
@@ -47,7 +47,7 @@ locateConfigFile() {
   PBASE_ALL_IN_ONE_CONFIG_FILENAME="pbase_module_config.json"
   PBASE_CONFIG_DIR="${PBASE_CONFIG_BASE}/module-config.d"
 
-  ## Look for config .json file in one of two places.
+  ## config is stored in json file with root-only permissions
   ##     in the directory: /usr/local/pbase-data/admin-only/module-config.d/
 
   PBASE_CONFIG_SEPARATE="${PBASE_CONFIG_DIR}/${PBASE_CONFIG_FILENAME}"
@@ -134,20 +134,30 @@ setFieldInJsonModuleConfig() {
 
   CONFIG_FILE_NAME="${MODULE}.json"
   TEMPLATE_JSON_FILE="${SOURCE_DIR}/${CONFIG_FILE_NAME}"
-  /bin/cp -f "${TEMPLATE_JSON_FILE}" "/tmp/${CONFIG_FILE_NAME}"
 
-  ## set a value in the json file
-  PREFIX="jq '.${MODULE}.${FULLFIELDNAME}= \""
-  SUFFIX="\"'"
-  JQ_COMMAND="${PREFIX}${NEWVALUE}${SUFFIX} /tmp/${CONFIG_FILE_NAME} > ${MODULE_CONFIG_DIR}/${CONFIG_FILE_NAME}"
+  if [[ -e "${TEMPLATE_JSON_FILE}" ]] ; then
+    /bin/cp -f "${TEMPLATE_JSON_FILE}" "/tmp/${CONFIG_FILE_NAME}"
 
-  ##echo "Executing:  eval $JQ_COMMAND"
-  eval $JQ_COMMAND
+    ## set a value in the json file
+    PREFIX="jq '.${MODULE}.${FULLFIELDNAME}= \""
+    SUFFIX="\"'"
+    JQ_COMMAND="${PREFIX}${NEWVALUE}${SUFFIX} /tmp/${CONFIG_FILE_NAME} > ${MODULE_CONFIG_DIR}/${CONFIG_FILE_NAME}"
 
-  /bin/rm -f "/tmp/${CONFIG_FILE_NAME}"
+    ##echo "Executing:  eval $JQ_COMMAND"
+    eval $JQ_COMMAND
+
+    /bin/rm -f "/tmp/${CONFIG_FILE_NAME}"
+  else
+    echo "Pre-config not present:   ${TEMPLATE_JSON_FILE}"
+  fi
 }
 
 echo "PBase MySQL create config preset user and DB name for use by pbase-gitea"
+
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
 
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
@@ -177,12 +187,87 @@ if [[ $DEFAULT_SUB_DOMAIN == null ]] ; then
   echo "No DEFAULT_SUB_DOMAIN override file found, using 'git' for defaultSubDomain"
   DEFAULT_SUB_DOMAIN="git"
 fi
-##echo "DEFAULT_SUB_DOMAIN:      ${DEFAULT_SUB_DOMAIN}"
+#echo "DEFAULT_SUB_DOMAIN:      ${DEFAULT_SUB_DOMAIN}"
+
+
+## check if subdomain declared in pbase_repo.json needs to be updated
+## handle case of new app running in a subdomain being overlaid on an existing apache running the root domain
+## this is done by adding apache proxy instead of nginx proxy
+
+PREVIOUS_SUB_DOMAIN="${DEFAULT_SUB_DOMAIN}"
+DEFAULT_SUB_DOMAIN=""
+PBASE_REPO_JSON_PATH="/usr/local/pbase-data/admin-only/module-config.d/pbase_repo.json"
+
+if [[ -e "/root/DEFAULT_SUB_DOMAIN.txt" ]] ; then
+  read -r DEFAULT_SUB_DOMAIN < /root/DEFAULT_SUB_DOMAIN.txt
+
+  if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] && [[ "${PREVIOUS_SUB_DOMAIN}" == "" ]] ; then
+    echo "Adding subdomain name:   pbase_repo.json"
+    sed -i "s/defaultSubDomain\": null/defaultSubDomain\": \"${DEFAULT_SUB_DOMAIN}\"/" ${PBASE_REPO_JSON_PATH}
+    sed -i "s/defaultSubDomain\": \"\"/defaultSubDomain\": \"${DEFAULT_SUB_DOMAIN}\"/" ${PBASE_REPO_JSON_PATH}
+  fi
+fi
 
 
 ## when smtp password was given, but not server then assume mailgun
 if [[ "${DEFAULT_SMTP_SERVER}" == "" ]] && [[ "${DEFAULT_SMTP_PASSWORD}" != "" ]] ; then
   DEFAULT_SMTP_SERVER="smtp.mailgun.org"
+fi
+
+
+HAS_APACHE_CONF=""
+HAS_APACHE_ROOTDOMAIN_CONF=""
+HAS_APACHE_SUBDOMAIN_CONF=""
+
+## FULLDOMAINNAME is the subdomain if declared plus the domain
+FULLDOMAINNAME="${THISDOMAINNAME}"
+
+## check for case subdomain proxy to be added
+ROOTDOMAIN_HTTP_CONF_FILE=""
+SUBDOMAIN_HTTP_CONF_FILE=""
+
+
+if [[ -e "/etc/httpd/conf.d/${THISDOMAINNAME}.conf" ]] ; then
+  echo "Found existing Apache on this host, will configure Apache proxy"
+  ROOTDOMAIN_HTTP_CONF_FILE="/etc/httpd/conf.d/${THISDOMAINNAME}.conf"
+  HAS_APACHE_ROOTDOMAIN_CONF="true"
+  HAS_APACHE_CONF="true"
+fi
+
+if [[ "${SUBDOMAIN_NAME}" == "" ]] ; then
+  FULLDOMAINNAME="${THISDOMAINNAME}"
+  echo "Using root domain:       ${FULLDOMAINNAME}"
+
+  ## replace existing root domain conf
+  if [[ -e "/etc/httpd/conf.d/${THISDOMAINNAME}.conf" ]] ; then
+    echo "Found existing Apache root domain .conf file"
+    SUBDOMAIN_HTTP_CONF_FILE="/etc/httpd/conf.d/${THISDOMAINNAME}.conf"
+    HAS_APACHE_SUBDOMAIN_CONF=""
+    HAS_APACHE_CONF="true"
+  fi
+
+else
+  FULLDOMAINNAME="${SUBDOMAIN_NAME}.${THISDOMAINNAME}"
+  echo "Using subdomain:         ${FULLDOMAINNAME}"
+
+  ## replace existing subdomain conf
+  if [[ -e "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf" ]] ; then
+    echo "Found existing Apache subdomain .conf file"
+    ## mv "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf-DISABLED"
+    SUBDOMAIN_HTTP_CONF_FILE="/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
+    HAS_APACHE_SUBDOMAIN_CONF="true"
+    HAS_APACHE_CONF="true"
+  fi
+fi
+
+
+if [[ "${HAS_APACHE_CONF}" == "" ]] ; then
+  echo "Found no existing Apache on this host"
+else
+  ## disable unused config file: apache ssl.conf
+  if [[ -e "/etc/httpd/conf.d/ssl.conf" ]] ; then
+    mv "/etc/httpd/conf.d/ssl.conf" "/etc/httpd/conf.d/ssl.conf-DISABLED"
+  fi
 fi
 
 
@@ -207,15 +292,17 @@ fi
 QT="'"
 DEFAULT_SUB_DOMAIN_QUOTED=${QT}${DEFAULT_SUB_DOMAIN}${QT}
 
-echo "DEFAULT_SUB_DOMAIN:      ${DEFAULT_SUB_DOMAIN_QUOTED}"
+##echo "DEFAULT_SUB_DOMAIN:      ${DEFAULT_SUB_DOMAIN_QUOTED}"
 
 if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] ; then
-  echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN}"
+  echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN_QUOTED}"
   setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_lets_encrypt urlSubDomain
   setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_apache urlSubDomain
 else
   echo "Setting empty urlSubDomain, Gitea will be root level of domain"
+  echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN_QUOTED}"
   setFieldInJsonModuleConfig "" pbase_lets_encrypt urlSubDomain
+  setFieldInJsonModuleConfig "" pbase_apache urlSubDomain
 fi
 
 echo "SMTP defaults:           ${MODULE_CONFIG_DIR}/pbase_smtp.json"

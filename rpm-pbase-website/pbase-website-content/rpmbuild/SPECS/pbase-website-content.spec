@@ -1,6 +1,6 @@
 Name: pbase-website-content
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase pbase-foundation.com website rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -30,6 +30,13 @@ rm -rf "$RPM_BUILD_ROOT"
 %post
 echo "rpm postinstall $1"
 
+echo "pbase-foundation.com website content:"
+
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
+
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
 
@@ -43,7 +50,6 @@ elif [[ -d "/var/www/html" ]]; then
   ALT_ROOT="/var/www/html"
 fi
 
-echo "pbase-foundation.com website content:"
 echo "                         /var/www/html/${THISDOMAINNAME}/public/"
 /bin/rm -rf /var/www/html/${THISDOMAINNAME}/public
 
@@ -63,6 +69,7 @@ if [[ -e /var/www/html/${THISDOMAINNAME}/public/mp3 ]] ; then
 else
   echo "Creating links to media: /var/www/mp3"
   ln -s /var/www/mp3 mp3
+  #ln -s /var/www/wav wav
 
   ## yum
   ln -s /var/www/yum-repo yum-repo

@@ -1,6 +1,6 @@
 Name: pbase-preconfig-lets-encrypt
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase Let's Encrypt config file create
 Group: System Environment/Base
 License: Apache-2.0

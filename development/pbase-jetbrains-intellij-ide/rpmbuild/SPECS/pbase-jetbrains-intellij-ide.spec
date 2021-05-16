@@ -1,6 +1,6 @@
 Name: pbase-jetbrains-intellij-ide
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase Jetbrains IntelliJ Community Edition download rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -47,7 +47,7 @@ locateConfigFile() {
   PBASE_ALL_IN_ONE_CONFIG_FILENAME="pbase_module_config.json"
   PBASE_CONFIG_DIR="${PBASE_CONFIG_BASE}/module-config.d"
 
-  ## Look for config .json file in one of two places.
+  ## config is stored in json file with root-only permissions
   ##     in the directory: /usr/local/pbase-data/admin-only/module-config.d/
 
   PBASE_CONFIG_SEPARATE="${PBASE_CONFIG_DIR}/${PBASE_CONFIG_FILENAME}"
@@ -114,6 +114,12 @@ copy_if_not_exists() {
 
 
 echo "PBase JetBrains IntelliJ IDE download"
+
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
+
 echo ""
 
 MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
@@ -158,28 +164,30 @@ fi
 echo "Downloading IntelliJ from jetbrains.com"
 
 cd /usr/local/pbase-data/pbase-jetbrains-intellij-ide
+/bin/rm -f ideaIC-latest.tar.gz
 
-wget -q https://download.jetbrains.com/idea/ideaIC-2020.3.2.tar.gz
+## fetch latest release
+curl -L -s -o ideaIC-latest.tar.gz "https://download.jetbrains.com/product?code=IC&latest&distribution=linux"
 
 echo "Downloaded file from jetbrains.com:"
 ls -lh /usr/local/pbase-data/pbase-jetbrains-intellij-ide/*.gz
-tar zxf ideaIC-*.tar.gz -C /opt
+tar zxf ideaIC-latest.tar.gz -C /opt
 
 echo "Unzipped into /opt"
 
 cd /opt
 mv /opt/idea-IC-* /opt/idea-IC
 
+PRODUCT_INFO_FILE="/opt/idea-IC/product-info.json"
+echo "Product info:            ${PRODUCT_INFO_FILE}"
+cat "${PRODUCT_INFO_FILE}"
+echo ""
+
 ## set permission for desktop user
 if [[ "$DEFAULT_DESKTOP_USER_NAME" != "" ]] && [[ "$DEFAULT_DESKTOP_USER_NAME" != null ]]; then
   echo "chown -R $DEFAULT_DESKTOP_USER_NAME:$DEFAULT_DESKTOP_USER_NAME /opt/idea-IC"
   chown -R $DEFAULT_DESKTOP_USER_NAME:$DEFAULT_DESKTOP_USER_NAME /opt/idea-IC
 fi
-
-#echo "Adding env-variables:    /etc/profile.d/pbase-idea.sh"
-#/bin/cp -rf /usr/local/pbase-data/pbase-jetbrains-intellij-ide/etc-profile-d/*.sh /etc/profile.d
-#echo "To re-load now:          source /etc/profile.d/pbase-idea.sh"
-#echo ""
 
 echo "Next step - if needed - as root, change the owner of the IDE directory:"
 echo "       '/opt/idea-IC' to the desktop user"

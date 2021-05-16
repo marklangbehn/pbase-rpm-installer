@@ -11,7 +11,6 @@ BuildRoot: %{_tmppath}/%{name}-buildroot
 Provides: pbase-preconfig-virtualbox-transitive-dep
 Requires: pbase-epel, dkms, fontforge
 
-
 %description
 PBase VirtualBox transitive dependencies for EL6
 

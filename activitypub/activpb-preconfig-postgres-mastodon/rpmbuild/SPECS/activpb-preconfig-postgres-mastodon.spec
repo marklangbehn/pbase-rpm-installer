@@ -1,6 +1,6 @@
 Name: activpb-preconfig-postgres-mastodon
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase Postgres preconfigure rpm, preset user and DB name for use by pbase-mastodon
 Group: System Environment/Base
 License: Apache-2.0
@@ -47,7 +47,7 @@ locateConfigFile() {
   PBASE_ALL_IN_ONE_CONFIG_FILENAME="pbase_module_config.json"
   PBASE_CONFIG_DIR="${PBASE_CONFIG_BASE}/module-config.d"
 
-  ## Look for config .json file in one of two places.
+  ## config is stored in json file with root-only permissions
   ##     in the directory: /usr/local/pbase-data/admin-only/module-config.d/
 
   PBASE_CONFIG_SEPARATE="${PBASE_CONFIG_DIR}/${PBASE_CONFIG_FILENAME}"
@@ -134,20 +134,30 @@ setFieldInJsonModuleConfig() {
 
   CONFIG_FILE_NAME="${MODULE}.json"
   TEMPLATE_JSON_FILE="${SOURCE_DIR}/${CONFIG_FILE_NAME}"
-  /bin/cp -f "${TEMPLATE_JSON_FILE}" "/tmp/${CONFIG_FILE_NAME}"
 
-  ## set a value in the json file
-  PREFIX="jq '.${MODULE}.${FULLFIELDNAME}= \""
-  SUFFIX="\"'"
-  JQ_COMMAND="${PREFIX}${NEWVALUE}${SUFFIX} /tmp/${CONFIG_FILE_NAME} > ${MODULE_CONFIG_DIR}/${CONFIG_FILE_NAME}"
+  if [[ -e "${TEMPLATE_JSON_FILE}" ]] ; then
+    /bin/cp -f "${TEMPLATE_JSON_FILE}" "/tmp/${CONFIG_FILE_NAME}"
 
-  ##echo "Executing:  eval $JQ_COMMAND"
-  eval $JQ_COMMAND
+    ## set a value in the json file
+    PREFIX="jq '.${MODULE}.${FULLFIELDNAME}= \""
+    SUFFIX="\"'"
+    JQ_COMMAND="${PREFIX}${NEWVALUE}${SUFFIX} /tmp/${CONFIG_FILE_NAME} > ${MODULE_CONFIG_DIR}/${CONFIG_FILE_NAME}"
 
-  /bin/rm -f "/tmp/${CONFIG_FILE_NAME}"
+    ##echo "Executing:  eval $JQ_COMMAND"
+    eval $JQ_COMMAND
+
+    /bin/rm -f "/tmp/${CONFIG_FILE_NAME}"
+  else
+    echo "Pre-config not present:   ${TEMPLATE_JSON_FILE}"
+  fi
 }
 
 echo "PBase Postgres create config preset user and DB name for use by activpb-mastodon"
+
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
 
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
@@ -178,6 +188,26 @@ if [[ $DEFAULT_SUB_DOMAIN == null ]] ; then
   DEFAULT_SUB_DOMAIN="mastodon"
 fi
 #echo "DEFAULT_SUB_DOMAIN:      ${DEFAULT_SUB_DOMAIN}"
+
+
+## check if subdomain declared in pbase_repo.json needs to be updated
+## handle case of new app running in a subdomain being overlaid on an existing apache running the root domain
+## this is done by adding apache proxy instead of nginx proxy
+
+PREVIOUS_SUB_DOMAIN="${DEFAULT_SUB_DOMAIN}"
+DEFAULT_SUB_DOMAIN=""
+PBASE_REPO_JSON_PATH="/usr/local/pbase-data/admin-only/module-config.d/pbase_repo.json"
+PBASE_LETS_ENCRYPT_JSON_PATH="/usr/local/pbase-data/admin-only/module-config.d/pbase_lets_encrypt.json"
+
+if [[ -e "/root/DEFAULT_SUB_DOMAIN.txt" ]] ; then
+  read -r DEFAULT_SUB_DOMAIN < /root/DEFAULT_SUB_DOMAIN.txt
+
+  if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] && [[ "${PREVIOUS_SUB_DOMAIN}" == "" ]] ; then
+    echo "Adding subdomain name:   pbase_repo.json"
+    sed -i "s/defaultSubDomain\": null/defaultSubDomain\": \"${DEFAULT_SUB_DOMAIN}\"/" ${PBASE_REPO_JSON_PATH}
+    sed -i "s/defaultSubDomain\": \"\"/defaultSubDomain\": \"${DEFAULT_SUB_DOMAIN}\"/" ${PBASE_REPO_JSON_PATH}
+  fi
+fi
 
 
 ## when smtp password was given, but not server then assume mailgun
@@ -253,12 +283,13 @@ sed -i "s/example.com/${THISDOMAINNAME}/" "${MODULE_CONFIG_DIR}/pbase_smtp.json"
 echo ""
 echo "Postgres, SMTP and Let's Encrypt module config files for Mastodon added."
 echo "Next step - optional - review the configuration defaults provided"
+echo "    make sure that pbase_smtp.json contains valid credentials."
 echo "    under 'module-config.d' by editing their JSON text files. For example:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
 echo "  vi pbase_lets_encrypt.json"
 echo "  vi pbase_postgres.json"
-echo "  vi pbase_smtp.json         ## must contain valid SMTP credentials"
+echo "  vi pbase_smtp.json"
 echo "  vi activpb_mastodon.json"
 echo ""
 

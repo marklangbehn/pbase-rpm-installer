@@ -1,6 +1,6 @@
 Name: activpb-preconfig-postgres-peertube
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase Postgres preconfigure rpm, preset user and DB name for use by activpb-peertube
 Group: System Environment/Base
 License: Apache-2.0
@@ -134,20 +134,44 @@ setFieldInJsonModuleConfig() {
 
   CONFIG_FILE_NAME="${MODULE}.json"
   TEMPLATE_JSON_FILE="${SOURCE_DIR}/${CONFIG_FILE_NAME}"
-  /bin/cp -f "${TEMPLATE_JSON_FILE}" "/tmp/${CONFIG_FILE_NAME}"
 
-  ## set a value in the json file
-  PREFIX="jq '.${MODULE}.${FULLFIELDNAME}= \""
-  SUFFIX="\"'"
-  JQ_COMMAND="${PREFIX}${NEWVALUE}${SUFFIX} /tmp/${CONFIG_FILE_NAME} > ${MODULE_CONFIG_DIR}/${CONFIG_FILE_NAME}"
+  if [[ -e "${TEMPLATE_JSON_FILE}" ]] ; then
+    /bin/cp -f "${TEMPLATE_JSON_FILE}" "/tmp/${CONFIG_FILE_NAME}"
 
-  ##echo "Executing:  eval $JQ_COMMAND"
-  eval $JQ_COMMAND
+    ## set a value in the json file
+    PREFIX="jq '.${MODULE}.${FULLFIELDNAME}= \""
+    SUFFIX="\"'"
+    JQ_COMMAND="${PREFIX}${NEWVALUE}${SUFFIX} /tmp/${CONFIG_FILE_NAME} > ${MODULE_CONFIG_DIR}/${CONFIG_FILE_NAME}"
 
-  /bin/rm -f "/tmp/${CONFIG_FILE_NAME}"
+    ##echo "Executing:  eval $JQ_COMMAND"
+    eval $JQ_COMMAND
+
+    /bin/rm -f "/tmp/${CONFIG_FILE_NAME}"
+  else
+    echo "Pre-config not present:   ${TEMPLATE_JSON_FILE}"
+  fi
 }
 
 echo "PBase Postgres create config preset user and DB name for use by activpb-peertube"
+
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
+
+## check if node 12 or higher installed
+VERS_INSTALLED="$(node --version)"
+VERS_REQUIRED="v12.0.0"
+
+if [ "$(printf '%s\n' "$VERS_REQUIRED" "$VERS_INSTALLED" | sort -V | head -n1)" = "$VERS_REQUIRED" ]; then
+  echo "Node version:            ${VERS_INSTALLED}"
+  echo ""
+else
+  echo "Less than ${VERS_REQUIRED}"
+  echo "Node version 12 or higher required, found: ${VERS_INSTALLED}"
+  echo "MUST upgrade node before Peertube can be installed"
+  echo ""
+fi
 
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
@@ -180,17 +204,98 @@ fi
 #echo "DEFAULT_SUB_DOMAIN:      ${DEFAULT_SUB_DOMAIN}"
 
 
+## check if subdomain declared in pbase_repo.json needs to be updated
+## handle case of new app running in a subdomain being overlaid on an existing apache running the root domain
+## this is done by adding apache proxy instead of nginx proxy
+
+PREVIOUS_SUB_DOMAIN="${DEFAULT_SUB_DOMAIN}"
+DEFAULT_SUB_DOMAIN=""
+PBASE_REPO_JSON_PATH="/usr/local/pbase-data/admin-only/module-config.d/pbase_repo.json"
+PBASE_LETS_ENCRYPT_JSON_PATH="/usr/local/pbase-data/admin-only/module-config.d/pbase_lets_encrypt.json"
+
+if [[ -e "/root/DEFAULT_SUB_DOMAIN.txt" ]] ; then
+  read -r DEFAULT_SUB_DOMAIN < /root/DEFAULT_SUB_DOMAIN.txt
+
+  if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] && [[ "${PREVIOUS_SUB_DOMAIN}" == "" ]] ; then
+    echo "Adding subdomain name:   pbase_repo.json"
+    sed -i "s/defaultSubDomain\": null/defaultSubDomain\": \"${DEFAULT_SUB_DOMAIN}\"/" ${PBASE_REPO_JSON_PATH}
+    sed -i "s/defaultSubDomain\": \"\"/defaultSubDomain\": \"${DEFAULT_SUB_DOMAIN}\"/" ${PBASE_REPO_JSON_PATH}
+  fi
+fi
+
+
 ## when smtp password was given, but not server then assume mailgun
 if [[ "${DEFAULT_SMTP_SERVER}" == "" ]] && [[ "${DEFAULT_SMTP_PASSWORD}" != "" ]] ; then
   DEFAULT_SMTP_SERVER="smtp.mailgun.org"
 fi
 
 
+HAS_APACHE_CONF=""
+HAS_APACHE_ROOTDOMAIN_CONF=""
+HAS_APACHE_SUBDOMAIN_CONF=""
+
+## FULLDOMAINNAME is the subdomain if declared plus the domain
+FULLDOMAINNAME="${THISDOMAINNAME}"
+
+## check for case subdomain proxy to be added
+PEERTUBE_JSON_FILENAME="activpb_peertube.json"
+ROOTDOMAIN_HTTP_CONF_FILE=""
+SUBDOMAIN_HTTP_CONF_FILE=""
+
+
+if [[ -e "/etc/httpd/conf.d/${THISDOMAINNAME}.conf" ]] ; then
+  echo "Found existing Apache on this host, will configure Apache proxy"
+  PEERTUBE_JSON_FILENAME="activpb_peertube_apacheproxy.json"
+  ROOTDOMAIN_HTTP_CONF_FILE="/etc/httpd/conf.d/${THISDOMAINNAME}.conf"
+  HAS_APACHE_ROOTDOMAIN_CONF="true"
+  HAS_APACHE_CONF="true"
+fi
+
+if [[ "${SUBDOMAIN_NAME}" == "" ]] ; then
+  FULLDOMAINNAME="${THISDOMAINNAME}"
+  echo "Using root domain:       ${FULLDOMAINNAME}"
+
+  ## replace existing root domain conf
+  if [[ -e "/etc/httpd/conf.d/${THISDOMAINNAME}.conf" ]] ; then
+    echo "Found existing Apache root domain .conf file"
+    PEERTUBE_JSON_FILENAME="activpb_peertube_apacheproxy.json"
+    SUBDOMAIN_HTTP_CONF_FILE="/etc/httpd/conf.d/${THISDOMAINNAME}.conf"
+    HAS_APACHE_SUBDOMAIN_CONF=""
+    HAS_APACHE_CONF="true"
+  fi
+
+else
+  FULLDOMAINNAME="${SUBDOMAIN_NAME}.${THISDOMAINNAME}"
+  echo "Using subdomain:         ${FULLDOMAINNAME}"
+
+  ## replace existing subdomain conf
+  if [[ -e "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf" ]] ; then
+    echo "Found existing Apache subdomain .conf file"
+    ## mv "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf-DISABLED"
+    PEERTUBE_JSON_FILENAME="activpb_peertube_apacheproxy.json"
+    SUBDOMAIN_HTTP_CONF_FILE="/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
+    HAS_APACHE_SUBDOMAIN_CONF="true"
+    HAS_APACHE_CONF="true"
+  fi
+fi
+
+
+if [[ "${HAS_APACHE_CONF}" == "" ]] ; then
+  echo "Found no existing Apache on this host, will add Nginx proxy"
+else
+  ## disable unused config file: apache ssl.conf
+  if [[ -e "/etc/httpd/conf.d/ssl.conf" ]] ; then
+    mv "/etc/httpd/conf.d/ssl.conf" "/etc/httpd/conf.d/ssl.conf-DISABLED"
+  fi
+fi
+
+
 DB_CONFIG_FILENAME="pbase_postgres.json"
 
 echo "Peertube config:         ${MODULE_CONFIG_DIR}/activpb_peertube.json"
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${PEERTUBE_JSON_FILENAME}  ${MODULE_CONFIG_DIR}/activpb_peertube.json
+
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_lets_encrypt.json  ${MODULE_CONFIG_DIR}/
-/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/activpb_peertube.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_smtp.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_postgres.json  ${MODULE_CONFIG_DIR}/
 
@@ -199,6 +304,7 @@ echo "Let's Encrypt defaults:  ${MODULE_CONFIG_DIR}/pbase_lets_encrypt.json"
 if [[ "${DEFAULT_EMAIL_ADDRESS}" != "" ]] ; then
   echo "emailAddress:            ${DEFAULT_EMAIL_ADDRESS}"
   setFieldInJsonModuleConfig ${DEFAULT_EMAIL_ADDRESS} pbase_lets_encrypt emailAddress
+  setFieldInJsonModuleConfig ${DEFAULT_EMAIL_ADDRESS} pbase_apache serverAdmin
 fi
 
 QT="'"
@@ -210,10 +316,12 @@ if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] ; then
   echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN}"
   setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_lets_encrypt urlSubDomain
   setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} activpb_peertube urlSubDomain
+  setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_apache urlSubDomain
 else
   echo "Setting empty urlSubDomain, Peertube will be root level of domain"
   setFieldInJsonModuleConfig "" pbase_lets_encrypt urlSubDomain
   setFieldInJsonModuleConfig "" activpb_peertube urlSubDomain
+  setFieldInJsonModuleConfig "" pbase_apache urlSubDomain
 fi
 
 echo "SMTP defaults:           ${MODULE_CONFIG_DIR}/pbase_smtp.json"
@@ -270,6 +378,7 @@ echo ""
 %files
 %defattr(600,root,root,700)
 /usr/local/pbase-data/activpb-preconfig-postgres-peertube/module-config-samples/activpb_peertube.json
+/usr/local/pbase-data/activpb-preconfig-postgres-peertube/module-config-samples/activpb_peertube_apacheproxy.json
 /usr/local/pbase-data/activpb-preconfig-postgres-peertube/module-config-samples/pbase_lets_encrypt.json
 /usr/local/pbase-data/activpb-preconfig-postgres-peertube/module-config-samples/pbase_postgres.json
 /usr/local/pbase-data/activpb-preconfig-postgres-peertube/module-config-samples/pbase_s3storage.json

@@ -5,7 +5,8 @@
 Installing and configuring a Linux server can be challenging. 
 PBase-Foundation is a set of configurable RPM installers
 that provide a foundation for servers and desktops that work consistently across several versions
-of the Red Hat Enterprise Linux and CentOS operating system family.
+of the operating system family based on Red Hat Enterprise Linux (EL), 
+such as CentOS, Alma Linux, Rocky Linux and Oracle Linux.
 Several application stack installers are provided using these RPM components.
 
 ## Our Almost Famous 4-Minute Installation
@@ -39,7 +40,9 @@ Requires a Red Hat Enterprise Linux (EL) compatible operating system such as:
 - Red Hat EL 6, 7 or 8
 - CentOS 6, 7, 8 including CentOS Steam 8
 - Amazon Linux 1 or 2 AMI
-- Fedora 3x (tested on Fedora versions 31 through 33 for most RPM components)
+- AlmaLinux 8
+- Rocky Linux 8
+- Fedora 3x (tested on Fedora versions 31 through 34 for most RPM components)
 
 All `yum` install commands must be run as root user, or using sudo.
 
@@ -360,6 +363,47 @@ When install is done load the shell-aliases from .bashrc and run the "tailelasti
 source ~/.bashrc
 tailelastic
 ```
+
+#### PHP 7.4
+The Remi PHP repository is installed first with the remi-release-XX.rpm file URL whose name matches to your OS.
+Then depending on your OS version a pair of yum commands will be needed to enable the php from the Remi repo.  
+  
+Start with installing the pbase-repo ...
+```
+yum -y install https://pbase-foundation.com/pbase-repo.rpm
+```
+
+EL8 - add remi repo
+```
+yum -y install pbase-epel
+yum -y install https://rpms.remirepo.net/enterprise/remi-release-8.rpm
+yum module reset php
+yum module install php:remi-7.4
+yum install php
+```
+
+EL7 - add remi repo
+```
+yum -y install pbase-epel
+yum -y install https://rpms.remirepo.net/enterprise/remi-release-7.rpm
+yum -y install yum-utils
+yum-config-manager --enable remi-php74
+yum install php
+```
+
+FEDORA 34 - add remi repo
+```
+yum install https://rpms.remirepo.net/fedora/remi-release-34.rpm
+yum module reset php
+yum module install php:remi-7.4
+yum install php
+```
+
+Amazon Linux 2
+```
+amazon-linux-extras install php7.4
+```
+
 
 #### Nextcloud
   

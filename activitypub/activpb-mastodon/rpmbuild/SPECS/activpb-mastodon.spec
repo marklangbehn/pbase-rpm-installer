@@ -1,6 +1,6 @@
 Name: activpb-mastodon
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase Mastodon service rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -46,7 +46,7 @@ append_bashrc_alias() {
 }
 
 ## config is stored in json file with root-only permissions
-##     /usr/local/pbase-data/admin-only/module-config.d/activpb_mastodon.json
+##     in the directory: /usr/local/pbase-data/admin-only/module-config.d/
 
 
 locateConfigFile() {
@@ -98,6 +98,11 @@ parseConfig() {
 
 echo "PBase Mastodon server install"
 
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
+
 ## check if already installed
 if [[ -e "/home/mastodon/live/.env.production" ]]; then
   echo "/home/mastodon/live/.env.production already exists - exiting"
@@ -130,7 +135,7 @@ parseConfig "MASTODON_VER_CONFIG" ".activpb_mastodon.mastodonVersion" ""
 
 parseConfig "HTTP_PORT" ".activpb_mastodon.port" "3000"
 parseConfig "ADD_NGINX_PROXY" ".activpb_mastodon.addNgnixProxy" "true"
-parseConfig "URL_SUB_DOMAIN" ".activpb_mastodon.urlSubDomain" "mastodon"
+parseConfig "URL_SUBDOMAIN" ".activpb_mastodon.urlSubDomain" "mastodon"
 parseConfig "WEB_DOMAIN_NAME" ".activpb_mastodon.webDomainName" ""
 parseConfig "ALTERNATE_DOMAINS" ".activpb_mastodon.alternateDomains" ""
 parseConfig "SINGLE_USER_MODE" ".activpb_mastodon.singleUserMode" "false"
@@ -140,7 +145,7 @@ parseConfig "LIMITED_FEDERATION_MODE" ".activpb_mastodon.limitedFederationMode" 
 
 echo "HTTP_PORT:               $HTTP_PORT"
 ##echo "ADD_NGINX_PROXY:         $ADD_NGINX_PROXY"
-echo "URL_SUB_DOMAIN:         $URL_SUB_DOMAIN"
+echo "URL_SUBDOMAIN:           $URL_SUBDOMAIN"
 echo "WEB_DOMAIN_NAME:         $WEB_DOMAIN_NAME"
 echo "ALTERNATE_DOMAINS:       $ALTERNATE_DOMAINS"
 echo "SINGLE_USER_MODE:        $SINGLE_USER_MODE"
@@ -189,12 +194,12 @@ echo "CONFIG_DB_PSWD:          $CONFIG_DB_PSWD"
 echo ""
 
 PBASE_CONFIG_FILENAME="pbase_lets_encrypt.json"
-
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config value from JSON file
 parseConfig "CONFIG_ENABLE_AUTORENEW" ".pbase_lets_encrypt.enableAutoRenew" "true"
 parseConfig "EXECUTE_CERTBOT_CMD" ".pbase_lets_encrypt.executeCertbotCmd" "true"
+
 parseConfig "EMAIL_ADDR" ".pbase_lets_encrypt.emailAddress" "yoursysadmin@yourrealmail.com"
 parseConfig "ADDITIONAL_SUBDOMAIN" ".pbase_lets_encrypt.additionalSubDomain" ""
 
@@ -203,6 +208,16 @@ echo "EXECUTE_CERTBOT_CMD:     $EXECUTE_CERTBOT_CMD"
 echo "EMAIL_ADDR:              $EMAIL_ADDR"
 #echo "ADDITIONAL_SUBDOMAIN:    $ADDITIONAL_SUBDOMAIN"
 
+## make sure certbot is installed
+HAS_CERTBOT_INSTALLED="$(which certbot)"
+
+if [[ -z "${HAS_CERTBOT_INSTALLED}" ]] ; then
+  echo "Certbot not installed"
+  EXECUTE_CERTBOT_CMD="false"
+else
+  echo "Certbot is installed     ${HAS_CERTBOT_INSTALLED}"
+fi
+
 DASH_D_ADDITIONAL_SUBDOMAIN=""
 
 if [[ $ADDITIONAL_SUBDOMAIN != "" ]] ; then
@@ -210,13 +225,22 @@ if [[ $ADDITIONAL_SUBDOMAIN != "" ]] ; then
 fi
 
 
+## fetch previously registered domain names
+DOMAIN_NAME_LIST=""
+SAVE_CMD_DIR="/usr/local/pbase-data/admin-only"
+
+read -r DOMAIN_NAME_LIST < "${SAVE_CMD_DIR}/domain-name-list.txt"
+
+echo "Saved domain names:      ${SAVE_CMD_DIR}/domain-name-list.txt"
+echo "Found domain-name-list:  ${DOMAIN_NAME_LIST}"
+
 ## Outgoing SMTP config
 PBASE_CONFIG_FILENAME="pbase_smtp.json"
 PBASE_CONFIG_NAME="pbase_smtp"
 
 echo ""
 echo "PBASE_CONFIG_FILENAME:   $PBASE_CONFIG_FILENAME"
-echo "PBASE_CONFIG_NAME:       $PBASE_CONFIG_NAME"
+##echo "PBASE_CONFIG_NAME:       $PBASE_CONFIG_NAME"
 
 locateConfigFile "${PBASE_CONFIG_FILENAME}"
 
@@ -252,22 +276,57 @@ systemctl status redis
 ## FULLDOMAINNAME is the subdomain if declared plus the domain
 FULLDOMAINNAME="${THISDOMAINNAME}"
 
-if [[ "$URL_SUB_DOMAIN" != "" ]] ; then
-  FULLDOMAINNAME="${URL_SUB_DOMAIN}.${THISDOMAINNAME}"
+## FIRSTDOMAINNREGISTERED should match the subdirectory under /etc/letsencrypt/live
+FIRSTDOMAINNREGISTERED="${FULLDOMAINNAME}"
+
+if [[ ${URL_SUBDOMAIN} == "" ]] || [[ ${URL_SUBDOMAIN} == null ]] ; then
+  FULLDOMAINNAME="${THISDOMAINNAME}"
+  echo "Using root domain:       ${FULLDOMAINNAME}"
+else
+  FULLDOMAINNAME="${URL_SUBDOMAIN}.${THISDOMAINNAME}"
   echo "Using subdomain:         ${FULLDOMAINNAME}"
 fi
 
+
+DOMAIN_NAME_LIST_NEW=""
+DOMAIN_NAME_PARAM=""
+
+if [[ "${DOMAIN_NAME_LIST}" == "" ]] ; then
+  DOMAIN_NAME_LIST_NEW="${FULLDOMAINNAME}"
+  DOMAIN_NAME_PARAM="${FULLDOMAINNAME}"
+else
+    ## use cut to grab first name from comma delimited list
+    FIRSTDOMAINNREGISTERED=$(cut -f1 -d "," ${SAVE_CMD_DIR}/domain-name-list.txt)
+    echo "FIRSTDOMAINNREGISTERED:  ${FIRSTDOMAINNREGISTERED}"
+
+  if [[ "${DOMAIN_NAME_LIST}" == *"${FULLDOMAINNAME}"* ]]; then
+    echo "Already has ${FULLDOMAINNAME}"
+    DOMAIN_NAME_LIST_NEW="${DOMAIN_NAME_LIST}"
+    DOMAIN_NAME_PARAM="${DOMAIN_NAME_LIST}"
+  else
+    echo "Adding ${FULLDOMAINNAME}"
+    DOMAIN_NAME_LIST_NEW="${DOMAIN_NAME_LIST},${FULLDOMAINNAME}"
+    DOMAIN_NAME_PARAM="${DOMAIN_NAME_LIST},${FULLDOMAINNAME} --expand"
+  fi
+fi
+
+echo "${DOMAIN_NAME_LIST_NEW}" > ${SAVE_CMD_DIR}/domain-name-list.txt
+echo "Saved domain names:      ${SAVE_CMD_DIR}/domain-name-list.txt"
+
 ## LETS ENCRYPT - HTTPS CERTIFICATE
+echo ""
+
+CERTBOT_CMD="certbot certonly --standalone --agree-tos --email ${EMAIL_ADDR} -n -d ${DOMAIN_NAME_PARAM}"
 
 if [[ $EXECUTE_CERTBOT_CMD == "true" ]] ; then
-  echo "Executing:               certbot certonly --standalone -d ${FULLDOMAINNAME} -m ${EMAIL_ADDR} --agree-tos -n"
-  certbot certonly --standalone -d ${FULLDOMAINNAME} -m ${EMAIL_ADDR} --agree-tos -n
+  echo "Executing:               ${CERTBOT_CMD}"
+  eval "${CERTBOT_CMD}"
 
   echo "Enabling ssl_certificate in nginx.conf"
   sed -i -e "s/# ssl_certificate/ssl_certificate/g" /home/mastodon/live/dist/nginx.conf
 else
-  echo "Not executing:           certbot certonly --standalone -d ${FULLDOMAINNAME} -m ${EMAIL_ADDR} --agree-tos -n"
-  echo "Skipping certbot:        EXECUTE_CERTBOT_CMD=false"
+  echo "Skipping execute:        EXECUTE_CERTBOT_CMD=false"
+  echo "                         ${CERTBOT_CMD}"
 fi
 
 echo "Copy systemctl files:    /etc/systemd/system/"

@@ -1,6 +1,6 @@
 Name: vrl-website-content
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase VirtualRecordLabel.net sample website rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -35,6 +35,12 @@ THISDOMAINNAME="$(hostname -d)"
 
 
 echo "VirtualRecordLabel.net website content:"
+
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
+
 echo "                         /var/www/html/${THISDOMAINNAME}/public/"
 /bin/rm -rf /var/www/html/${THISDOMAINNAME}/public
 
@@ -59,7 +65,7 @@ else
 
   ## yum
   #ln -s /var/www/yum-repo yum-repo
-  #ln -s /var/www/yum-repo/pbase-components/1.0/RPMS/pbase-preconfig-1.0-0.noarch.rpm pbase-repo.rpm
+  #ln -s /var/www/yum-repo/pbase-components/1.0/RPMS/pbase-preconfig-1.0-1.noarch.rpm pbase-repo.rpm
   #ln -s /var/www/yum-static/ yum-static
 fi
 

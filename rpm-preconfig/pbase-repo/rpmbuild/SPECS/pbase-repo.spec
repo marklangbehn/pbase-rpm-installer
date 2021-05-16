@@ -1,6 +1,6 @@
 Name: pbase-repo
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase installer bootstrap rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -29,7 +29,7 @@ rm -rf "$RPM_BUILD_ROOT"
 ##echo "rpm preinstall $1"
 
 ## disable SELinux
-ALREADY_DISABLED=$(grep "SELINUX=disabled" /etc/selinux/config)
+ALREADY_DISABLED=$(grep "^SELINUX=disabled" /etc/selinux/config)
 
 if [[ "$ALREADY_DISABLED" == "" ]]; then
   echo "Disabling SELinux:       setenforce 0"

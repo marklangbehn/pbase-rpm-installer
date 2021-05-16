@@ -1,6 +1,6 @@
 Name: activpb-mastodon-ruby
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase Mastodon Ruby and Dependencies rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -84,6 +84,11 @@ parseConfig() {
 
 echo "PBase Mastodon Ruby and Dependencies"
 
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
+
 ## Mastodon config
 ## look for config file "activpb_mastodon.json"
 PBASE_CONFIG_FILENAME="activpb_mastodon.json"
@@ -156,10 +161,6 @@ fi
 echo "Execute Install:         rbenv install ${RUBY_VERSION}"
 su - mastodon -c "RUBY_CONFIGURE_OPTS=\"--with-jemalloc-prefix\" rbenv install ${RUBY_VERSION}"
 su - mastodon -c "rbenv global ${RUBY_VERSION}"
-
-#echo "Execute Install:         rbenv install 2.7.2"
-#su - mastodon -c "RUBY_CONFIGURE_OPTS=\"--with-jemalloc-prefix\" rbenv install 2.7.2"
-#su - mastodon -c "rbenv global 2.7.2"
 
 echo "Mastodon Ruby and Dependencies installed"
 

@@ -1,6 +1,6 @@
 Name: pbase-gitlab-ce
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase GitLab CE service rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -47,6 +47,11 @@ append_bashrc_alias() {
 
 
 echo "PBase GitLab CE service"
+
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
 
 ## config is stored in json file with root-only permissions
 ## it can be one of two places:

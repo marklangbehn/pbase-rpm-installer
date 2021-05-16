@@ -1,6 +1,6 @@
 Name: pbase-php-amzn2-dep
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase PHP 7 transitive dependencies for Amazon Linux 2
 Group: System Environment/Base
 License: Apache-2.0
@@ -30,6 +30,11 @@ fail() {
 }
 
 echo "PBase PHP 7.2 transitive dependencies for Amazon Linux 2"
+
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
 
 ALREADY_HAS_XTRAS_PHP72=$(grep "amzn2extra-php7.2" "/etc/yum.repos.d/amzn2-extras.repo")
 

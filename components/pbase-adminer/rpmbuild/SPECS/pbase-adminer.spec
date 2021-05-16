@@ -1,6 +1,6 @@
 Name: pbase-adminer
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase Adminer DB interface
 Group: System Environment/Base
 License: Apache-2.0
@@ -69,6 +69,12 @@ check_linux_version() {
 
 
 echo "PBase Adminer DB interface"
+
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
+
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
 

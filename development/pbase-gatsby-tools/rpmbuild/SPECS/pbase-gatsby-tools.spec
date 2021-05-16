@@ -1,6 +1,6 @@
 Name: pbase-gatsby-tools
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase Gatsby JS dependencies
 Group: System Environment/Base
 License: Apache-2.0
@@ -30,7 +30,20 @@ fail() {
     exit 1
 }
 
+
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
+
+
 echo "Gatsby JS command line"
+
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
+
 echo "executing:               npm install --global gatsby-cli"
 echo ""
 

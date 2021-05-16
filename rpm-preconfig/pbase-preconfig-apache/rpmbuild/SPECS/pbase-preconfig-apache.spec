@@ -1,6 +1,6 @@
 Name: pbase-preconfig-apache
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase Apache httpd config file create
 Group: System Environment/Base
 License: Apache-2.0
@@ -36,6 +36,11 @@ fail() {
 }
 
 echo "PBase Apache httpd pre-config file create"
+
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
 
 
 locateConfigFile() {

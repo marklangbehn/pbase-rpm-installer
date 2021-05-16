@@ -1,6 +1,6 @@
 Name: activpb-peertube
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase Peertube service rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -51,7 +51,8 @@ append_bashrc_alias() {
 }
 
 ## config is stored in json file with root-only permissions
-##     /usr/local/pbase-data/admin-only/module-config.d/activpb_peertube.json
+##     in the directory: /usr/local/pbase-data/admin-only/module-config.d/
+
 
 locateConfigFile() {
   ## name of config file is passed in param $1 - for example "activpb_peertube.json"
@@ -102,9 +103,28 @@ parseConfig() {
 
 echo "PBase Peertube ActivityPub server install"
 
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
+
 ## check if already installed
 if [[ -e "/var/www/peertube/config/production.yaml" ]]; then
   echo "/var/www/peertube/config/production.yaml already exists - exiting"
+  exit 0
+fi
+
+## check if node 12 or higher installed
+VERS_INSTALLED="$(node --version)"
+VERS_REQUIRED="v12.0.0"
+
+if [ "$(printf '%s\n' "$VERS_REQUIRED" "$VERS_INSTALLED" | sort -V | head -n1)" = "$VERS_REQUIRED" ]; then
+  echo "Node JS version:         ${VERS_INSTALLED}"
+  echo ""
+else
+  echo "Less than ${VERS_REQUIRED}"
+  echo "Node JS version 12 or higher required, found: ${VERS_INSTALLED}"
+  echo "Exiting."
   exit 0
 fi
 
@@ -119,7 +139,6 @@ echo "Domainname:              $THISDOMAINNAME"
 ## Peertube config
 ## look for config file "activpb_peertube.json"
 PBASE_CONFIG_FILENAME="activpb_peertube.json"
-
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config value from JSON file
@@ -128,11 +147,13 @@ parseConfig "PEERTUBE_VER_CONFIG" ".activpb_peertube.peertubeVersion" ""
 
 parseConfig "HTTP_PORT" ".activpb_peertube.port" "9000"
 parseConfig "ADD_NGINX_PROXY" ".activpb_peertube.addNgnixProxy" "true"
-parseConfig "URL_SUB_DOMAIN" ".activpb_peertube.urlSubDomain" "peertube"
+parseConfig "ADD_APACHE_PROXY" ".activpb_peertube.addApacheProxy" ""
+parseConfig "URL_SUBDOMAIN" ".activpb_peertube.urlSubDomain" "peertube"
 
 echo "HTTP_PORT:               $HTTP_PORT"
-##echo "ADD_NGINX_PROXY:         $ADD_NGINX_PROXY"
-echo "URL_SUB_DOMAIN:          $URL_SUB_DOMAIN"
+echo "ADD_NGINX_PROXY:         $ADD_NGINX_PROXY"
+echo "ADD_APACHE_PROXY:        $ADD_APACHE_PROXY"
+echo "URL_SUBDOMAIN:           $URL_SUBDOMAIN"
 
 
 ## use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars
@@ -176,7 +197,6 @@ echo "CONFIG_DB_PSWD:          $CONFIG_DB_PSWD"
 echo ""
 
 PBASE_CONFIG_FILENAME="pbase_lets_encrypt.json"
-
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config value from JSON file
@@ -189,14 +209,36 @@ parseConfig "ADDITIONAL_SUBDOMAIN" ".pbase_lets_encrypt.additionalSubDomain" ""
 echo "CONFIG_ENABLE_AUTORENEW: $CONFIG_ENABLE_AUTORENEW"
 echo "EXECUTE_CERTBOT_CMD:     $EXECUTE_CERTBOT_CMD"
 echo "EMAIL_ADDR:              $EMAIL_ADDR"
-#echo "ADDITIONAL_SUBDOMAIN:    $ADDITIONAL_SUBDOMAIN"
+echo "ADDITIONAL_SUBDOMAIN:    $ADDITIONAL_SUBDOMAIN"
 
-DASH_D_ADDITIONAL_SUBDOMAIN=""
+## make sure certbot is installed
+HAS_CERTBOT_INSTALLED="$(which certbot)"
 
-if [[ $ADDITIONAL_SUBDOMAIN != "" ]] ; then
-  DASH_D_ADDITIONAL_SUBDOMAIN="-d $ADDITIONAL_SUBDOMAIN.$THISDOMAINNAME"
+if [[ -z "${HAS_CERTBOT_INSTALLED}" ]] ; then
+  echo "Certbot not installed"
+  EXECUTE_CERTBOT_CMD="false"
+else
+  echo "Certbot is installed     ${HAS_CERTBOT_INSTALLED}"
 fi
 
+
+HAS_APACHE_ROOTDOMAIN_CONF=""
+ROOTDOMAIN_HTTP_CONF_FILE="/etc/httpd/conf.d/${THISDOMAINNAME}.conf"
+
+if [[ -e "${ROOTDOMAIN_HTTP_CONF_FILE}" ]] ; then
+  echo "Found existing Apache root domain .conf file "
+  HAS_APACHE_ROOTDOMAIN_CONF="true"
+fi
+
+
+## fetch previously registered domain names
+DOMAIN_NAME_LIST=""
+SAVE_CMD_DIR="/usr/local/pbase-data/admin-only"
+
+read -r DOMAIN_NAME_LIST < "${SAVE_CMD_DIR}/domain-name-list.txt"
+
+echo "Saved domain names:      ${SAVE_CMD_DIR}/domain-name-list.txt"
+echo "Found domain-name-list:  ${DOMAIN_NAME_LIST}"
 
 ## Outgoing SMTP config
 PBASE_CONFIG_FILENAME="pbase_smtp.json"
@@ -318,10 +360,43 @@ su - peertube -c "cp /var/www/peertube/peertube-latest/config/production.yaml.ex
 ## FULLDOMAINNAME is the subdomain if declared plus the domain
 FULLDOMAINNAME="${THISDOMAINNAME}"
 
-if [[ "$URL_SUB_DOMAIN" != "" ]] ; then
-  FULLDOMAINNAME="${URL_SUB_DOMAIN}.${THISDOMAINNAME}"
+## FIRSTDOMAINNREGISTERED should match the subdirectory under /etc/letsencrypt/live
+FIRSTDOMAINNREGISTERED="${FULLDOMAINNAME}"
+
+if [[ ${URL_SUBDOMAIN} == "" ]] || [[ ${URL_SUBDOMAIN} == null ]] ; then
+  FULLDOMAINNAME="${THISDOMAINNAME}"
+  echo "Using root domain:       ${FULLDOMAINNAME}"
+else
+  FULLDOMAINNAME="${URL_SUBDOMAIN}.${THISDOMAINNAME}"
   echo "Using subdomain:         ${FULLDOMAINNAME}"
 fi
+
+
+DOMAIN_NAME_LIST_NEW=""
+DOMAIN_NAME_PARAM=""
+
+if [[ "${DOMAIN_NAME_LIST}" == "" ]] ; then
+  DOMAIN_NAME_LIST_NEW="${FULLDOMAINNAME}"
+  DOMAIN_NAME_PARAM="${FULLDOMAINNAME}"
+else
+    ## use cut to grab first name from comma delimited list
+    FIRSTDOMAINNREGISTERED=$(cut -f1 -d "," ${SAVE_CMD_DIR}/domain-name-list.txt)
+    echo "FIRSTDOMAINNREGISTERED:  ${FIRSTDOMAINNREGISTERED}"
+
+  if [[ "${DOMAIN_NAME_LIST}" == *"${FULLDOMAINNAME}"* ]]; then
+    echo "Already has ${FULLDOMAINNAME}"
+    DOMAIN_NAME_LIST_NEW="${DOMAIN_NAME_LIST}"
+    DOMAIN_NAME_PARAM="${DOMAIN_NAME_LIST}"
+  else
+    echo "Adding ${FULLDOMAINNAME}"
+    DOMAIN_NAME_LIST_NEW="${DOMAIN_NAME_LIST},${FULLDOMAINNAME}"
+    DOMAIN_NAME_PARAM="${DOMAIN_NAME_LIST},${FULLDOMAINNAME} --expand"
+  fi
+fi
+
+echo "${DOMAIN_NAME_LIST_NEW}" > ${SAVE_CMD_DIR}/domain-name-list.txt
+echo "Saved domain names:      ${SAVE_CMD_DIR}/domain-name-list.txt"
+
 
 echo "Updating config in production.yaml"
 
@@ -349,40 +424,54 @@ export WEBSERVER_HOST="${FULLDOMAINNAME}"
 export PEERTUBE_HOST="localhost"
 envsubst '${WEBSERVER_HOST},${PEERTUBE_HOST}' < /var/www/peertube/peertube-latest/support/nginx/peertube > /etc/nginx/conf.d/peertube.conf
 
-## template cert path changed for v3.0rc
-#sed -i "s|peertube/fullchain.pem|${FULLDOMAINNAME}/fullchain.pem|g" /etc/nginx/conf.d/peertube.conf
-#sed -i "s|peertube/privkey.pem|${FULLDOMAINNAME}/privkey.pem|g" /etc/nginx/conf.d/peertube.conf
-#
-##  how enable aio on nginx? turn off 'aio threads' for now
+## how enable aio on nginx? turn off 'aio threads' for now
 sed -i "s/aio threads/##aio threads/g" /etc/nginx/conf.d/peertube.conf
 
 
 ## replace proxy_pass backend with:  http://127.0.0.1:9000
 sed -i "s|proxy_pass http://backend|proxy_pass http://127.0.0.1:9000|g" /etc/nginx/conf.d/peertube.conf
 
+if [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
+  mv /etc/nginx/conf.d/peertube.conf /usr/local/pbase-data/activpb-peertube/peertube.conf-NGINX-DISABLED
 
-## 2.4 template substitution
-## /bin/cp -f --no-clobber /var/www/peertube/peertube-latest/support/nginx/peertube /etc/nginx/conf.d/peertube.conf
-## replace domain name
-##/bin/cp -f --no-clobber /usr/local/pbase-data/activpb-peertube/etc-nginx-conf-d/peertube.conf /etc/nginx/conf.d/peertube.conf
-##sed -i "s/peertube.example.com/${FULLDOMAINNAME}/g" /etc/nginx/conf.d/peertube.conf
+  ## configure apache proxy file
+  echo "Apache virtual host:     /etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
+  /bin/cp -f "/usr/local/pbase-data/activpb-peertube/etc-httpd-conf-d/peertube.example.com.conf" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
+  sed -i "s/peertube.example.com/${FULLDOMAINNAME}/g" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
 
-echo "Configuration updated:   /etc/nginx/conf.d/peertube.conf"
+  mkdir -p "/etc/httpd/logs/${FULLDOMAINNAME}"
+  systemctl reload httpd
 
-echo "Nginx configuration:     /etc/nginx/conf.d/"
-ls -l /etc/nginx/conf.d/
+else
+  echo "Configuration updated:   /etc/nginx/conf.d/peertube.conf"
+  echo "Nginx configuration:     /etc/nginx/conf.d/"
+  ls -l /etc/nginx/conf.d/
+fi
 
 
 ## LETS ENCRYPT - HTTPS CERTIFICATE
 echo ""
 
-if [[ $EXECUTE_CERTBOT_CMD == "true" ]] ; then
-  echo "Executing:               certbot certonly --standalone --post-hook "systemctl start nginx" -d ${FULLDOMAINNAME} -m ${EMAIL_ADDR} --agree-tos -n"
-  certbot certonly --standalone --post-hook "systemctl start nginx" -d ${FULLDOMAINNAME} -m ${EMAIL_ADDR} --agree-tos -n
+if [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
+  ## APACHE
+  CERTBOT_CMD="certbot --apache --agree-tos --email ${EMAIL_ADDR} -n -d ${DOMAIN_NAME_PARAM}"
 else
-  echo "Not executing:           certbot certonly --standalone --post-hook "systemctl start nginx" -d ${FULLDOMAINNAME} -m ${EMAIL_ADDR} --agree-tos -n"
-  echo "Skipping certbot:        EXECUTE_CERTBOT_CMD=false"
+  ## NGINX
+  CERTBOT_CMD="certbot certonly --standalone --post-hook 'systemctl start nginx' --agree-tos --email ${EMAIL_ADDR} -n -d ${DOMAIN_NAME_PARAM}"
 fi
+
+## save command line in file
+echo "Saving command line:     ${SAVE_CMD_DIR}/certbot-cmd.sh"
+echo ${CERTBOT_CMD} > ${SAVE_CMD_DIR}/certbot-cmd.sh
+
+if [[ $EXECUTE_CERTBOT_CMD == "true" ]] ; then
+  echo "Executing:               ${CERTBOT_CMD}"
+  eval "${CERTBOT_CMD}"
+else
+  echo "Skipping execute:        EXECUTE_CERTBOT_CMD=false"
+  echo "                         ${CERTBOT_CMD}"
+fi
+
 
 EXTERNALURL="https://$FULLDOMAINNAME"
 echo "URL:                     $EXTERNALURL"
@@ -403,7 +492,14 @@ if [[ $CONFIG_ENABLE_AUTORENEW == "true" ]]; then
 
   RAND_MINUTE="$((2 + RANDOM % 50))"
   RAND_HOUR="$((2 + RANDOM % 23))"
-  CRONJOB_LINE1="${RAND_MINUTE} ${RAND_HOUR} * * * root /usr/bin/certbot renew --deploy-hook '/bin/systemctl reload nginx' >> $CRONJOB_LOGFILE"
+
+  if [[ "$ADD_NGINX_PROXY" == "true" ]] ; then
+    CRONJOB_LINE1="${RAND_MINUTE} ${RAND_HOUR} * * * root /usr/bin/certbot renew --deploy-hook '/bin/systemctl reload nginx' >> $CRONJOB_LOGFILE"
+  fi
+
+  if [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
+    CRONJOB_LINE1="${RAND_MINUTE} ${RAND_HOUR} * * * root /usr/bin/certbot renew --deploy-hook '/bin/systemctl reload httpd' >> $CRONJOB_LOGFILE"
+  fi
 
   echo ""  >>  /etc/crontab
   echo "## Added by activpb-peertube RPM ##"  >>  /etc/crontab
@@ -416,7 +512,6 @@ fi
 ## Add aliases helpful for admin tasks to .bashrc
 echo ""
 echo "" >> /root/.bashrc
-append_bashrc_alias tailnginx "tail -f /var/log/nginx/*.log"
 append_bashrc_alias tailpeertube "journalctl -feu peertube"
 
 append_bashrc_alias statuspeertube "systemctl status peertube"
@@ -425,13 +520,15 @@ append_bashrc_alias startpeertube "systemctl start peertube"
 append_bashrc_alias restartpeertube "systemctl restart peertube"
 
 append_bashrc_alias editpeertubeconf "vi /var/www/peertube/config/production.yaml"
-append_bashrc_alias editnginxconf "vi /etc/nginx/conf.d/peertube.conf"
 
-append_bashrc_alias statusnginx "systemctl status nginx"
-append_bashrc_alias stopnginx "systemctl stop nginx"
-append_bashrc_alias startnginx "systemctl start nginx"
-append_bashrc_alias restartnginx "systemctl restart nginx"
-
+if [[ "$ADD_NGINX_PROXY" == "true" ]] ; then
+  append_bashrc_alias tailnginx "tail -f /var/log/nginx/*.log"
+  append_bashrc_alias editnginxconf "vi /etc/nginx/conf.d/peertube.conf"
+  append_bashrc_alias statusnginx "systemctl status nginx"
+  append_bashrc_alias stopnginx "systemctl stop nginx"
+  append_bashrc_alias startnginx "systemctl start nginx"
+  append_bashrc_alias restartnginx "systemctl restart nginx"
+fi
 
 
 echo "TCP/IP Tuning:           /etc/sysctl.d/30-peertube-tcp.conf"
@@ -442,22 +539,28 @@ sysctl -p /etc/sysctl.d/30-peertube-tcp.conf
 /bin/cp -f --no-clobber /var/www/peertube/peertube-latest/support/systemd/peertube.service /etc/systemd/system/
 echo ""
 
+## start services
+systemctl daemon-reload
+
 if [[ $EXECUTE_CERTBOT_CMD == "false" ]] ; then
   echo "Skipping certbot:      EXECUTE_CERTBOT_CMD=false"
-  echo "Not starting nginx or peertube service - enabling only"
-  systemctl daemon-reload
-  systemctl enable nginx
+  echo "Not starting peertube service - enabling only"
   systemctl enable peertube
+
+  if [[ "$ADD_NGINX_PROXY" == "true" ]] ; then
+    systemctl enable nginx
+  fi
   echo "exiting"
   exit 0
 fi
 
-echo "Starting nginx service"
-systemctl daemon-reload
-systemctl enable nginx
+if [[ "$ADD_NGINX_PROXY" == "true" ]] ; then
+  echo "Starting nginx service"
+  systemctl enable nginx
 
-systemctl start nginx
-systemctl status nginx
+  systemctl start nginx
+  systemctl status nginx
+fi
 
 echo ""
 echo "Starting peertube service"
@@ -499,3 +602,4 @@ echo ""
 %files
 %defattr(-,root,root,-)
 /usr/local/pbase-data/activpb-peertube/etc-nginx-conf-d/peertube.conf
+/usr/local/pbase-data/activpb-peertube/etc-httpd-conf-d/peertube.example.com.conf

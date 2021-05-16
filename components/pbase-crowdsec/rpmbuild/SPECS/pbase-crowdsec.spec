@@ -1,6 +1,6 @@
 Name: pbase-crowdsec
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase Crowdsec Install
 Group: System Environment/Base
 License: Apache-2.0
@@ -77,7 +77,11 @@ check_linux_version() {
 }
 
 echo "PBase Crowdsec Install"
-echo ""
+
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
 
 ## config may be stored in json file with root-only permissions
 ##     in the directory: /usr/local/pbase-data/admin-only/module-config.d/

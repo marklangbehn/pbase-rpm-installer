@@ -1,6 +1,6 @@
 Name: pbase-preconfig-mysql-nextcloud
 Version: 1.0
-Release: 1
+Release: 2
 Summary: PBase MySQL preconfigure rpm, preset user and DB name for use by pbase-nextcloud
 Group: System Environment/Base
 License: Apache-2.0
@@ -141,6 +141,13 @@ setFieldInJsonModuleConfig() {
     ## set a value in the json file
     PREFIX="jq '.${MODULE}.${FULLFIELDNAME}= \""
     SUFFIX="\"'"
+
+    ## no quotes needed when setting boolean
+    if [[ "${NEWVALUE}" == "true" ]] || [[ "${NEWVALUE}" == "false" ]] ; then
+      PREFIX="jq '.${MODULE}.${FULLFIELDNAME}= "
+      SUFFIX="'"
+    fi
+
     JQ_COMMAND="${PREFIX}${NEWVALUE}${SUFFIX} /tmp/${CONFIG_FILE_NAME} > ${MODULE_CONFIG_DIR}/${CONFIG_FILE_NAME}"
 
     ##echo "Executing:  eval $JQ_COMMAND"
@@ -238,13 +245,12 @@ fi
 QT="'"
 DEFAULT_SUB_DOMAIN_QUOTED=${QT}${DEFAULT_SUB_DOMAIN}${QT}
 
-##echo "DEFAULT_SUB_DOMAIN:      ${DEFAULT_SUB_DOMAIN_QUOTED}"
-
 if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] ; then
   echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN_QUOTED}"
   setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_lets_encrypt urlSubDomain
   setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_nextcloud urlSubDomain
   setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_apache urlSubDomain
+  setFieldInJsonModuleConfig "false" pbase_apache enableCheckForWww
 else
   echo "Setting empty urlSubDomain, Nextcloud will be root level of domain"
   echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN_QUOTED}"

@@ -56,6 +56,10 @@ elif [[ -e "/etc/yum.repos.d/Rocky-PowerTools.repo" ]] ; then
   echo "Enabling PowerTools:     /etc/yum.repos.d/Rocky-PowerTools.repo"
   /bin/sed -i "s/enabled=0/enabled=1/" /etc/yum.repos.d/Rocky-PowerTools.repo
 
+elif [[ -e "/etc/yum.repos.d/almalinux-powertools.repo" ]] ; then
+  echo "Enabling PowerTools:     /etc/yum.repos.d/almalinux-powertools.repo"
+  /bin/sed -i "s/enabled=0/enabled=1/" /etc/yum.repos.d/almalinux-powertools.repo
+
 else
   echo "Could not find repo:     /etc/yum.repos.d/CentOS-PowerTools.repo"
 fi

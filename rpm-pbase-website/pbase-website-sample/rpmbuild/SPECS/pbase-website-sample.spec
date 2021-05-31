@@ -1,6 +1,6 @@
 Name: pbase-website-sample
 Version: 1.0
-Release: 1
+Release: 2
 Summary: PBase sample website rpm
 Group: System Environment/Base
 License: Apache-2.0

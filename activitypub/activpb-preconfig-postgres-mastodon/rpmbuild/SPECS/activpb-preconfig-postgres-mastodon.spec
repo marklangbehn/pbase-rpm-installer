@@ -1,6 +1,6 @@
 Name: activpb-preconfig-postgres-mastodon
 Version: 1.0
-Release: 1
+Release: 2
 Summary: PBase Postgres preconfigure rpm, preset user and DB name for use by pbase-mastodon
 Group: System Environment/Base
 License: Apache-2.0
@@ -141,6 +141,13 @@ setFieldInJsonModuleConfig() {
     ## set a value in the json file
     PREFIX="jq '.${MODULE}.${FULLFIELDNAME}= \""
     SUFFIX="\"'"
+
+    ## no quotes needed when setting boolean
+    if [[ "${NEWVALUE}" == "true" ]] || [[ "${NEWVALUE}" == "false" ]] ; then
+      PREFIX="jq '.${MODULE}.${FULLFIELDNAME}= "
+      SUFFIX="'"
+    fi
+
     JQ_COMMAND="${PREFIX}${NEWVALUE}${SUFFIX} /tmp/${CONFIG_FILE_NAME} > ${MODULE_CONFIG_DIR}/${CONFIG_FILE_NAME}"
 
     ##echo "Executing:  eval $JQ_COMMAND"
@@ -157,6 +164,20 @@ echo "PBase Postgres create config preset user and DB name for use by activpb-ma
 if [[ $1 -ne 1 ]] ; then
   echo "Already Installed. Exiting."
   exit 0
+fi
+
+## check if node 12 or higher installed
+VERS_INSTALLED="$(node --version)"
+VERS_REQUIRED="v12.0.0"
+
+if [ "$(printf '%s\n' "$VERS_REQUIRED" "$VERS_INSTALLED" | sort -V | head -n1)" = "$VERS_REQUIRED" ]; then
+  echo "Node version:            ${VERS_INSTALLED}"
+  echo ""
+else
+  echo "Less than ${VERS_REQUIRED}"
+  echo "Node version 12 or higher required, found: ${VERS_INSTALLED}"
+  echo "MUST upgrade node before Mastodon can be installed"
+  echo ""
 fi
 
 THISHOSTNAME="$(hostname)"
@@ -234,14 +255,13 @@ fi
 QT="'"
 DEFAULT_SUB_DOMAIN_QUOTED=${QT}${DEFAULT_SUB_DOMAIN}${QT}
 
-echo "DEFAULT_SUB_DOMAIN:      ${DEFAULT_SUB_DOMAIN_QUOTED}"
-
 if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] ; then
-  echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN}"
+  echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN_QUOTED}"
   setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_lets_encrypt urlSubDomain
   setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} activpb_mastodon urlSubDomain
 else
   echo "Setting empty urlSubDomain, Mastodon will be root level of domain"
+  echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN_QUOTED}"
   setFieldInJsonModuleConfig "" pbase_lets_encrypt urlSubDomain
   setFieldInJsonModuleConfig "" activpb_mastodon urlSubDomain
 fi

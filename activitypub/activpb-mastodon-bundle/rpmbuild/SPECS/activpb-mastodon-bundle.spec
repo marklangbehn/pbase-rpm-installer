@@ -1,6 +1,6 @@
 Name: activpb-mastodon-bundle
 Version: 1.0
-Release: 1
+Release: 2
 Summary: PBase Mastodon service rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -55,7 +55,7 @@ echo ""
 ## BUNDLER
 echo "Configure Ruby bundler"
 
-su - mastodon -c "cd /home/mastodon/live  ;  gem install bundler --no-document"
+su - mastodon -c "cd /home/mastodon/live  ;  gem install --quiet bundler --no-document"
 
 su - mastodon -c "cd /home/mastodon/live  ;  bundle config deployment 'true'"
 su - mastodon -c "cd /home/mastodon/live  ;  bundle config without 'development test'"
@@ -67,8 +67,8 @@ su - mastodon -c "cd /home/mastodon/live  ;  bundle config build.pg --with-pg-co
 
 echo "Executing bundle install..."
 
-su - mastodon -c "cd /home/mastodon/live  ;  bundle install -j$(getconf _NPROCESSORS_ONLN)"
-su - mastodon -c "cd /home/mastodon/live  ;  yarn install --pure-lockfile"
+su - mastodon -c "cd /home/mastodon/live  ;  bundle install --quiet -j$(getconf _NPROCESSORS_ONLN)"
+su - mastodon -c "cd /home/mastodon/live  ;  yarn install --silent --pure-lockfile"
 
 echo "Mastodon code bundle:    /home/mastodon/live"
 

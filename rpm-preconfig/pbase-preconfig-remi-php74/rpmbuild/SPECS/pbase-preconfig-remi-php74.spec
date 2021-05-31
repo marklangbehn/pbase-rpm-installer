@@ -10,6 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-preconfig-remi-php74
+Requires: pbase-epel
 
 %description
 Configure Remi yum repo for PHP 7.4
@@ -83,9 +84,25 @@ if [[ "${AMAZON2_RELEASE}" != "" ]] ; then
 fi
 
 ## GPG keys are in RPM-GPG-KEY-remi-files.tar
-#echo "Remi rpm-gpg keys"
-#cd  /usr/local/pbase-data/pbase-preconfig-remi-php74/etc-pki-rpm-gpg/
-#tar xf RPM-GPG-KEY-remi-files.tar -C /etc/pki/rpm-gpg/
+## created with:  tar cf RPM-GPG-KEY-remi-files.tar RPM-GPG-KEY-rem*
+echo "Remi rpm-gpg keys:       /etc/pki/rpm-gpg"
+
+if [[ "${REDHAT_RELEASE_DIGIT}" == "7" ]] ; then
+  echo "el7:"
+  cd  /usr/local/pbase-data/pbase-preconfig-remi-php74/etc-pki-rpm-gpg/el7/
+  tar xf RPM-GPG-KEY-remi-files.tar -C /etc/pki/rpm-gpg/
+elif [[ "${REDHAT_RELEASE_DIGIT}" == "8" ]] ; then
+  echo "el8:"
+  cd  /usr/local/pbase-data/pbase-preconfig-remi-php74/etc-pki-rpm-gpg/el8/
+  tar xf RPM-GPG-KEY-remi-files.tar -C /etc/pki/rpm-gpg/
+elif [[ "${FEDORA_RELEASE}" != "" ]] ; then
+  echo "fedora:"
+  cd  /usr/local/pbase-data/pbase-preconfig-remi-php74/etc-pki-rpm-gpg/fedora/
+  tar xf RPM-GPG-KEY-remi-files.tar -C /etc/pki/rpm-gpg/
+else
+  echo "Leaving unchanged"
+fi
+
 
 echo "Remi yum repos"
 cd  /usr/local/pbase-data/pbase-preconfig-remi-php74/etc-yum-repos-d/
@@ -134,4 +151,6 @@ fi
 /usr/local/pbase-data/pbase-preconfig-remi-php74/etc-yum-repos-d/el7/REMI-REPOS-el7.tar
 /usr/local/pbase-data/pbase-preconfig-remi-php74/etc-yum-repos-d/el8/REMI-REPOS-el8.tar
 /usr/local/pbase-data/pbase-preconfig-remi-php74/etc-yum-repos-d/fedora/REMI-REPOS-fedora.tar
-/usr/local/pbase-data/pbase-preconfig-remi-php74/etc-pki-rpm-gpg/RPM-GPG-KEY-remi-files.tar
+/usr/local/pbase-data/pbase-preconfig-remi-php74/etc-pki-rpm-gpg/el7/RPM-GPG-KEY-remi-files.tar
+/usr/local/pbase-data/pbase-preconfig-remi-php74/etc-pki-rpm-gpg/el8/RPM-GPG-KEY-remi-files.tar
+/usr/local/pbase-data/pbase-preconfig-remi-php74/etc-pki-rpm-gpg/fedora/RPM-GPG-KEY-remi-files.tar

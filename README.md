@@ -377,9 +377,8 @@ EL8 - add remi repo
 ```
 yum -y install pbase-epel
 yum -y install https://rpms.remirepo.net/enterprise/remi-release-8.rpm
-yum module reset php
-yum module install php:remi-7.4
-yum install php
+yum -y module reset php
+yum -y module install php:remi-7.4
 ```
 
 EL7 - add remi repo
@@ -393,10 +392,9 @@ yum install php
 
 FEDORA 34 - add remi repo
 ```
-yum install https://rpms.remirepo.net/fedora/remi-release-34.rpm
-yum module reset php
-yum module install php:remi-7.4
-yum install php
+yum -y install https://rpms.remirepo.net/fedora/remi-release-34.rpm
+yum -y module reset php
+yum -y module install php:remi-7.4
 ```
 
 Amazon Linux 2

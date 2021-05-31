@@ -1,6 +1,6 @@
 Name: activpb-preconfig-postgres-peertube
 Version: 1.0
-Release: 1
+Release: 2
 Summary: PBase Postgres preconfigure rpm, preset user and DB name for use by activpb-peertube
 Group: System Environment/Base
 License: Apache-2.0
@@ -141,6 +141,13 @@ setFieldInJsonModuleConfig() {
     ## set a value in the json file
     PREFIX="jq '.${MODULE}.${FULLFIELDNAME}= \""
     SUFFIX="\"'"
+
+    ## no quotes needed when setting boolean
+    if [[ "${NEWVALUE}" == "true" ]] || [[ "${NEWVALUE}" == "false" ]] ; then
+      PREFIX="jq '.${MODULE}.${FULLFIELDNAME}= "
+      SUFFIX="'"
+    fi
+
     JQ_COMMAND="${PREFIX}${NEWVALUE}${SUFFIX} /tmp/${CONFIG_FILE_NAME} > ${MODULE_CONFIG_DIR}/${CONFIG_FILE_NAME}"
 
     ##echo "Executing:  eval $JQ_COMMAND"
@@ -290,6 +297,7 @@ else
 fi
 
 
+
 DB_CONFIG_FILENAME="pbase_postgres.json"
 
 echo "Peertube config:         ${MODULE_CONFIG_DIR}/activpb_peertube.json"
@@ -298,6 +306,10 @@ echo "Peertube config:         ${MODULE_CONFIG_DIR}/activpb_peertube.json"
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_lets_encrypt.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_smtp.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_postgres.json  ${MODULE_CONFIG_DIR}/
+
+if [[ "${HAS_APACHE_CONF}" == "true" ]] ; then
+  /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_apache.json  ${MODULE_CONFIG_DIR}/
+fi
 
 echo "Let's Encrypt defaults:  ${MODULE_CONFIG_DIR}/pbase_lets_encrypt.json"
 
@@ -310,18 +322,24 @@ fi
 QT="'"
 DEFAULT_SUB_DOMAIN_QUOTED=${QT}${DEFAULT_SUB_DOMAIN}${QT}
 
-echo "DEFAULT_SUB_DOMAIN:      ${DEFAULT_SUB_DOMAIN_QUOTED}"
-
 if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] ; then
-  echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN}"
+  echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN_QUOTED}"
   setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_lets_encrypt urlSubDomain
   setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} activpb_peertube urlSubDomain
   setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_apache urlSubDomain
+  setFieldInJsonModuleConfig "false" pbase_apache enableCheckForWww
 else
   echo "Setting empty urlSubDomain, Peertube will be root level of domain"
+  echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN_QUOTED}"
   setFieldInJsonModuleConfig "" pbase_lets_encrypt urlSubDomain
   setFieldInJsonModuleConfig "" activpb_peertube urlSubDomain
   setFieldInJsonModuleConfig "" pbase_apache urlSubDomain
+fi
+
+if [[ "${HAS_APACHE_CONF}" == "true" ]] ; then
+  echo "Enabling activpb_peertube.addApacheProxy"
+  setFieldInJsonModuleConfig "true" activpb_peertube addApacheProxy
+  setFieldInJsonModuleConfig "false" activpb_peertube addNgnixProxy
 fi
 
 echo "SMTP defaults:           ${MODULE_CONFIG_DIR}/pbase_smtp.json"
@@ -379,6 +397,7 @@ echo ""
 %defattr(600,root,root,700)
 /usr/local/pbase-data/activpb-preconfig-postgres-peertube/module-config-samples/activpb_peertube.json
 /usr/local/pbase-data/activpb-preconfig-postgres-peertube/module-config-samples/activpb_peertube_apacheproxy.json
+/usr/local/pbase-data/activpb-preconfig-postgres-peertube/module-config-samples/pbase_apache.json
 /usr/local/pbase-data/activpb-preconfig-postgres-peertube/module-config-samples/pbase_lets_encrypt.json
 /usr/local/pbase-data/activpb-preconfig-postgres-peertube/module-config-samples/pbase_postgres.json
 /usr/local/pbase-data/activpb-preconfig-postgres-peertube/module-config-samples/pbase_s3storage.json

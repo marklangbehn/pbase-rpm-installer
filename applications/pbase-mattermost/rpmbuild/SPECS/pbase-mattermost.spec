@@ -1,6 +1,6 @@
 Name: pbase-mattermost
 Version: 1.0
-Release: 1
+Release: 2
 Summary: PBase Mattermost service rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -250,7 +250,7 @@ SAVE_CMD_DIR="/usr/local/pbase-data/admin-only"
 
 read -r DOMAIN_NAME_LIST < "${SAVE_CMD_DIR}/domain-name-list.txt"
 
-echo "Saved domain names:      ${SAVE_CMD_DIR}/domain-name-list.txt"
+echo "Existing domain names:   ${SAVE_CMD_DIR}/domain-name-list.txt"
 echo "Found domain-name-list:  ${DOMAIN_NAME_LIST}"
 
 echo "Downloading Mattermost server binary from releases.mattermost.com"
@@ -357,7 +357,10 @@ fi
 DOMAIN_NAME_LIST_NEW=""
 DOMAIN_NAME_PARAM=""
 
+echo "Found DOMAIN_NAME_LIST:  ${DOMAIN_NAME_LIST}"
+
 if [[ "${DOMAIN_NAME_LIST}" == "" ]] ; then
+  echo "Starting from empty domain-name-list.txt, adding ${FULLDOMAINNAME}"
   DOMAIN_NAME_LIST_NEW="${FULLDOMAINNAME}"
   DOMAIN_NAME_PARAM="${FULLDOMAINNAME}"
 else
@@ -376,9 +379,11 @@ else
   fi
 fi
 
+echo ""
 echo "${DOMAIN_NAME_LIST_NEW}" > ${SAVE_CMD_DIR}/domain-name-list.txt
 echo "Saved domain names:      ${SAVE_CMD_DIR}/domain-name-list.txt"
-
+echo "                         ${DOMAIN_NAME_LIST_NEW}"
+echo ""
 
 echo "FULLDOMAINNAME:          $FULLDOMAINNAME"
 echo "SUBPATH_URI:             $SUBPATH_URI"
@@ -410,8 +415,9 @@ if [[ "$URL_SUBDOMAIN" != "" ]] && [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
   sed -i "s/mysubdomain.mydomain.com/${FULLDOMAINNAME}/" $PROXY_CONF
   sed -i "s/hostmaster@mydomain.com/${APACHE_SERVER_ADMIN}/" $PROXY_CONF
 
-  echo "Configured Apache proxy:   ${PROXY_CONF_FULLDOMAINNAME}"
-  mv "{$PROXY_CONF}" "${PROXY_CONF_FULLDOMAINNAME}"
+  echo "Replacing proxy:         ${PROXY_CONF_FULLDOMAINNAME}"
+  cd /etc/httpd/conf.d/
+  mv -f "${PROXY_CONF}" "${FULLDOMAINNAME}.conf"
 
   systemctl daemon-reload
   systemctl restart httpd
@@ -441,8 +447,16 @@ elif [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
   /bin/cp --no-clobber /usr/local/pbase-data/pbase-mattermost/root-uri/etc-httpd-confd/mattermost-proxy.conf /etc/httpd/conf.d/
   PROXY_CONF="/etc/httpd/conf.d/mattermost-proxy.conf"
 
-  echo "Updating config file:    ${PROXY_CONF}"
+  ## rename conf file to match the full domain name
+  echo "Mattermost proxy:        /etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
+  mv "${PROXY_CONF}" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
+
+  PROXY_CONF="/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
+
+  ##echo "Updating config file:    ${PROXY_CONF}"
+  sed -i "s/hostmaster@mydomain.com/${APACHE_SERVER_ADMIN}/" $PROXY_CONF
   sed -i "s/mydomain.com/${THISDOMAINNAME}/" $PROXY_CONF
+
   systemctl daemon-reload
   systemctl restart httpd
 

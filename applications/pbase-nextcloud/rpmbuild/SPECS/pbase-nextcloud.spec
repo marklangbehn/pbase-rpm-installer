@@ -1,6 +1,6 @@
 Name: pbase-nextcloud
 Version: 1.0
-Release: 1
+Release: 2
 Summary: PBase NextCloud service rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -171,6 +171,13 @@ fi
 
 echo "SLASH_NEXTCLOUD_URLSUBPATH: ${SLASH_NEXTCLOUD_URLSUBPATH}"
 
+## look for config file "pbase_apache.json"
+PBASE_CONFIG_FILENAME="pbase_apache.json"
+locateConfigFile "$PBASE_CONFIG_FILENAME"
+parseConfig "ENABLE_CHECK_FOR_WWW" ".pbase_apache.enableCheckForWww" "true"
+
+echo "ENABLE_CHECK_FOR_WWW:    $ENABLE_CHECK_FOR_WWW"
+
 
 PBASE_CONFIG_FILENAME="pbase_lets_encrypt.json"
 locateConfigFile "$PBASE_CONFIG_FILENAME"
@@ -237,7 +244,10 @@ fi
 DOMAIN_NAME_LIST_NEW=""
 DOMAIN_NAME_PARAM=""
 
+echo "Found DOMAIN_NAME_LIST:  ${DOMAIN_NAME_LIST}"
+
 if [[ "${DOMAIN_NAME_LIST}" == "" ]] ; then
+  echo "Starting from empty domain-name-list.txt, adding ${FULLDOMAINNAME}"
   DOMAIN_NAME_LIST_NEW="${FULLDOMAINNAME}"
   DOMAIN_NAME_PARAM="${FULLDOMAINNAME}"
 else
@@ -261,6 +271,9 @@ echo "${DOMAIN_NAME_LIST_NEW}" > ${SAVE_CMD_DIR}/domain-name-list.txt
 echo "Saved domain names:      ${SAVE_CMD_DIR}/domain-name-list.txt"
 echo "                         ${DOMAIN_NAME_LIST_NEW}"
 echo ""
+
+DOMAIN_NAME_LIST_HAS_WWW=$(grep www ${SAVE_CMD_DIR}/domain-name-list.txt)
+echo "Domain list has WWW:     ${DOMAIN_NAME_LIST_HAS_WWW}"
 
 ## when DB_PSWD is populated below that means DB config has been defined
 DB_PSWD=""
@@ -317,7 +330,7 @@ echo "Apache vhost template:   /etc/httpd/conf.d/nextcloud-vhost.conf"
 echo "FULLDOMAINNAME:          $FULLDOMAINNAME"
 /bin/cp --no-clobber /usr/local/pbase-data/pbase-nextcloud/etc-httpd-confd/nextcloud-vhost.conf /etc/httpd/conf.d/
 
-if [[ -e "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"  ]] ; then
+if [[ -e "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf" ]] ; then
   echo "Removing existing:       /etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
   mv "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"  "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf-DISABLED"
 fi
@@ -325,7 +338,16 @@ fi
 ## replace your.server.com in template conf
 sed -i "s/your.server.com/${FULLDOMAINNAME}/" "/etc/httpd/conf.d/nextcloud-vhost.conf"
 
-## rename conf file to match the full domain name
+## may also enable www alias
+sed -i "s/www.server.com/www.${THISDOMAINNAME}/" "/etc/httpd/conf.d/nextcloud-vhost.conf"
+
+if [[ "${DOMAIN_NAME_LIST_HAS_WWW}" != "" ]] ; then
+  echo "Enabling:                ServerAlias www.${THISDOMAINNAME}"
+  sed -i "s/# ServerAlias www/ServerAlias www/" "/etc/httpd/conf.d/nextcloud-vhost.conf"
+fi
+
+
+## rename template conf file to match the full domain name
 echo "Nextcloud proxy:         /etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
 mv "/etc/httpd/conf.d/nextcloud-vhost.conf" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
 
@@ -354,7 +376,9 @@ if [[ -e "/etc/yum.repos.d/amzn2extra-php72.repo" ]]; then
   fi
 fi
 
+echo ""
 IMAGEMAGIK_PHP_INI="/etc/php.d/20-imagick.ini"
+
 ## add imagemagik php extension
 if [[ -e "${IMAGEMAGIK_PHP_INI}" ]]; then
   echo "Already exists:          ${IMAGEMAGIK_PHP_INI}"
@@ -425,7 +449,6 @@ echo "                         http://${INSTALLED_DOMAIN_URI}"
 echo "or if your domain is registered in DNS and has HTTPS enabled"
 echo "                         https://${INSTALLED_DOMAIN_URI}"
 echo ""
-
 
 %files
 %defattr(-,root,root,-)

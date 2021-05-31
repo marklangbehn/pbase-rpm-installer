@@ -1,6 +1,6 @@
 Name: activpb-mastodon
 Version: 1.0
-Release: 1
+Release: 2
 Summary: PBase Mastodon service rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -109,7 +109,21 @@ if [[ -e "/home/mastodon/live/.env.production" ]]; then
   exit 0
 fi
 
-## check if prerequisite base config rpm has been installed
+## check if node 12 or higher installed
+VERS_INSTALLED="$(node --version)"
+VERS_REQUIRED="v12.0.0"
+
+if [ "$(printf '%s\n' "$VERS_REQUIRED" "$VERS_INSTALLED" | sort -V | head -n1)" = "$VERS_REQUIRED" ]; then
+  echo "Node JS version:         ${VERS_INSTALLED}"
+  echo ""
+else
+  echo "Less than ${VERS_REQUIRED}"
+  echo "Node JS version 12 or higher required, found: ${VERS_INSTALLED}"
+  echo "Exiting."
+  exit 0
+fi
+
+## check if home directory has been installed
 if [[ ! -d "/home/mastodon" ]]; then
   echo "/home/mastodon directory not found - exiting"
   exit 0
@@ -119,7 +133,6 @@ fi
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
 
-echo ""
 echo "Hostname:                $THISHOSTNAME"
 echo "Domainname:              $THISDOMAINNAME"
 
@@ -229,7 +242,9 @@ fi
 DOMAIN_NAME_LIST=""
 SAVE_CMD_DIR="/usr/local/pbase-data/admin-only"
 
-read -r DOMAIN_NAME_LIST < "${SAVE_CMD_DIR}/domain-name-list.txt"
+if [[ -e "${SAVE_CMD_DIR}/domain-name-list.txt" ]] ; then
+  read -r DOMAIN_NAME_LIST < "${SAVE_CMD_DIR}/domain-name-list.txt"
+fi
 
 echo "Saved domain names:      ${SAVE_CMD_DIR}/domain-name-list.txt"
 echo "Found domain-name-list:  ${DOMAIN_NAME_LIST}"
@@ -370,19 +385,7 @@ OTP_SECRET=$(su - mastodon -c "cd ~/live  &&  RAILS_ENV=production bundle exec r
 echo "SECRET_KEY_BASE:         $SECRET_KEY_BASE"
 echo "OTP_SECRET:              $OTP_SECRET"
 
-VAPID_PAIR=$(su - mastodon -c "cd ~/live  &&  RAILS_ENV=production bundle exec rake mastodon:webpush:generate_vapid_key")
-
-echo "Vapid key pair generated:"
-echo $VAPID_PAIR
-
-VAPIDPRIVATEKEY=$(echo $VAPID_PAIR | cut -f 1 -d' ')
-VAPIDPUBLICKEY=$(echo $VAPID_PAIR | cut -f 2 -d' ')
-
-VPRIVATEKEY=$(echo $VAPIDPRIVATEKEY | sed s/VAPID_PRIVATE_KEY=//)
-VPUBLICKEY=$(echo $VAPIDPUBLICKEY | sed s/VAPID_PUBLIC_KEY=//)
-
-echo "VAPID_PRIVATE_KEY:       $VPRIVATEKEY"
-echo "VAPID_PUBLIC_KEY:        $VPUBLICKEY"
+echo "Configuring Mastodon:    $ENV_PRODUCTION_FILENAME"
 
 sed -i -e "s/^DB_HOST=.*/DB_HOST=$CONFIG_DB_HOSTNAME/"  $ENV_PRODUCTION_FILENAME
 sed -i -e "s/^DB_USER=.*/DB_USER=$CONFIG_DB_USER/"  $ENV_PRODUCTION_FILENAME
@@ -401,6 +404,23 @@ sed -i -e "s/^SMTP_PASSWORD=.*/SMTP_PASSWORD=$SMTP_PASSWORD/"  $ENV_PRODUCTION_F
 sed -i -e "s/^SMTP_SERVER=.*/SMTP_SERVER=$SMTP_SERVER/"  $ENV_PRODUCTION_FILENAME
 sed -i -e "s/^SMTP_FROM_ADDRESS=.*/SMTP_FROM_ADDRESS=notifications@${THISDOMAINNAME}/"  $ENV_PRODUCTION_FILENAME
 
+#echo "Setting SECRET_KEY_BASE in config/secrets.yml"
+#sed -i "s/<%= ENV\[\"SECRET_KEY_BASE\"\] %>/$SECRET_KEY_BASE/"  /home/mastodon/live/config/secrets.yml
+
+## generate vapid keys
+VAPID_PAIR=$(su - mastodon -c "cd ~/live  &&  RAILS_ENV=production bundle exec rake mastodon:webpush:generate_vapid_key")
+
+echo "Vapid key pair generated:"
+echo $VAPID_PAIR
+
+VAPIDPRIVATEKEY=$(echo $VAPID_PAIR | cut -f 1 -d' ')
+VAPIDPUBLICKEY=$(echo $VAPID_PAIR | cut -f 2 -d' ')
+
+VPRIVATEKEY=$(echo $VAPIDPRIVATEKEY | sed s/VAPID_PRIVATE_KEY=//)
+VPUBLICKEY=$(echo $VAPIDPUBLICKEY | sed s/VAPID_PUBLIC_KEY=//)
+
+echo "VAPID_PRIVATE_KEY:       $VPRIVATEKEY"
+echo "VAPID_PUBLIC_KEY:        $VPUBLICKEY"
 
 ## set vapid keys
 sed -i -e "s/^VAPID_PRIVATE_KEY=.*/VAPID_PRIVATE_KEY=$VPRIVATEKEY/"  $ENV_PRODUCTION_FILENAME
@@ -484,7 +504,6 @@ touch "$TOOLCTL_LOGFILE"
 chown mastodon:mastodon ${TOOLCTL_LOGFILE}
 
 echo "$CRONJOB_LINE2"  >>  /etc/crontab
-
 
 ## finish setup
 echo "Executing:               bundle exec rails db:setup"

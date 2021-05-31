@@ -210,7 +210,7 @@ if [[ -e /root/DEFAULT_EMAIL_ADDRESS.txt ]] ; then
 fi
 
 parseConfig "SERVER_ADMIN_EMAIL" ".pbase_apache.serverAdmin" "${DEFAULT_EMAIL}"
-parseConfig "SUBDOMAIN_NAME" ".pbase_apache.urlSubDomain" ""
+parseConfig "URL_SUBDOMAIN" ".pbase_apache.urlSubDomain" ""
 
 echo "ADD_SELF_TO_ETC_HOSTS:   $ADD_SELF_TO_ETC_HOSTS"
 echo "ADD_SECURITY_HEADERS:    $ADD_SECURITY_HEADERS"
@@ -220,7 +220,7 @@ echo "ENABLE_INDEX_PHP:        $ENABLE_INDEX_PHP"
 echo "ENABLE_INDEX_PHP:        $ENABLE_INDEX_PHP"
 echo "ENABLE_CHECK_FOR_WWW:    $ENABLE_CHECK_FOR_WWW"
 echo "SERVER_ADMIN_EMAIL:      $SERVER_ADMIN_EMAIL"
-echo "SUBDOMAIN_NAME:          $SUBDOMAIN_NAME"
+echo "URL_SUBDOMAIN:           $URL_SUBDOMAIN"
 
 
 ## check which version of Linux is installed
@@ -233,8 +233,8 @@ THISDOMAINNAME="$(hostname -d)"
 ## FULLDOMAINNAME is the subdomain if declared plus the domain
 FULLDOMAINNAME="${THISDOMAINNAME}"
 
-if [[ "${SUBDOMAIN_NAME}" != "" ]] ; then
-  FULLDOMAINNAME="${SUBDOMAIN_NAME}.${THISDOMAINNAME}"
+if [[ "${URL_SUBDOMAIN}" != "" ]] ; then
+  FULLDOMAINNAME="${URL_SUBDOMAIN}.${THISDOMAINNAME}"
   echo "Using subdomain:         ${FULLDOMAINNAME}"
 fi
 
@@ -296,6 +296,8 @@ FULLDOMAINNAME="${THISDOMAINNAME}"
 WWWDOMAINNAME="www.${THISDOMAINNAME}"
 HAS_WWW_SUBDOMAIN="false"
 DOMAIN_NAME_LIST=""
+
+echo "Given URL_SUBDOMAIN:     ${URL_SUBDOMAIN}"
 
 if [[ "${URL_SUBDOMAIN}" != "" ]] ; then
   ## when doing subdomain only like myapp.example.com (not registering root domain)
@@ -451,7 +453,7 @@ fi
 ##   Header set X-Permitted-Cross-Domain-Policies "none"
 
 HTTPD_CONF_SRC="/usr/local/pbase-data/pbase-apache/etc-httpd-conf-d"
-if [[ "${SUBDOMAIN_NAME}" != "" ]] ; then
+if [[ "${URL_SUBDOMAIN}" != "" ]] ; then
   HTTPD_CONF_SRC="/usr/local/pbase-data/pbase-apache/etc-httpd-conf-d-subdomain"
 fi
 

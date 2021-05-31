@@ -1,6 +1,6 @@
 Name: pbase-preconfig-mysql-wordpress
 Version: 1.0
-Release: 1
+Release: 2
 Summary: PBase MySQL preconfigure rpm, preset user and DB name for use by pbase-wordpress
 Group: System Environment/Base
 License: Apache-2.0
@@ -141,6 +141,13 @@ setFieldInJsonModuleConfig() {
     ## set a value in the json file
     PREFIX="jq '.${MODULE}.${FULLFIELDNAME}= \""
     SUFFIX="\"'"
+
+    ## no quotes needed when setting boolean
+    if [[ "${NEWVALUE}" == "true" ]] || [[ "${NEWVALUE}" == "false" ]] ; then
+      PREFIX="jq '.${MODULE}.${FULLFIELDNAME}= "
+      SUFFIX="'"
+    fi
+
     JQ_COMMAND="${PREFIX}${NEWVALUE}${SUFFIX} /tmp/${CONFIG_FILE_NAME} > ${MODULE_CONFIG_DIR}/${CONFIG_FILE_NAME}"
 
     ##echo "Executing:  eval $JQ_COMMAND"
@@ -188,8 +195,6 @@ parseConfig "DEFAULT_SUB_DOMAIN" ".pbase_repo.defaultSubDomain" ""
 if [[ $DEFAULT_SUB_DOMAIN == null ]] ; then
   echo "No DEFAULT_SUB_DOMAIN override file found, using '' for defaultSubDomain"
   DEFAULT_SUB_DOMAIN=""
-#  echo "No DEFAULT_SUB_DOMAIN override file found, using 'wordpress' for defaultSubDomain"
-#  DEFAULT_SUB_DOMAIN="wordpress"
 fi
 #echo "DEFAULT_SUB_DOMAIN:      ${DEFAULT_SUB_DOMAIN}"
 
@@ -246,8 +251,10 @@ if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] ; then
   setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_lets_encrypt urlSubDomain
   setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_wordpress urlSubDomain
   setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_apache urlSubDomain
+  setFieldInJsonModuleConfig "false" pbase_apache enableCheckForWww
 else
   echo "Setting empty urlSubDomain, Wordpress will be root level of domain"
+  echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN_QUOTED}"
   setFieldInJsonModuleConfig "" pbase_lets_encrypt urlSubDomain
   setFieldInJsonModuleConfig "" pbase_wordpress urlSubDomain
   setFieldInJsonModuleConfig "" pbase_apache urlSubDomain

@@ -1,6 +1,6 @@
 Name: activpb-mastodon-ruby
 Version: 1.0
-Release: 1
+Release: 2
 Summary: PBase Mastodon Ruby and Dependencies rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -99,6 +99,9 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 ## version to download
 parseConfig "MASTODON_VER_CONFIG" ".activpb_mastodon.mastodonVersion" ""
 
+# disable git message
+git config --global advice.detachedHead false
+
 ## USER
 echo "Creating group and user: mastodon"
 
@@ -127,6 +130,8 @@ cat /home/mastodon/.bashrc /usr/local/pbase-data/activpb-mastodon-ruby/ruby-bash
 /bin/cp -f /home/mastodon/.bashrc-rbenv /home/mastodon/.bashrc
 chown mastodon:mastodon /home/mastodon/.bashrc
 
+source /home/mastodon/.bashrc
+
 echo "Pull code for rbenv/plugins"
 su - mastodon -c "source /home/mastodon/.bashrc  &&  git clone https://github.com/rbenv/ruby-build.git /home/mastodon/.rbenv/plugins/ruby-build"
 
@@ -147,8 +152,14 @@ else
   echo "Latest version:          ${VERSION}"
 fi
 
-su - mastodon -c "cd /home/mastodon/live  ;  git checkout ${VERSION}"
 
+# turn off git message
+su - mastodon -c "git config --global advice.detachedHead false"
+
+# checkout release version
+if [[ "${VERSION}" != "HEAD" ]] && [[ "${VERSION}" != "head" ]] ; then
+  su - mastodon -c "cd /home/mastodon/live  ;  git checkout ${VERSION}"
+fi
 
 ## use the version number stored in text file
 RUBY_VERSION="2.7.2"

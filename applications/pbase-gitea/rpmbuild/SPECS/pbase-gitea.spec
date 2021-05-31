@@ -1,6 +1,6 @@
 Name: pbase-gitea
 Version: 1.0
-Release: 1
+Release: 2
 Summary: PBase Gitea service rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -323,7 +323,7 @@ SAVE_CMD_DIR="/usr/local/pbase-data/admin-only"
 
 read -r DOMAIN_NAME_LIST < "${SAVE_CMD_DIR}/domain-name-list.txt"
 
-echo "Saved domain names:      ${SAVE_CMD_DIR}/domain-name-list.txt"
+echo "Existing domain names:   ${SAVE_CMD_DIR}/domain-name-list.txt"
 echo "Found domain-name-list:  ${DOMAIN_NAME_LIST}"
 
 ## configure SMTP email
@@ -390,13 +390,16 @@ fi
 DOMAIN_NAME_LIST_NEW=""
 DOMAIN_NAME_PARAM=""
 
+echo "Found DOMAIN_NAME_LIST:  ${DOMAIN_NAME_LIST}"
+
 if [[ "${DOMAIN_NAME_LIST}" == "" ]] ; then
+  echo "Starting from empty domain-name-list.txt, adding ${FULLDOMAINNAME}"
   DOMAIN_NAME_LIST_NEW="${FULLDOMAINNAME}"
   DOMAIN_NAME_PARAM="${FULLDOMAINNAME}"
 else
     ## use cut to grab first name from comma delimited list
     FIRSTDOMAINNREGISTERED=$(cut -f1 -d "," ${SAVE_CMD_DIR}/domain-name-list.txt)
-    echo "FIRSTDOMAINNREGISTERED:  ${FIRSTDOMAINNREGISTERED}"
+    ##echo "FIRSTDOMAINNREGISTERED:  ${FIRSTDOMAINNREGISTERED}"
 
   if [[ "${DOMAIN_NAME_LIST}" == *"${FULLDOMAINNAME}"* ]]; then
     echo "Already has ${FULLDOMAINNAME}"
@@ -411,7 +414,11 @@ fi
 
 echo "${DOMAIN_NAME_LIST_NEW}" > ${SAVE_CMD_DIR}/domain-name-list.txt
 echo "Saved domain names:      ${SAVE_CMD_DIR}/domain-name-list.txt"
+echo "                         ${DOMAIN_NAME_LIST_NEW}"
+echo ""
 
+DOMAIN_NAME_LIST_HAS_WWW=$(grep www ${SAVE_CMD_DIR}/domain-name-list.txt)
+##echo "Domain list has WWW:     ${DOMAIN_NAME_LIST_HAS_WWW}"
 
 echo "FULLDOMAINNAME:          $FULLDOMAINNAME"
 echo "SUBPATH_URI:             $SUBPATH_URI"
@@ -432,7 +439,7 @@ if [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
 
   /bin/cp --no-clobber /usr/local/pbase-data/pbase-gitea/etc-httpd-confd/${PROXY_CONF_FILE} /etc/httpd/conf.d/
 
-  mv "/etc/httpd/conf.d/${PROXY_CONF_FILE}" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
+  mv -f "/etc/httpd/conf.d/${PROXY_CONF_FILE}" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
   CONF_FILE="/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
 
   if [[ ${URL_SUBDOMAIN} != "" ]] ; then
@@ -443,6 +450,14 @@ if [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
       echo "Setting subpath:         ${CONF_FILE}"
       sed -i -e "s/git.example.com/${FULLDOMAINNAME}/" "${CONF_FILE}"
       sed -i -e "s|/git http|/${URL_SUBPATH} http|" "${CONF_FILE}"
+    fi
+
+    ## may also enable www alias
+    sed -i "s/www.example.com/www.${THISDOMAINNAME}/" "${CONF_FILE}"
+
+    if [[ "${DOMAIN_NAME_LIST_HAS_WWW}" != "" ]] ; then
+      echo "Enabling:                ServerAlias www.${THISDOMAINNAME}"
+      sed -i "s/#ServerAlias/ServerAlias/" "${CONF_FILE}"
     fi
   fi
 

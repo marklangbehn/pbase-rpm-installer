@@ -1,6 +1,6 @@
 Name: activpb-peertube
 Version: 1.0
-Release: 1
+Release: 2
 Summary: PBase Peertube service rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -349,8 +349,8 @@ chmod +x /var/www/peertube
 
 ## run install
 echo ""
-echo "Executing:               yarn install --production --pure-lockfile"
-su - peertube -c "cd /var/www/peertube/peertube-latest/ && yarn install --production --pure-lockfile"
+echo "Executing:               yarn install --silent --production --pure-lockfile"
+su - peertube -c "cd /var/www/peertube/peertube-latest/ && yarn install --silent --production --pure-lockfile"
 
 ## copy example config file
 echo ""
@@ -396,7 +396,11 @@ fi
 
 echo "${DOMAIN_NAME_LIST_NEW}" > ${SAVE_CMD_DIR}/domain-name-list.txt
 echo "Saved domain names:      ${SAVE_CMD_DIR}/domain-name-list.txt"
+echo "                         ${DOMAIN_NAME_LIST_NEW}"
+echo ""
 
+DOMAIN_NAME_LIST_HAS_WWW=$(grep www ${SAVE_CMD_DIR}/domain-name-list.txt)
+##echo "Domain list has WWW:     ${DOMAIN_NAME_LIST_HAS_WWW}"
 
 echo "Updating config in production.yaml"
 
@@ -434,10 +438,25 @@ sed -i "s|proxy_pass http://backend|proxy_pass http://127.0.0.1:9000|g" /etc/ngi
 if [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
   mv /etc/nginx/conf.d/peertube.conf /usr/local/pbase-data/activpb-peertube/peertube.conf-NGINX-DISABLED
 
+  ## set aside conf file so that certbot can recreate the ...le-ssl.conf
+  if [[ -e "/etc/httpd/conf.d/${FULLDOMAINNAME}-le-ssl.conf" ]] ; then
+    echo "Disabling prev conf:     /etc/httpd/conf.d/${FULLDOMAINNAME}-le-ssl.conf"
+    mv "/etc/httpd/conf.d/${FULLDOMAINNAME}-le-ssl.conf" "/etc/httpd/conf.d/${FULLDOMAINNAME}-le-ssl.conf-DISABLED"
+  fi
+
   ## configure apache proxy file
   echo "Apache virtual host:     /etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
   /bin/cp -f "/usr/local/pbase-data/activpb-peertube/etc-httpd-conf-d/peertube.example.com.conf" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
   sed -i "s/peertube.example.com/${FULLDOMAINNAME}/g" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
+
+  ## may also enable www alias
+  echo "Check for www alias"
+  sed -i "s/www.example.com/www.${THISDOMAINNAME}/" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
+
+  if [[ "${DOMAIN_NAME_LIST_HAS_WWW}" != "" ]] ; then
+    echo "Enabling:                ServerAlias www.${THISDOMAINNAME}"
+    sed -i "s/#ServerAlias/ServerAlias/" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
+  fi
 
   mkdir -p "/etc/httpd/logs/${FULLDOMAINNAME}"
   systemctl reload httpd

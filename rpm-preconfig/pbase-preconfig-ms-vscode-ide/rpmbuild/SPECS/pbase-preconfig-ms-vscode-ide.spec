@@ -1,15 +1,15 @@
-Name: pbase-preconfig-vscode-ide
+Name: pbase-preconfig-ms-vscode-ide
 Version: 1.0
 Release: 0
 Summary: PBase VSCode repo preconfigure
 Group: System Environment/Base
 License: Apache-2.0
 URL: https://pbase-foundation.com
-Source0: pbase-preconfig-vscode-ide-1.0.tar.gz
+Source0: pbase-preconfig-ms-vscode-ide-1.0.tar.gz
 BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
-Provides: pbase-preconfig-vscode-ide
+Provides: pbase-preconfig-ms-vscode-ide
 Requires: git,curl
 
 %description
@@ -78,7 +78,7 @@ if [[ $? == "1" ]] ; then
   sysctl -p --system
 fi
 
-#YUM_REPO_PATH="/usr/local/pbase-data/pbase-preconfig-vscode-ide/etc-yum-repos-d"
+#YUM_REPO_PATH="/usr/local/pbase-data/pbase-preconfig-ms-vscode-ide/etc-yum-repos-d"
 #REPO_NAME="vscode.repo"
 #if [[ -e "/etc/yum.repos.d/$REPO_NAME" ]]; then
 #  echo "Existing YUM repo:       /etc/yum.repos.d/$REPO_NAME"
@@ -100,7 +100,13 @@ echo "  cd myprojectdirectory"
 echo "  code ."
 echo ""
 
+%preun
+echo "rpm preuninstall"
+
+## remove the repo files that were added by script
+/bin/rm -f /etc/yum.repos.d/vscode.repo
+
 %files
 %defattr(-,root,root,-)
-/usr/local/pbase-data/pbase-preconfig-vscode-ide/etc-sysctl-d/inotify-maxuserwatches.conf
+/usr/local/pbase-data/pbase-preconfig-ms-vscode-ide/etc-sysctl-d/inotify-maxuserwatches.conf
 /etc/yum.repos.d/vscode.repo

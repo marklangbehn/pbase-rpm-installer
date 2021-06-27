@@ -1,6 +1,6 @@
 Name: pbase-gotty
 Version: 1.0
-Release: 1
+Release: 2
 Summary: PBase GoTTY rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -51,12 +51,11 @@ append_bashrc_alias() {
 }
 
 ## config is stored in json file with root-only permissions
-## it can be one of two places:
-##     /usr/local/pbase-data/admin-only/module-config.d/activpb_peertube.json
+##     in the directory: /usr/local/pbase-data/admin-only/module-config.d/
 
 
 locateConfigFile() {
-  ## name of config file is passed in param $1 - for example "activpb_peertube.json"
+  ## name of config file is passed in param $1 - for example "pbase_gotty.json"
   PBASE_CONFIG_FILENAME="$1"
 
   PBASE_CONFIG_BASE="/usr/local/pbase-data/admin-only"
@@ -131,33 +130,107 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config value from JSON file
 parseConfig "ENABLE_AUTORENEW" ".pbase_gotty.enableAutoRenew" "true"
+parseConfig "ADD_APACHE_PROXY" ".pbase_gotty.addApacheProxy" "false"
 parseConfig "EXECUTE_CERTBOT_CMD" ".pbase_gotty.executeCertbotCmd" "true"
 
-parseConfig "URL_SUB_DOMAIN" ".pbase_gotty.urlSubDomain" "shell"
-parseConfig "EMAIL_ADDRESS" ".pbase_gotty.emailAddress" "yoursysadmin@yourrealmail.com"
+parseConfig "URL_SUBDOMAIN" ".pbase_gotty.urlSubDomain" "shell"
+parseConfig "EMAIL_ADDR" ".pbase_gotty.emailAddress" "yoursysadmin@yourrealmail.com"
 parseConfig "AUTH_USERNAME" ".pbase_gotty.basicAuthUsername" "mark"
 parseConfig "AUTH_PASSWORD" ".pbase_gotty.basicAuthPassword" "shomeddata"
 
 echo "ENABLE_AUTORENEW:        $ENABLE_AUTORENEW"
 echo "EXECUTE_CERTBOT_CMD:     $EXECUTE_CERTBOT_CMD"
+echo "EMAIL_ADDR:              $EMAIL_ADDR"
+echo "ADDITIONAL_SUBDOMAIN:    $ADDITIONAL_SUBDOMAIN"
 
-echo "URL_SUB_DOMAIN:          $URL_SUB_DOMAIN"
-echo "EMAIL_ADDRESS:           $EMAIL_ADDRESS"
+## make sure certbot is installed
+HAS_CERTBOT_INSTALLED="$(which certbot)"
+
+if [[ -z "${HAS_CERTBOT_INSTALLED}" ]] ; then
+  echo "Certbot not installed"
+  EXECUTE_CERTBOT_CMD="false"
+else
+  echo "Certbot is installed     ${HAS_CERTBOT_INSTALLED}"
+fi
+
+
+HAS_APACHE_ROOTDOMAIN_CONF=""
+ROOTDOMAIN_HTTP_CONF_FILE="/etc/httpd/conf.d/${THISDOMAINNAME}.conf"
+
+if [[ -e "${ROOTDOMAIN_HTTP_CONF_FILE}" ]] ; then
+  echo "Found existing Apache root domain .conf file "
+  HAS_APACHE_ROOTDOMAIN_CONF="true"
+fi
+
+
+## fetch previously registered domain names
+HAS_WWW_SUBDOMAIN="false"
+DOMAIN_NAME_LIST=""
+SAVE_CMD_DIR="/usr/local/pbase-data/admin-only"
+
+if [[ -e "${SAVE_CMD_DIR}/domain-name-list.txt" ]]; then
+  read -r DOMAIN_NAME_LIST < "${SAVE_CMD_DIR}/domain-name-list.txt"
+
+  echo "Existing domain names:   ${SAVE_CMD_DIR}/domain-name-list.txt"
+  echo "Found domain-name-list:  ${DOMAIN_NAME_LIST}"
+else
+  echo "Adding first domain:     ${SAVE_CMD_DIR}/domain-name-list.txt"
+fi
+
+echo "URL_SUBDOMAIN:           $URL_SUBDOMAIN"
 echo "AUTH_USERNAME:           $AUTH_USERNAME"
 echo "AUTH_PASSWORD:           $AUTH_PASSWORD"
 
 ## FULLDOMAINNAME is the subdomain if declared plus the domain
 FULLDOMAINNAME="${THISDOMAINNAME}"
 
-if [[ "$URL_SUB_DOMAIN" != "" ]] ; then
-  FULLDOMAINNAME="${URL_SUB_DOMAIN}.${THISDOMAINNAME}"
+if [[ ${URL_SUBDOMAIN} == "" ]] || [[ ${URL_SUBDOMAIN} == null ]] ; then
+  FULLDOMAINNAME="${THISDOMAINNAME}"
+  echo "Using root domain:       ${FULLDOMAINNAME}"
+else
+  FULLDOMAINNAME="${URL_SUBDOMAIN}.${THISDOMAINNAME}"
   echo "Using subdomain:         ${FULLDOMAINNAME}"
 fi
 
 
+DOMAIN_NAME_LIST_NEW=""
+DOMAIN_NAME_PARAM=""
+
+if [[ "${DOMAIN_NAME_LIST}" == "" ]] ; then
+  echo "Starting from empty domain-name-list.txt, adding ${FULLDOMAINNAME}"
+  DOMAIN_NAME_LIST_NEW="${FULLDOMAINNAME}"
+  DOMAIN_NAME_PARAM="${FULLDOMAINNAME}"
+else
+    ## use cut to grab first name from comma delimited list
+    FIRSTDOMAINNREGISTERED=$(cut -f1 -d "," ${SAVE_CMD_DIR}/domain-name-list.txt)
+    ##echo "FIRSTDOMAINNREGISTERED:  ${FIRSTDOMAINNREGISTERED}"
+
+  if [[ "${DOMAIN_NAME_LIST}" == *"${FULLDOMAINNAME}"* ]]; then
+    echo "Already has ${FULLDOMAINNAME}"
+    DOMAIN_NAME_LIST_NEW="${DOMAIN_NAME_LIST}"
+    DOMAIN_NAME_PARAM="${DOMAIN_NAME_LIST}"
+  else
+    echo "Adding ${FULLDOMAINNAME}"
+    DOMAIN_NAME_LIST_NEW="${DOMAIN_NAME_LIST},${FULLDOMAINNAME}"
+    DOMAIN_NAME_PARAM="${DOMAIN_NAME_LIST},${FULLDOMAINNAME} --expand"
+  fi
+fi
+
+echo "${DOMAIN_NAME_LIST_NEW}" > ${SAVE_CMD_DIR}/domain-name-list.txt
+echo "Saved domain names:      ${SAVE_CMD_DIR}/domain-name-list.txt"
+echo "                         ${DOMAIN_NAME_LIST_NEW}"
+echo ""
+
+DOMAIN_NAME_LIST_HAS_WWW=$(grep www ${SAVE_CMD_DIR}/domain-name-list.txt)
+##echo "Domain list has WWW:     ${DOMAIN_NAME_LIST_HAS_WWW}"
+
+#echo "FULLDOMAINNAME:          $FULLDOMAINNAME"
+#echo "SUBPATH_URI:             $SUBPATH_URI"
+#echo "PROXY_CONF_FILE:         $PROXY_CONF_FILE"
+
+
 cd /root
 
-echo ""
 echo "Building code:           go get -v github.com/yudai/gotty"
 
 go get -v github.com/yudai/gotty
@@ -173,8 +246,29 @@ echo "Launch script:"
 echo "  /usr/local/pbase-data/pbase-gotty/script/launch-gotty.sh"
 echo ""
 
-## add gotty service file
-/bin/cp -f --no-clobber /usr/local/pbase-data/pbase-gotty/etc-systemd-system/gotty.service /etc/systemd/system/
+if [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
+  ## add gotty service file
+  /bin/cp -f --no-clobber /usr/local/pbase-data/pbase-gotty/etc-systemd-system/gotty-port-18080.service /etc/systemd/system/gotty.service
+
+  echo "Using Apache proxy"
+  PREV_CONF_FILE="/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
+  if [[ -e "${PREV_CONF_FILE}" ]] ; then
+    echo "Disabling previous:      ${PREV_CONF_FILE}"
+    mv "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf-DISABLED"
+  fi
+
+  /bin/cp --no-clobber /usr/local/pbase-data/pbase-gotty/etc-httpd-confd/gotty-proxy-subdomain.conf /etc/httpd/conf.d/
+  mv -f "/etc/httpd/conf.d/gotty-proxy-subdomain.conf" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
+  CONF_FILE="/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
+
+  echo "Setting subdomain:       ${CONF_FILE}"
+  sed -i -e "s/shell.example.com/${FULLDOMAINNAME}/" "${CONF_FILE}"
+  sed -i -e "s/example.com/${THISDOMAINNAME}/" "${CONF_FILE}"
+else
+  ## add gotty service file
+  echo "Using direct GoTTY"
+  /bin/cp -f --no-clobber /usr/local/pbase-data/pbase-gotty/etc-systemd-system/gotty.service /etc/systemd/system/gotty.service
+fi
 
 
 if [[ "${AUTH_USERNAME}" != "" ]] && [[ "${AUTH_PASSWORD}" != "" ]] ; then
@@ -187,14 +281,30 @@ else
   echo "HTTP auth must be set:   /etc/systemd/system/gotty.service"
 fi
 
+#SAVE_CMD_DIR="/usr/local/pbase-data/admin-only"
+#echo "${FULLDOMAINNAME}" > ${SAVE_CMD_DIR}/domain-name-list.txt
+#echo "Saved domain name:       ${SAVE_CMD_DIR}/domain-name-list.txt"
+#echo ""
+
+
 ## LETS ENCRYPT - HTTPS CERTIFICATE
 
-if [[ $EXECUTE_CERTBOT_CMD == "true" ]] ; then
-  echo "Executing:               certbot certonly --standalone -d ${FULLDOMAINNAME} -m ${EMAIL_ADDRESS} --agree-tos -n"
-  certbot certonly --standalone -d ${FULLDOMAINNAME} -m ${EMAIL_ADDRESS} --agree-tos -n
+if [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
+  CERTBOT_CMD="certbot --apache --agree-tos --email ${EMAIL_ADDR} -n -d ${DOMAIN_NAME_PARAM}"
 else
-  echo "Not executing:           certbot certonly --standalone -d ${FULLDOMAINNAME} -m ${EMAIL_ADDRESS} --agree-tos -n"
-  echo "Skipping certbot:        EXECUTE_CERTBOT_CMD=false"
+  CERTBOT_CMD="certbot certonly --standalone --agree-tos --email ${EMAIL_ADDR} -n -d ${DOMAIN_NAME_PARAM}"
+fi
+
+## save command line in file
+echo "Saving command line:     ${SAVE_CMD_DIR}/certbot-cmd.sh"
+echo ${CERTBOT_CMD} > ${SAVE_CMD_DIR}/certbot-cmd.sh
+
+if [[ $EXECUTE_CERTBOT_CMD == "true" ]] ; then
+  echo "Executing:               ${CERTBOT_CMD}"
+  eval "${CERTBOT_CMD}"
+else
+  echo "Skipping execute:        EXECUTE_CERTBOT_CMD=false"
+  echo "                         ${CERTBOT_CMD}"
 fi
 
 echo "Creating HTTPS certificate symlinks"
@@ -234,3 +344,5 @@ echo ""
 %defattr(-,root,root,-)
 /usr/local/pbase-data/pbase-gotty/script/launch-gotty.sh
 /usr/local/pbase-data/pbase-gotty/etc-systemd-system/gotty.service
+/usr/local/pbase-data/pbase-gotty/etc-systemd-system/gotty-port-18080.service
+/usr/local/pbase-data/pbase-gotty/etc-httpd-confd/gotty-proxy-subdomain.conf

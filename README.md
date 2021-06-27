@@ -598,6 +598,14 @@ yum -y install obs-studio
 
 Here's how to install Mastodon:
 (Note: On RHEL 8 you must enable CodeReadyBuilder with:  subscription-manager repos --enable codeready-builder-for-rhel-8-x86_64-rpms)
+
+Mastodon requires Node JS 12 or higher:
+```
+curl -sL https://rpm.nodesource.com/setup_12.x | bash -
+yum -y install nodejs
+```
+
+After Node JS is installed you are ready to install Mastodon
 ```
 yum -y install https://pbase-foundation.com/pbase-repo.rpm
 yum -y install activpb-preconfig-postgres-mastodon
@@ -606,9 +614,16 @@ yum -y install activpb-mastodon
 ```
 
 Here's how to install Peertube:
-Default install is to assume your domain is registered in DNS with a 'peertube' subdomain.  
+The default install assumes your domain is registered in DNS with a 'peertube' subdomain.  
 For example: peertube.mydomainname.com  
 If you want to change this edit the `activpb_peertube.json` preconfig file.
+
+Requires Node JS 12 or higher:
+```
+curl -sL https://rpm.nodesource.com/setup_14.x | bash -
+yum -y install nodejs
+```
+After Node JS is installed you are ready to install Peertube
 ```
 yum -y install https://pbase-foundation.com/pbase-repo.rpm
 yum -y install activpb-preconfig-postgres-peertube

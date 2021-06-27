@@ -1,18 +1,18 @@
-Name: pbase-golang-tools
+Name: pbase-golang-fedora-dep
 Version: 1.0
 Release: 0
-Summary: PBase Go dependencies
+Summary: PBase Let's Encrypt transitive dependencies for Fedora 3x
 Group: System Environment/Base
 License: Apache-2.0
 URL: https://pbase-foundation.com
 BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot 
 
-Provides: pbase-golang-tools
-Requires: git, pbase-golang-transitive-dep
+Provides: pbase-golang-transitive-dep
+Requires: golang
 
 %description
-Go dependencies
+PBase Go language transitive dependencies for Fedora 3x
 
 %prep
 
@@ -30,6 +30,6 @@ fail() {
     exit 1
 }
 
-echo "Done:                    'go' language is ready."
+echo "PBase Go language transitive dependencies for Fedora 3x"
 
 %files

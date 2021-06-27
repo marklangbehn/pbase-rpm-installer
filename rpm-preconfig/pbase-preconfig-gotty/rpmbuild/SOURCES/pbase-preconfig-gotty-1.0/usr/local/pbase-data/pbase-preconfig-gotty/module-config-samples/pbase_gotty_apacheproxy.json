@@ -1,0 +1,13 @@
+{
+  "pbase_gotty" :  {
+    "enableAutoRenew": true,
+    "executeCertbotCmd": true,
+    "usePrebuiltBinary": false,
+    "addApacheProxy": true,
+    "urlSubDomain": "shell",
+    "additionalSubDomain": "",
+    "emailAddress": "yoursysadmin@yourrealmail.com",
+    "basicAuthUsername": "mark",
+    "basicAuthPassword": ""
+  }
+}

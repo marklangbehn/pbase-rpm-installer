@@ -1,19 +1,19 @@
-Name: activpb-preconfig-postgres-peertube
+Name: pbase-preconfig-gotty
 Version: 1.0
-Release: 2
-Summary: PBase Postgres preconfigure rpm, preset user and DB name for use by activpb-peertube
+Release: 1
+Summary: PBase GoTTY config file create
 Group: System Environment/Base
 License: Apache-2.0
 URL: https://pbase-foundation.com
-Source0: activpb-preconfig-postgres-peertube-1.0.tar.gz
+Source0: pbase-preconfig-gotty-1.0.tar.gz
 BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
-Provides: activpb-preconfig-postgres-peertube
-Requires: pbase-preconfig-yarn, pbase-epel, jq, pbase-rpmfusion
+Provides: pbase-preconfig-gotty
+Requires: pbase-epel, jq
 
 %description
-Configure Postgres preset user and DB name for use by activpb-peertube
+Configure GoTTY config file
 
 %prep
 %setup -q
@@ -159,25 +159,11 @@ setFieldInJsonModuleConfig() {
   fi
 }
 
-echo "PBase Postgres create config preset user and DB name for use by activpb-peertube"
+echo "PBase GoTTY pre-configuration and dependencies"
 
 if [[ $1 -ne 1 ]] ; then
   echo "Already Installed. Exiting."
   exit 0
-fi
-
-## check if node 12 or higher installed
-VERS_INSTALLED="$(node --version)"
-VERS_REQUIRED="v12.0.0"
-
-if [ "$(printf '%s\n' "$VERS_REQUIRED" "$VERS_INSTALLED" | sort -V | head -n1)" = "$VERS_REQUIRED" ]; then
-  echo "Node version:            ${VERS_INSTALLED}"
-  echo ""
-else
-  echo "Less than ${VERS_REQUIRED}"
-  echo "Node version 12 or higher required, found: ${VERS_INSTALLED}"
-  echo "MUST upgrade node before Peertube can be installed"
-  echo ""
 fi
 
 THISHOSTNAME="$(hostname)"
@@ -187,7 +173,7 @@ echo "Hostname:                $THISHOSTNAME"
 echo "Domainname:              $THISDOMAINNAME"
 
 MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
-MODULE_SAMPLES_DIR="/usr/local/pbase-data/activpb-preconfig-postgres-peertube/module-config-samples"
+MODULE_SAMPLES_DIR="/usr/local/pbase-data/pbase-preconfig-gotty/module-config-samples/"
 
 PBASE_DEFAULTS_FILENAME="pbase_repo.json"
 
@@ -198,15 +184,13 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config values from JSON file
 parseConfig "DEFAULT_EMAIL_ADDRESS" ".pbase_repo.defaultEmailAddress" ""
-parseConfig "DEFAULT_SMTP_SERVER" ".pbase_repo.defaultSmtpServer" ""
-parseConfig "DEFAULT_SMTP_USERNAME" ".pbase_repo.defaultSmtpUsername" ""
-parseConfig "DEFAULT_SMTP_PASSWORD" ".pbase_repo.defaultSmtpPassword" ""
+parseConfig "DEFAULT_DESKTOP_USERNAME" ".pbase_repo.defaultDesktopUsername" ""
 parseConfig "DEFAULT_SUB_DOMAIN" ".pbase_repo.defaultSubDomain" ""
 
 ## when DEFAULT_SUB_DOMAIN.txt file is not present
 if [[ $DEFAULT_SUB_DOMAIN == null ]] ; then
-  echo "No DEFAULT_SUB_DOMAIN override file found, using 'peertube' for defaultSubDomain"
-  DEFAULT_SUB_DOMAIN="peertube"
+  echo "No DEFAULT_SUB_DOMAIN override file found, using 'shell' for defaultSubDomain"
+  DEFAULT_SUB_DOMAIN="shell"
 fi
 #echo "DEFAULT_SUB_DOMAIN:      ${DEFAULT_SUB_DOMAIN}"
 
@@ -231,12 +215,6 @@ if [[ -e "/root/DEFAULT_SUB_DOMAIN.txt" ]] ; then
 fi
 
 
-## when smtp password was given, but not server then assume mailgun
-if [[ "${DEFAULT_SMTP_SERVER}" == "" ]] && [[ "${DEFAULT_SMTP_PASSWORD}" != "" ]] ; then
-  DEFAULT_SMTP_SERVER="smtp.mailgun.org"
-fi
-
-
 HAS_APACHE_CONF=""
 HAS_APACHE_ROOTDOMAIN_CONF=""
 HAS_APACHE_SUBDOMAIN_CONF=""
@@ -245,14 +223,14 @@ HAS_APACHE_SUBDOMAIN_CONF=""
 FULLDOMAINNAME="${THISDOMAINNAME}"
 
 ## check for case subdomain proxy to be added
-PEERTUBE_JSON_FILENAME="activpb_peertube.json"
+JELLYFIN_JSON_FILENAME="pbase_gotty.json"
 ROOTDOMAIN_HTTP_CONF_FILE=""
 SUBDOMAIN_HTTP_CONF_FILE=""
 
 
 if [[ -e "/etc/httpd/conf.d/${THISDOMAINNAME}.conf" ]] ; then
   echo "Found existing Apache on this host, will configure Apache proxy"
-  PEERTUBE_JSON_FILENAME="activpb_peertube_apacheproxy.json"
+  JELLYFIN_JSON_FILENAME="pbase_gotty_apacheproxy.json"
   ROOTDOMAIN_HTTP_CONF_FILE="/etc/httpd/conf.d/${THISDOMAINNAME}.conf"
   HAS_APACHE_ROOTDOMAIN_CONF="true"
   HAS_APACHE_CONF="true"
@@ -265,7 +243,7 @@ if [[ "${SUBDOMAIN_NAME}" == "" ]] ; then
   ## replace existing root domain conf
   if [[ -e "/etc/httpd/conf.d/${THISDOMAINNAME}.conf" ]] ; then
     echo "Found existing Apache root domain .conf file"
-    PEERTUBE_JSON_FILENAME="activpb_peertube_apacheproxy.json"
+    JELLYFIN_JSON_FILENAME="pbase_gotty_apacheproxy.json"
     SUBDOMAIN_HTTP_CONF_FILE="/etc/httpd/conf.d/${THISDOMAINNAME}.conf"
     HAS_APACHE_SUBDOMAIN_CONF=""
     HAS_APACHE_CONF="true"
@@ -279,7 +257,7 @@ else
   if [[ -e "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf" ]] ; then
     echo "Found existing Apache subdomain .conf file"
     ## mv "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf-DISABLED"
-    PEERTUBE_JSON_FILENAME="activpb_peertube_apacheproxy.json"
+    JELLYFIN_JSON_FILENAME="pbase_gotty_apacheproxy.json"
     SUBDOMAIN_HTTP_CONF_FILE="/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
     HAS_APACHE_SUBDOMAIN_CONF="true"
     HAS_APACHE_CONF="true"
@@ -287,29 +265,18 @@ else
 fi
 
 
-if [[ "${HAS_APACHE_CONF}" == "" ]] ; then
-  echo "Found no existing Apache on this host, will add Nginx proxy"
-else
+if [[ "${HAS_APACHE_CONF}" != "" ]] ; then
   ## disable unused config file: apache ssl.conf
   if [[ -e "/etc/httpd/conf.d/ssl.conf" ]] ; then
     mv "/etc/httpd/conf.d/ssl.conf" "/etc/httpd/conf.d/ssl.conf-DISABLED"
   fi
 fi
 
-
-
-DB_CONFIG_FILENAME="pbase_postgres.json"
-
-echo "Peertube config:         ${MODULE_CONFIG_DIR}/activpb_peertube.json"
-/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${PEERTUBE_JSON_FILENAME}  ${MODULE_CONFIG_DIR}/activpb_peertube.json
-
-/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_lets_encrypt.json  ${MODULE_CONFIG_DIR}/
-/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_smtp.json  ${MODULE_CONFIG_DIR}/
-/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_postgres.json  ${MODULE_CONFIG_DIR}/
-
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${JELLYFIN_JSON_FILENAME}  ${MODULE_CONFIG_DIR}/pbase_gotty.json
 if [[ "${HAS_APACHE_CONF}" == "true" ]] ; then
   /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_apache.json  ${MODULE_CONFIG_DIR}/
 fi
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_lets_encrypt.json  ${MODULE_CONFIG_DIR}/
 
 echo "Let's Encrypt defaults:  ${MODULE_CONFIG_DIR}/pbase_lets_encrypt.json"
 
@@ -317,6 +284,7 @@ if [[ "${DEFAULT_EMAIL_ADDRESS}" != "" ]] ; then
   echo "emailAddress:            ${DEFAULT_EMAIL_ADDRESS}"
   setFieldInJsonModuleConfig ${DEFAULT_EMAIL_ADDRESS} pbase_lets_encrypt emailAddress
   setFieldInJsonModuleConfig ${DEFAULT_EMAIL_ADDRESS} pbase_apache serverAdmin
+  setFieldInJsonModuleConfig ${DEFAULT_EMAIL_ADDRESS} pbase_gotty emailAddress
 fi
 
 QT="'"
@@ -325,80 +293,47 @@ DEFAULT_SUB_DOMAIN_QUOTED=${QT}${DEFAULT_SUB_DOMAIN}${QT}
 if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] ; then
   echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN_QUOTED}"
   setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_lets_encrypt urlSubDomain
-  setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} activpb_peertube urlSubDomain
+  setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_gotty urlSubDomain
   setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_apache urlSubDomain
   setFieldInJsonModuleConfig "false" pbase_apache enableCheckForWww
 else
-  echo "Setting empty urlSubDomain, Peertube will be root level of domain"
+  echo "Setting empty urlSubDomain, GoTTY will be root level of domain"
   echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN_QUOTED}"
   setFieldInJsonModuleConfig "" pbase_lets_encrypt urlSubDomain
-  setFieldInJsonModuleConfig "" activpb_peertube urlSubDomain
+  setFieldInJsonModuleConfig "" pbase_gotty urlSubDomain
   setFieldInJsonModuleConfig "" pbase_apache urlSubDomain
 fi
 
-if [[ "${HAS_APACHE_CONF}" == "true" ]] ; then
-  echo "Enabling activpb_peertube.addApacheProxy"
-  setFieldInJsonModuleConfig "true" activpb_peertube addApacheProxy
-  setFieldInJsonModuleConfig "false" activpb_peertube addNgnixProxy
+if [[ "${DEFAULT_DESKTOP_USERNAME}" != "" ]] && [[ "${DEFAULT_DESKTOP_USERNAME}" != null ]] ; then
+  echo "basicAuthUsername:       ${DEFAULT_DESKTOP_USERNAME}"
+  setFieldInJsonModuleConfig ${DEFAULT_DESKTOP_USERNAME} pbase_gotty basicAuthUsername
 fi
 
-echo "SMTP defaults:           ${MODULE_CONFIG_DIR}/pbase_smtp.json"
-
-## replace domainname in smtp config template file
-if [[ -e "${MODULE_CONFIG_DIR}/pbase_smtp.json" ]]; then
-  sed -i "s/example.com/${THISDOMAINNAME}/" "${MODULE_CONFIG_DIR}/pbase_smtp.json"
-fi
-
-if [[ "${DEFAULT_SMTP_SERVER}" != "" ]] ; then
-  echo "defaultSmtpServer:       ${DEFAULT_SMTP_SERVER}"
-  setFieldInJsonModuleConfig ${DEFAULT_SMTP_SERVER} pbase_smtp server
-fi
-
-if [[ "${DEFAULT_SMTP_USERNAME}" != "" ]] ; then
-  echo "defaultSmtpUsername:     ${DEFAULT_SMTP_USERNAME}"
-  setFieldInJsonModuleConfig ${DEFAULT_SMTP_USERNAME} pbase_smtp login
-fi
-
-if [[ "${DEFAULT_SMTP_PASSWORD}" != "" ]] ; then
-  echo "defaultSmtpPassword:     ${DEFAULT_SMTP_PASSWORD}"
-  setFieldInJsonModuleConfig ${DEFAULT_SMTP_PASSWORD} pbase_smtp password
-fi
-
-
-## use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars
+## use a hash of the date as a random-ish string. use head to grab first 8 chars
 RAND_PW_USER="u$(date +%s | sha256sum | base64 | head -c 8)"
-echo "RAND_PW_USER:            $RAND_PW_USER"
 
-## provide random password in database config file
-sed -i "s/shomeddata/${RAND_PW_USER}/" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}"
-
-## provide domainname in smtp config file
-sed -i "s/example.com/${THISDOMAINNAME}/" "${MODULE_CONFIG_DIR}/pbase_smtp.json"
+echo "basicAuthPassword:       ${RAND_PW_USER}"
+setFieldInJsonModuleConfig ${RAND_PW_USER} pbase_gotty basicAuthPassword
 
 
-echo ""
-echo "Postgres, SMTP and Let's Encrypt module config files for Peertube added."
-echo "Next step - optional - review the configuration defaults provided"
-echo "    under 'module-config.d' by editing their JSON text files. For example:"
+echo "Next step - recommended - review or change the GoTTY user/password"
+echo "  and other default configuration by editing the pbase_gotty.json file."
+echo "  For example:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
-echo "  vi activpb_peertube.json"
-echo "  vi pbase_lets_encrypt.json"
-echo "  vi pbase_postgres.json"
-echo "  vi pbase_smtp.json"
-echo ""
+echo "  vi pbase_gotty.json"
 
-echo "Next step - install Postgres and Peertube application with:"
-echo "  yum -y install pbase-postgres"
-echo "  yum -y install activpb-peertube"
+echo ""
+echo "Next step - install GoTTY with:"
+echo ""
+echo "  yum -y install pbase-golang-tools"
+echo "  yum -y install pbase-gotty"
 echo ""
 
 %files
+## root only access to pbase configuration directories
 %defattr(600,root,root,700)
-/usr/local/pbase-data/activpb-preconfig-postgres-peertube/module-config-samples/activpb_peertube.json
-/usr/local/pbase-data/activpb-preconfig-postgres-peertube/module-config-samples/activpb_peertube_apacheproxy.json
-/usr/local/pbase-data/activpb-preconfig-postgres-peertube/module-config-samples/pbase_apache.json
-/usr/local/pbase-data/activpb-preconfig-postgres-peertube/module-config-samples/pbase_lets_encrypt.json
-/usr/local/pbase-data/activpb-preconfig-postgres-peertube/module-config-samples/pbase_postgres.json
-/usr/local/pbase-data/activpb-preconfig-postgres-peertube/module-config-samples/pbase_s3storage.json
-/usr/local/pbase-data/activpb-preconfig-postgres-peertube/module-config-samples/pbase_smtp.json
+/usr/local/pbase-data/pbase-preconfig-gotty/module-config-samples/pbase_apache.json
+/usr/local/pbase-data/pbase-preconfig-gotty/module-config-samples/pbase_gotty.json
+/usr/local/pbase-data/pbase-preconfig-gotty/module-config-samples/pbase_gotty_apacheproxy.json
+/usr/local/pbase-data/pbase-preconfig-gotty/module-config-samples/pbase_lets_encrypt.json

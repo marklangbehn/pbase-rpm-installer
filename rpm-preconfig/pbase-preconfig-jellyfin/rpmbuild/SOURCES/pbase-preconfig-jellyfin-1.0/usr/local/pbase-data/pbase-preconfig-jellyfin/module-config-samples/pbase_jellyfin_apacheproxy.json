@@ -1,0 +1,9 @@
+{
+  "pbase_jellyfin" : {
+    "jellyfinVersion": "",
+    "port": 8096,
+    "addApacheProxy": true,
+    "urlSubPath": "",
+    "urlSubDomain": "jellyfin"
+  }
+}

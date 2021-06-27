@@ -410,8 +410,8 @@ sed -i -e "s/^SMTP_FROM_ADDRESS=.*/SMTP_FROM_ADDRESS=notifications@${THISDOMAINN
 ## generate vapid keys
 VAPID_PAIR=$(su - mastodon -c "cd ~/live  &&  RAILS_ENV=production bundle exec rake mastodon:webpush:generate_vapid_key")
 
-echo "Vapid key pair generated:"
-echo $VAPID_PAIR
+echo "Vapid key pair generated"
+##echo $VAPID_PAIR
 
 VAPIDPRIVATEKEY=$(echo $VAPID_PAIR | cut -f 1 -d' ')
 VAPIDPUBLICKEY=$(echo $VAPID_PAIR | cut -f 2 -d' ')

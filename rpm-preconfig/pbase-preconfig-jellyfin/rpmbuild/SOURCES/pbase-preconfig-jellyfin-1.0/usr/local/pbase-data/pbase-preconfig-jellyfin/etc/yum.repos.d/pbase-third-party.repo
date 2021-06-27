@@ -1,0 +1,5 @@
+[pbase-third-party]
+name=PBase third-party RPM components
+baseurl=https://pbase-foundation.com/yum-repo/pbase-third-party/1.0/
+enabled=1
+gpgcheck=0

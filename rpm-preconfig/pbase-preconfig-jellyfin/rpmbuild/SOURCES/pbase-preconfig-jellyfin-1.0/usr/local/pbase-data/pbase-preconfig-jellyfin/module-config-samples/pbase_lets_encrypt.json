@@ -1,0 +1,9 @@
+{
+  "pbase_lets_encrypt" :  {
+    "enableAutoRenew": true,
+    "executeCertbotCmd": true,
+    "urlSubDomain": "jellyfin",
+    "additionalSubDomain": "",
+    "emailAddress": "yoursysadmin@yourrealmail.com"
+  }
+}

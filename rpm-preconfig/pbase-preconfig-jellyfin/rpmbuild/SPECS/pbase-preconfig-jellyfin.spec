@@ -1,19 +1,19 @@
-Name: activpb-preconfig-postgres-peertube
+Name: pbase-preconfig-jellyfin
 Version: 1.0
-Release: 2
-Summary: PBase Postgres preconfigure rpm, preset user and DB name for use by activpb-peertube
+Release: 0
+Summary: PBase Jellyfin preconfigure and dependencies for pbase-jellyfin
 Group: System Environment/Base
 License: Apache-2.0
 URL: https://pbase-foundation.com
-Source0: activpb-preconfig-postgres-peertube-1.0.tar.gz
+Source0: pbase-preconfig-jellyfin-1.0.tar.gz
 BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
-Provides: activpb-preconfig-postgres-peertube
-Requires: pbase-preconfig-yarn, pbase-epel, jq, pbase-rpmfusion
+Provides: pbase-preconfig-jellyfin
+Requires: pbase-epel, pbase-rpmfusion, jq
 
 %description
-Configure Postgres preset user and DB name for use by activpb-peertube
+Configure dependencies for use by pbase-jellyfin
 
 %prep
 %setup -q
@@ -159,25 +159,11 @@ setFieldInJsonModuleConfig() {
   fi
 }
 
-echo "PBase Postgres create config preset user and DB name for use by activpb-peertube"
+echo "PBase Jellyfin pre-configuration and dependencies"
 
 if [[ $1 -ne 1 ]] ; then
   echo "Already Installed. Exiting."
   exit 0
-fi
-
-## check if node 12 or higher installed
-VERS_INSTALLED="$(node --version)"
-VERS_REQUIRED="v12.0.0"
-
-if [ "$(printf '%s\n' "$VERS_REQUIRED" "$VERS_INSTALLED" | sort -V | head -n1)" = "$VERS_REQUIRED" ]; then
-  echo "Node version:            ${VERS_INSTALLED}"
-  echo ""
-else
-  echo "Less than ${VERS_REQUIRED}"
-  echo "Node version 12 or higher required, found: ${VERS_INSTALLED}"
-  echo "MUST upgrade node before Peertube can be installed"
-  echo ""
 fi
 
 THISHOSTNAME="$(hostname)"
@@ -187,7 +173,7 @@ echo "Hostname:                $THISHOSTNAME"
 echo "Domainname:              $THISDOMAINNAME"
 
 MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
-MODULE_SAMPLES_DIR="/usr/local/pbase-data/activpb-preconfig-postgres-peertube/module-config-samples"
+MODULE_SAMPLES_DIR="/usr/local/pbase-data/pbase-preconfig-jellyfin/module-config-samples"
 
 PBASE_DEFAULTS_FILENAME="pbase_repo.json"
 
@@ -245,14 +231,14 @@ HAS_APACHE_SUBDOMAIN_CONF=""
 FULLDOMAINNAME="${THISDOMAINNAME}"
 
 ## check for case subdomain proxy to be added
-PEERTUBE_JSON_FILENAME="activpb_peertube.json"
+JELLYFIN_JSON_FILENAME="pbase_jellyfin.json"
 ROOTDOMAIN_HTTP_CONF_FILE=""
 SUBDOMAIN_HTTP_CONF_FILE=""
 
 
 if [[ -e "/etc/httpd/conf.d/${THISDOMAINNAME}.conf" ]] ; then
   echo "Found existing Apache on this host, will configure Apache proxy"
-  PEERTUBE_JSON_FILENAME="activpb_peertube_apacheproxy.json"
+  JELLYFIN_JSON_FILENAME="pbase_jellyfin_apacheproxy.json"
   ROOTDOMAIN_HTTP_CONF_FILE="/etc/httpd/conf.d/${THISDOMAINNAME}.conf"
   HAS_APACHE_ROOTDOMAIN_CONF="true"
   HAS_APACHE_CONF="true"
@@ -265,7 +251,7 @@ if [[ "${SUBDOMAIN_NAME}" == "" ]] ; then
   ## replace existing root domain conf
   if [[ -e "/etc/httpd/conf.d/${THISDOMAINNAME}.conf" ]] ; then
     echo "Found existing Apache root domain .conf file"
-    PEERTUBE_JSON_FILENAME="activpb_peertube_apacheproxy.json"
+    JELLYFIN_JSON_FILENAME="pbase_jellyfin_apacheproxy.json"
     SUBDOMAIN_HTTP_CONF_FILE="/etc/httpd/conf.d/${THISDOMAINNAME}.conf"
     HAS_APACHE_SUBDOMAIN_CONF=""
     HAS_APACHE_CONF="true"
@@ -279,7 +265,7 @@ else
   if [[ -e "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf" ]] ; then
     echo "Found existing Apache subdomain .conf file"
     ## mv "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf-DISABLED"
-    PEERTUBE_JSON_FILENAME="activpb_peertube_apacheproxy.json"
+    JELLYFIN_JSON_FILENAME="pbase_jellyfin_apacheproxy.json"
     SUBDOMAIN_HTTP_CONF_FILE="/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
     HAS_APACHE_SUBDOMAIN_CONF="true"
     HAS_APACHE_CONF="true"
@@ -287,29 +273,20 @@ else
 fi
 
 
-if [[ "${HAS_APACHE_CONF}" == "" ]] ; then
-  echo "Found no existing Apache on this host, will add Nginx proxy"
-else
+if [[ "${HAS_APACHE_CONF}" != "" ]] ; then
   ## disable unused config file: apache ssl.conf
   if [[ -e "/etc/httpd/conf.d/ssl.conf" ]] ; then
     mv "/etc/httpd/conf.d/ssl.conf" "/etc/httpd/conf.d/ssl.conf-DISABLED"
   fi
 fi
 
+echo "Adding repo:             /etc/yum.repos.d/pbase-third-party.repo"
+/bin/cp -f /usr/local/pbase-data/pbase-preconfig-jellyfin/etc/yum.repos.d/pbase-third-party.repo /etc/yum.repos.d/
 
-
-DB_CONFIG_FILENAME="pbase_postgres.json"
-
-echo "Peertube config:         ${MODULE_CONFIG_DIR}/activpb_peertube.json"
-/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${PEERTUBE_JSON_FILENAME}  ${MODULE_CONFIG_DIR}/activpb_peertube.json
-
+echo "Jellyfin config:         ${MODULE_CONFIG_DIR}/pbase_jellyfin.json"
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${JELLYFIN_JSON_FILENAME}  ${MODULE_CONFIG_DIR}/pbase_jellyfin.json
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_apache.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_lets_encrypt.json  ${MODULE_CONFIG_DIR}/
-/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_smtp.json  ${MODULE_CONFIG_DIR}/
-/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_postgres.json  ${MODULE_CONFIG_DIR}/
-
-if [[ "${HAS_APACHE_CONF}" == "true" ]] ; then
-  /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_apache.json  ${MODULE_CONFIG_DIR}/
-fi
 
 echo "Let's Encrypt defaults:  ${MODULE_CONFIG_DIR}/pbase_lets_encrypt.json"
 
@@ -325,80 +302,43 @@ DEFAULT_SUB_DOMAIN_QUOTED=${QT}${DEFAULT_SUB_DOMAIN}${QT}
 if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] ; then
   echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN_QUOTED}"
   setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_lets_encrypt urlSubDomain
-  setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} activpb_peertube urlSubDomain
+  setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_jellyfin urlSubDomain
   setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_apache urlSubDomain
   setFieldInJsonModuleConfig "false" pbase_apache enableCheckForWww
 else
-  echo "Setting empty urlSubDomain, Peertube will be root level of domain"
+  echo "Setting empty urlSubDomain, Jellyfin will be root level of domain"
   echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN_QUOTED}"
   setFieldInJsonModuleConfig "" pbase_lets_encrypt urlSubDomain
-  setFieldInJsonModuleConfig "" activpb_peertube urlSubDomain
+  setFieldInJsonModuleConfig "" pbase_jellyfin urlSubDomain
   setFieldInJsonModuleConfig "" pbase_apache urlSubDomain
 fi
 
-if [[ "${HAS_APACHE_CONF}" == "true" ]] ; then
-  echo "Enabling activpb_peertube.addApacheProxy"
-  setFieldInJsonModuleConfig "true" activpb_peertube addApacheProxy
-  setFieldInJsonModuleConfig "false" activpb_peertube addNgnixProxy
-fi
-
-echo "SMTP defaults:           ${MODULE_CONFIG_DIR}/pbase_smtp.json"
-
-## replace domainname in smtp config template file
-if [[ -e "${MODULE_CONFIG_DIR}/pbase_smtp.json" ]]; then
-  sed -i "s/example.com/${THISDOMAINNAME}/" "${MODULE_CONFIG_DIR}/pbase_smtp.json"
-fi
-
-if [[ "${DEFAULT_SMTP_SERVER}" != "" ]] ; then
-  echo "defaultSmtpServer:       ${DEFAULT_SMTP_SERVER}"
-  setFieldInJsonModuleConfig ${DEFAULT_SMTP_SERVER} pbase_smtp server
-fi
-
-if [[ "${DEFAULT_SMTP_USERNAME}" != "" ]] ; then
-  echo "defaultSmtpUsername:     ${DEFAULT_SMTP_USERNAME}"
-  setFieldInJsonModuleConfig ${DEFAULT_SMTP_USERNAME} pbase_smtp login
-fi
-
-if [[ "${DEFAULT_SMTP_PASSWORD}" != "" ]] ; then
-  echo "defaultSmtpPassword:     ${DEFAULT_SMTP_PASSWORD}"
-  setFieldInJsonModuleConfig ${DEFAULT_SMTP_PASSWORD} pbase_smtp password
-fi
-
-
-## use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars
-RAND_PW_USER="u$(date +%s | sha256sum | base64 | head -c 8)"
-echo "RAND_PW_USER:            $RAND_PW_USER"
-
-## provide random password in database config file
-sed -i "s/shomeddata/${RAND_PW_USER}/" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}"
-
-## provide domainname in smtp config file
-sed -i "s/example.com/${THISDOMAINNAME}/" "${MODULE_CONFIG_DIR}/pbase_smtp.json"
-
 
 echo ""
-echo "Postgres, SMTP and Let's Encrypt module config files for Peertube added."
+echo "Apache and Let's Encrypt module config files for Jellyfin added."
 echo "Next step - optional - review the configuration defaults provided"
 echo "    under 'module-config.d' by editing their JSON text files. For example:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
-echo "  vi activpb_peertube.json"
+echo "  vi pbase_apache.json"
+echo "  vi pbase_jellyfin.json"
 echo "  vi pbase_lets_encrypt.json"
-echo "  vi pbase_postgres.json"
-echo "  vi pbase_smtp.json"
 echo ""
 
-echo "Next step - install Postgres and Peertube application with:"
-echo "  yum -y install pbase-postgres"
-echo "  yum -y install activpb-peertube"
+echo "Next step - install Jellyfin application with:"
+echo "  yum -y install pbase-jellyfin"
 echo ""
+
+%preun
+echo "rpm preuninstall"
+
+## remove the repo files that were added by script
+/bin/rm -f /etc/yum.repos.d/pbase-third-party
 
 %files
 %defattr(600,root,root,700)
-/usr/local/pbase-data/activpb-preconfig-postgres-peertube/module-config-samples/activpb_peertube.json
-/usr/local/pbase-data/activpb-preconfig-postgres-peertube/module-config-samples/activpb_peertube_apacheproxy.json
-/usr/local/pbase-data/activpb-preconfig-postgres-peertube/module-config-samples/pbase_apache.json
-/usr/local/pbase-data/activpb-preconfig-postgres-peertube/module-config-samples/pbase_lets_encrypt.json
-/usr/local/pbase-data/activpb-preconfig-postgres-peertube/module-config-samples/pbase_postgres.json
-/usr/local/pbase-data/activpb-preconfig-postgres-peertube/module-config-samples/pbase_s3storage.json
-/usr/local/pbase-data/activpb-preconfig-postgres-peertube/module-config-samples/pbase_smtp.json
+/usr/local/pbase-data/pbase-preconfig-jellyfin/module-config-samples/pbase_apache.json
+/usr/local/pbase-data/pbase-preconfig-jellyfin/module-config-samples/pbase_jellyfin.json
+/usr/local/pbase-data/pbase-preconfig-jellyfin/module-config-samples/pbase_jellyfin_apacheproxy.json
+/usr/local/pbase-data/pbase-preconfig-jellyfin/module-config-samples/pbase_lets_encrypt.json
+/usr/local/pbase-data/pbase-preconfig-jellyfin/etc/yum.repos.d/pbase-third-party.repo

@@ -1,0 +1,7 @@
+{
+  "pbase_webdav" : {
+    "webDavAlias": "webdav",
+    "basicAuthUsername": "webdav",
+    "basicAuthPassword": "shomeddata"
+  }
+}

@@ -1,6 +1,6 @@
 Name: pbase-mattermost
 Version: 1.0
-Release: 2
+Release: 3
 Summary: PBase Mattermost service rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-mattermost
-Requires: pbase-apache, wget, tar, jq
+Requires: pbase-apache, wget, tar, jq, certbot, certbot-apache
 
 %description
 PBase Mattermost service
@@ -243,6 +243,10 @@ if [[ -e "${ROOTDOMAIN_HTTP_CONF_FILE}" ]] ; then
   HAS_APACHE_ROOTDOMAIN_CONF="true"
 fi
 
+if [[ -e "/etc/httpd/conf.d/ssl.conf" ]] ; then
+  echo "Disabling unused:        /etc/httpd/conf.d/ssl.conf"
+  mv "/etc/httpd/conf.d/ssl.conf" "/etc/httpd/conf.d/ssl.conf-DISABLED"
+fi
 
 ## fetch previously registered domain names
 DOMAIN_NAME_LIST=""

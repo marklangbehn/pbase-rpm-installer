@@ -1,6 +1,6 @@
 Name: pbase-gitea
 Version: 1.0
-Release: 2
+Release: 3
 Summary: PBase Gitea service rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-gitea
-Requires: pbase-apache, git, curl, xz, jq
+Requires: pbase-apache, git, curl, xz, jq, certbot, certbot-apache
 
 %description
 PBase Gitea service

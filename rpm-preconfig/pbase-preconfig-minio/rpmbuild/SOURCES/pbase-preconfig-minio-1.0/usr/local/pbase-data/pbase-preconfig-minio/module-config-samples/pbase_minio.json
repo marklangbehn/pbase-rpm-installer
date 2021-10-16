@@ -1,0 +1,9 @@
+{
+  "pbase_minio" : {
+    "minioVolumes": "/opt/minio/data",
+    "minioOpts": "",
+    "minioAccessKey": "minioadmin",
+    "minioSecretAccessKey": "minioadmin",
+    "minioRegionName": ""
+  }
+}

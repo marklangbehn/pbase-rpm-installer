@@ -1,6 +1,6 @@
 Name: pbase-gotty
 Version: 1.0
-Release: 2
+Release: 3
 Summary: PBase GoTTY rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-gotty
-Requires: pbase-lets-encrypt-transitive-dep, git, jq
+Requires: pbase-lets-encrypt-transitive-dep, git, jq, certbot, certbot-apache
 
 %description
 PBase GoTTY service
@@ -162,6 +162,10 @@ if [[ -e "${ROOTDOMAIN_HTTP_CONF_FILE}" ]] ; then
   HAS_APACHE_ROOTDOMAIN_CONF="true"
 fi
 
+if [[ -e "/etc/httpd/conf.d/ssl.conf" ]] ; then
+  echo "Disabling unused:        /etc/httpd/conf.d/ssl.conf"
+  mv "/etc/httpd/conf.d/ssl.conf" "/etc/httpd/conf.d/ssl.conf-DISABLED"
+fi
 
 ## fetch previously registered domain names
 HAS_WWW_SUBDOMAIN="false"
@@ -290,6 +294,9 @@ fi
 ## LETS ENCRYPT - HTTPS CERTIFICATE
 
 if [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
+  echo "Restarting Apache"
+  /bin/systemctl restart httpd
+
   CERTBOT_CMD="certbot --apache --agree-tos --email ${EMAIL_ADDR} -n -d ${DOMAIN_NAME_PARAM}"
 else
   CERTBOT_CMD="certbot certonly --standalone --agree-tos --email ${EMAIL_ADDR} -n -d ${DOMAIN_NAME_PARAM}"

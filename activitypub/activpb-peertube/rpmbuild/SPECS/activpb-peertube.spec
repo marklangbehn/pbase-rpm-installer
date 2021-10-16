@@ -1,6 +1,6 @@
 Name: activpb-peertube
 Version: 1.0
-Release: 2
+Release: 3
 Summary: PBase Peertube service rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: activpb-peertube
-Requires: nginx, postgresql, openssl, gcc-c++, make, wget, redis, git, ffmpeg, nodejs, unzip, yarn, certbot, jq, python3-pip
+Requires: nginx, postgresql, openssl, gcc-c++, make, wget, redis, git, ffmpeg, nodejs, unzip, yarn, certbot, certbot-apache, jq, python3-pip
 
 %description
 PBase Peertube ActivityPub service
@@ -120,7 +120,6 @@ VERS_REQUIRED="v12.0.0"
 
 if [ "$(printf '%s\n' "$VERS_REQUIRED" "$VERS_INSTALLED" | sort -V | head -n1)" = "$VERS_REQUIRED" ]; then
   echo "Node JS version:         ${VERS_INSTALLED}"
-  echo ""
 else
   echo "Less than ${VERS_REQUIRED}"
   echo "Node JS version 12 or higher required, found: ${VERS_INSTALLED}"
@@ -366,6 +365,7 @@ FIRSTDOMAINNREGISTERED="${FULLDOMAINNAME}"
 if [[ ${URL_SUBDOMAIN} == "" ]] || [[ ${URL_SUBDOMAIN} == null ]] ; then
   FULLDOMAINNAME="${THISDOMAINNAME}"
   echo "Using root domain:       ${FULLDOMAINNAME}"
+  URL_SUBDOMAIN=""
 else
   FULLDOMAINNAME="${URL_SUBDOMAIN}.${THISDOMAINNAME}"
   echo "Using subdomain:         ${FULLDOMAINNAME}"
@@ -450,13 +450,15 @@ if [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
   sed -i "s/peertube.example.com/${FULLDOMAINNAME}/g" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
 
   ## may also enable www alias
-  echo "Check for www alias"
-  sed -i "s/www.example.com/www.${THISDOMAINNAME}/" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
-
-  if [[ "${DOMAIN_NAME_LIST_HAS_WWW}" != "" ]] ; then
-    echo "Enabling:                ServerAlias www.${THISDOMAINNAME}"
-    sed -i "s/#ServerAlias/ServerAlias/" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
+  if [[ ${URL_SUBDOMAIN} == "" ]] ; then
+    echo "Check for www alias"
+    sed -i "s/www.example.com/www.${THISDOMAINNAME}/" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
+    if [[ "${DOMAIN_NAME_LIST_HAS_WWW}" != "" ]] ; then
+      echo "Enabling:                ServerAlias www.${THISDOMAINNAME}"
+      sed -i "s/#ServerAlias/ServerAlias/" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
+    fi
   fi
+
 
   mkdir -p "/etc/httpd/logs/${FULLDOMAINNAME}"
   systemctl reload httpd
@@ -555,6 +557,7 @@ cp /var/www/peertube/peertube-latest/support/sysctl.d/30-peertube-tcp.conf /etc/
 sysctl -p /etc/sysctl.d/30-peertube-tcp.conf
 
 ## add peertube service file
+echo "Service file:            /etc/systemd/system/peertube.service"
 /bin/cp -f --no-clobber /var/www/peertube/peertube-latest/support/systemd/peertube.service /etc/systemd/system/
 echo ""
 

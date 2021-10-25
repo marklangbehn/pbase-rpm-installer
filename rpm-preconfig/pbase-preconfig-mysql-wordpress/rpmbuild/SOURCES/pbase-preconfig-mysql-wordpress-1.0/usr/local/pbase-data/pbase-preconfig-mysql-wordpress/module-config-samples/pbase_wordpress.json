@@ -1,5 +1,6 @@
 {
   "pbase_wordpress": {
+    "httpOnly": false,
     "wordpressUriBase": "",
     "urlSubDomain": ""
   }

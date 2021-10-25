@@ -1,16 +1,16 @@
 Name: pbase-wordpress-allinone
-Name: pbase-wordpress-allinone
 Version: 1.0
-Release: 1
+Release: 3
 Summary: PBase WordPress all-in-one application stack rpm
 Group: System Environment/Base
 License: Apache-2.0
 URL: https://pbase-foundation.com
+Source0: pbase-wordpress-allinone-1.0.tar.gz
 BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-wordpress
-Requires: pbase-apache, pbase-mysql, pbase-phpmysql-transitive-dep, httpd-tools, wget
+Requires: pbase-apache, pbase-mysql, pbase-phpmysql-transitive-dep, httpd-tools, wget, dos2unix
 
 ## pbase-phpmysql-transitive-dep - has requires for:
 ## php,php-cli,php-json,php-gd,php-mbstring,php-pdo,php-xml,php-pecl-zip,httpd-tools,wget
@@ -21,10 +21,14 @@ Requires: pbase-apache, pbase-mysql, pbase-phpmysql-transitive-dep, httpd-tools,
 PBase WordPress all-in-one application stack
 
 %prep
+%setup -q
 
 %install
+mkdir -p "$RPM_BUILD_ROOT"
+cp -R * "$RPM_BUILD_ROOT"
 
 %clean
+rm -rf "$RPM_BUILD_ROOT"
 
 %pre
 
@@ -146,9 +150,14 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 URL_SUBDOMAIN=""
 QT="'"
 URL_SUBDOMAIN_QUOTED="${QT}${QT}"
+EXECUTE_CERTBOT_CMD="false"
+EMAIL_ADDR="yoursysadmin@yourrealmail.com"
 
 if [[ -e "/usr/local/pbase-data/admin-only/module-config.d/pbase_lets_encrypt.json" ]] ; then
   parseConfig "URL_SUBDOMAIN" ".pbase_lets_encrypt.urlSubDomain" ""
+  parseConfig "EXECUTE_CERTBOT_CMD" ".pbase_lets_encrypt.executeCertbotCmd" "true"
+  parseConfig "EMAIL_ADDR" ".pbase_lets_encrypt.emailAddress" "yoursysadmin@yourrealmail.com"
+
   URL_SUBDOMAIN_QUOTED=${QT}${URL_SUBDOMAIN}${QT}
   echo "URL_SUBDOMAIN:           ${URL_SUBDOMAIN_QUOTED}"
 else
@@ -202,7 +211,9 @@ echo ""
 PBASE_CONFIG_FILENAME="pbase_wordpress.json"
 locateConfigFile "$PBASE_CONFIG_FILENAME"
 
+HTTP_ONLY="false"
 ## fetch config value from JSON file
+parseConfig "HTTP_ONLY"  ".pbase_wordpress.httpOnly" "false"
 parseConfig "WORDPRESS_URI_BASE"  ".pbase_wordpress.wordpressUriBase" ""
 parseConfig "CONFIG_SUBDOMAIN_NAME" ".pbase_wordpress.urlSubDomain" ""
 
@@ -237,6 +248,10 @@ if [[ -e "${ROOTDOMAIN_HTTP_CONF_FILE}" ]] ; then
   HAS_APACHE_ROOTDOMAIN_CONF="true"
 fi
 
+if [[ -e "/etc/httpd/conf.d/ssl.conf" ]] ; then
+  echo "Disabling unused:        /etc/httpd/conf.d/ssl.conf"
+  mv "/etc/httpd/conf.d/ssl.conf" "/etc/httpd/conf.d/ssl.conf-DISABLED"
+fi
 
 ## fetch previously registered domain names
 DOMAIN_NAME_LIST=""
@@ -253,6 +268,9 @@ THISDOMAINNAME="$(hostname -d)"
 ## FULLDOMAINNAME is the subdomain if declared plus the domain
 FULLDOMAINNAME="${THISDOMAINNAME}"
 
+## FIRSTDOMAINNREGISTERED should match the subdirectory under /etc/letsencrypt/live
+FIRSTDOMAINNREGISTERED="${FULLDOMAINNAME}"
+
 if [[ ${URL_SUBDOMAIN} == "" ]] || [[ ${URL_SUBDOMAIN} == null ]] ; then
   FULLDOMAINNAME="${THISDOMAINNAME}"
   echo "Using root domain:       ${FULLDOMAINNAME}"
@@ -265,7 +283,10 @@ fi
 DOMAIN_NAME_LIST_NEW=""
 DOMAIN_NAME_PARAM=""
 
+echo "Found DOMAIN_NAME_LIST:  ${DOMAIN_NAME_LIST}"
+
 if [[ "${DOMAIN_NAME_LIST}" == "" ]] ; then
+  echo "Starting from empty domain-name-list.txt, adding ${FULLDOMAINNAME}"
   DOMAIN_NAME_LIST_NEW="${FULLDOMAINNAME}"
   DOMAIN_NAME_PARAM="${FULLDOMAINNAME}"
 else
@@ -284,24 +305,30 @@ else
   fi
 fi
 
+echo ""
 echo "${DOMAIN_NAME_LIST_NEW}" > ${SAVE_CMD_DIR}/domain-name-list.txt
 echo "Saved domain names:      ${SAVE_CMD_DIR}/domain-name-list.txt"
+echo "                         ${DOMAIN_NAME_LIST_NEW}"
+echo ""
 
+DOMAIN_NAME_LIST_HAS_WWW=$(grep www ${SAVE_CMD_DIR}/domain-name-list.txt)
+#echo "Domain list has WWW:     ${DOMAIN_NAME_LIST_HAS_WWW}"
 
 ## check for htdocs location
 WWW_ROOT="/var/www/html/${FULLDOMAINNAME}/public"
 
-if [[ -d "/var/www/html/${FULLDOMAINNAME}/public" ]]; then
-  WWW_ROOT="/var/www/html/${FULLDOMAINNAME}/public"
-elif [[ -d "/var/www/${FULLDOMAINNAME}/html" ]]; then
-  WWW_ROOT="/var/www/${FULLDOMAINNAME}/html"
-elif [[ -d "/var/www/html" ]]; then
-  WWW_ROOT="/var/www/html"
-fi
+#WWW_ROOT="/var/www/html/${FULLDOMAINNAME}/public"
+#if [[ -d "/var/www/html/${FULLDOMAINNAME}/public" ]]; then
+#  WWW_ROOT="/var/www/html/${FULLDOMAINNAME}/public"
+#elif [[ -d "/var/www/${FULLDOMAINNAME}/html" ]]; then
+#  WWW_ROOT="/var/www/${FULLDOMAINNAME}/html"
+#elif [[ -d "/var/www/html" ]]; then
+#  WWW_ROOT="/var/www/html/${FULLDOMAINNAME}"
+#fi
 
 ## check if already installed
-#if [[ -d "$WWW_ROOT/wordpress/" ]]; then
-#  echo "$WWW_ROOT/wordpress/ directory already exists - exiting"
+#if [[ -d "$WWW_ROOT/wp-config.php/" ]]; then
+#  echo "$WWW_ROOT/wp-config.php already exists - exiting"
 #  exit 0
 #fi
 
@@ -330,9 +357,14 @@ ls -lh
 
 if [[ $WORDPRESS_URI_BASE == "" ]] ; then
   echo "URI Base is empty, Wordpress will be website root"
-  /bin/cp -rp "${WWW_ROOT}" "${WWW_ROOT}-$(date +"%Y-%m-%d_%H-%M-%S")"
+  if [[ -d "${WWW_ROOT}" ]] ; then
+    mv "${WWW_ROOT}" ${WWW_ROOT}-$(date +"%Y-%m-%d_%H-%M-%S")
+  fi
 
-  cd wordpress
+  echo "Creating Wordpress home: ${WWW_ROOT}"
+  mkdir -p "${WWW_ROOT}"
+
+  cd "${DOWNLOADED_DIR}/wordpress"
   mv * "${WWW_ROOT}/"
 else
   echo "URI Base is:             $WORDPRESS_URI_BASE"
@@ -372,6 +404,67 @@ sed -i "s/$TMPL_APPUSER_NAME/$CONFIG_DB_USER/" "${WP_CONFIG_PHP}"
 sed -i "s/$TMPL_APPUSER_PSWD/$CONFIG_DB_PSWD/" "${WP_CONFIG_PHP}"
 
 
+## VirtualHost
+
+ROOT_VHOST_CONF_FILE="/etc/httpd/conf.d/${THISDOMAINNAME}.conf"
+VHOST_CONF_FILE="/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
+echo "Wordpress VirtualHost:   ${VHOST_CONF_FILE}"
+
+if [[ -e "${VHOST_CONF_FILE}" ]] ; then
+  echo "Disabling existing VirtualHost"
+  mv "${VHOST_CONF_FILE}" "${VHOST_CONF_FILE}-DISABLED"
+fi
+
+if [[ ${URL_SUBDOMAIN} == "" ]] || [[ ${URL_SUBDOMAIN} == null ]] ; then
+  echo "Using root domain:       /etc/httpd/conf/httpd.conf"
+  /bin/cp --no-clobber /usr/local/pbase-data/pbase-wordpress-allinone/etc-httpd-confd/wordpress-rootdomain.conf ${ROOT_VHOST_CONF_FILE}
+
+  ## may also enable www alias
+  sed -i "s/www.example.com/www.${THISDOMAINNAME}/" "${ROOT_VHOST_CONF_FILE}"
+  ##sed -i "s/example.com/${THISDOMAINNAME}/" "${ROOT_VHOST_CONF_FILE}"
+
+  if [[ "${DOMAIN_NAME_LIST_HAS_WWW}" != "" ]] ; then
+    echo "Enabling:                ServerAlias www.${THISDOMAINNAME}"
+    sed -i "s/#ServerAlias/ServerAlias/" "${ROOT_VHOST_CONF_FILE}"
+  fi
+
+else
+  echo "Using subdomain:         ${FULLDOMAINNAME}"
+  /bin/cp --no-clobber /usr/local/pbase-data/pbase-wordpress-allinone/etc-httpd-confd/wordpress-subdomain.conf ${VHOST_CONF_FILE}
+
+  ## modify root VirtuaHost to have * instead of domainname
+  #if [[ -e "${ROOT_VHOST_CONF_FILE}" ]] ; then
+  #  echo "Setting VirtualHost *:   ${ROOT_VHOST_CONF_FILE}"
+  #  sed -i "s/VirtualHost ${THISDOMAINNAME}/VirtualHost */" "${ROOT_VHOST_CONF_FILE}"
+  #fi
+
+  ## handle WP file with CR/LF line endings
+  dos2unix "${WP_CONFIG_PHP}"
+
+  echo "Set https WP_SITEURL:    ${WP_CONFIG_PHP}"
+
+  HTTP_OR_HTTPS="https"
+  if [[ ${HTTP_ONLY} == "true" ]] ; then
+    echo "Setting httpOnly"
+    HTTP_OR_HTTPS="http"
+  fi
+
+  HTTP_FULLDOMAINNAME_QUOTED="${QT}${HTTP_OR_HTTPS}://${FULLDOMAINNAME}${QT}"
+  echo "Adding subdomain WP_HOME and WP_SITEURL to wp-config.php"
+  echo ""  >>  "${WP_CONFIG_PHP}"
+  echo "define('WP_HOME', ${HTTP_FULLDOMAINNAME_QUOTED});"  >>  "${WP_CONFIG_PHP}"
+  echo "define('WP_SITEURL', ${HTTP_FULLDOMAINNAME_QUOTED});"  >>  "${WP_CONFIG_PHP}"
+  echo ""  >>  "${WP_CONFIG_PHP}"
+fi
+
+echo "Setting domain:          ${FULLDOMAINNAME}"
+sed -i "s/subdomain.example.com/${FULLDOMAINNAME}/" "${VHOST_CONF_FILE}"
+sed -i "s/yoursysadmin@yourrealmail.com/${EMAIL_ADDR}/" "${VHOST_CONF_FILE}"
+
+echo "Log directory:           /var/log/httpd/${FULLDOMAINNAME}/"
+mkdir -p "/var/log/httpd/${FULLDOMAINNAME}/"
+
+
 ## on Amzn1 remove the temporary yum repo file added by preconfig
 if [[ -e "/etc/yum.repos.d/amzn2extra-php72.repo" ]]; then
   echo "Removing:                /etc/yum.repos.d/amzn2extra-php72.repo"
@@ -409,6 +502,28 @@ else
 fi
 
 
+if [[ -z "${HAS_CERTBOT_INSTALLED}" ]] ; then
+  echo "Certbot not installed"
+else
+  ## LETS ENCRYPT - HTTPS CERTIFICATE
+  echo ""
+  CERTBOT_CMD="certbot --apache --agree-tos --email ${EMAIL_ADDR} -n -d ${DOMAIN_NAME_PARAM}"
+
+  ## save command line in file
+  echo "Saving command line:     ${SAVE_CMD_DIR}/certbot-cmd.sh"
+  echo ${CERTBOT_CMD} > ${SAVE_CMD_DIR}/certbot-cmd.sh
+
+  if [[ $EXECUTE_CERTBOT_CMD == "true" ]] ; then
+    echo "Executing:               ${CERTBOT_CMD}"
+    echo ""
+    eval "${CERTBOT_CMD}"
+  else
+    echo "Skipping execute:        EXECUTE_CERTBOT_CMD=false"
+    echo "                         ${CERTBOT_CMD}"
+  fi
+fi
+
+
 echo "WordPress web application is running."
 echo "Next step - required - Open this URL to complete the install."
 echo "if locally installed"
@@ -420,3 +535,6 @@ echo "                         https://${FULLDOMAINNAME}${SLASH_WORDPRESS_URI_BA
 echo ""
 
 %files
+%defattr(-,root,root,-)
+/usr/local/pbase-data/pbase-wordpress-allinone/etc-httpd-confd/wordpress-rootdomain.conf
+/usr/local/pbase-data/pbase-wordpress-allinone/etc-httpd-confd/wordpress-subdomain.conf

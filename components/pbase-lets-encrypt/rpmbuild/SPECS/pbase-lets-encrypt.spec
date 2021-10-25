@@ -1,6 +1,6 @@
 Name: pbase-lets-encrypt
 Version: 1.0
-Release: 2
+Release: 3
 Summary: PBase Let's Encrypt configure
 Group: System Environment/Base
 License: Apache-2.0
@@ -156,8 +156,14 @@ if [[ -e /root/DEFAULT_EMAIL_ADDRESS.txt ]] ; then
   read -r DEFAULT_EMAIL < /root/DEFAULT_EMAIL_ADDRESS.txt
 fi
 
+## check for default subdomain text file
+DEFAULT_SUB_DOMAIN=""
+if [[ -e /root/DEFAULT_SUB_DOMAIN.txt ]] ; then
+  read -r DEFAULT_SUB_DOMAIN < /root/DEFAULT_SUB_DOMAIN.txt
+fi
+
 parseConfig "EMAIL_ADDR" ".pbase_lets_encrypt.emailAddress" "${DEFAULT_EMAIL}"
-parseConfig "URL_SUBDOMAIN" ".pbase_lets_encrypt.urlSubDomain" ""
+parseConfig "URL_SUBDOMAIN" ".pbase_lets_encrypt.urlSubDomain" "${DEFAULT_SUB_DOMAIN}"
 parseConfig "ADDITIONAL_SUBDOMAIN" ".pbase_lets_encrypt.additionalSubDomain" ""
 
 
@@ -183,12 +189,28 @@ WWWDOMAINNAME="www.${THISDOMAINNAME}"
 HAS_WWW_SUBDOMAIN="false"
 DOMAIN_NAME_LIST=""
 
-if [[ "${URL_SUBDOMAIN}" != "" ]] ; then
+## save the command line and domain names used
+SAVE_CMD_DIR="/usr/local/pbase-data/admin-only"
+
+if [[ -f "${SAVE_CMD_DIR}/domain-name-list.txt" ]]; then
+  read -r DOMAIN_NAME_LIST < "${SAVE_CMD_DIR}/domain-name-list.txt"
+  echo "found DOMAIN_NAME_LIST:  ${DOMAIN_NAME_LIST}"
+fi
+
+echo "Checking if LE already installed"
+if [[ -d "/etc/letsencrypt/live/" ]] ; then
+  echo "ls -l /etc/letsencrypt/live/"
+  ls -l /etc/letsencrypt/live/
+fi
+
+## check if a subdomain has already been added to the DOMAIN_NAME_LIST
+
+if [[ "${URL_SUBDOMAIN}" != "" ]] && [[ "${DOMAIN_NAME_LIST}" != *"${URL_SUBDOMAIN}.${THISDOMAINNAME}"* ]] ; then
   ## when doing subdomain only like myapp.example.com (not registering root domain)
   FULLDOMAINNAME="${URL_SUBDOMAIN}.${THISDOMAINNAME}"
   DOMAIN_NAME_LIST="${FULLDOMAINNAME}"
   echo "Exclusive subdomain:     ${FULLDOMAINNAME}"
-else
+elif [[ "${DOMAIN_NAME_LIST}" != *"${URL_SUBDOMAIN}.${THISDOMAINNAME}"* ]] ; then
   ## when doing root domain, check if www is also ping-able
   if [[ $ENABLE_CHECK_FOR_WWW == "true" ]] ; then
     ping -c 1 "${WWWDOMAINNAME}" &> /dev/null
@@ -221,6 +243,8 @@ else
     fi
     DOMAIN_NAME_LIST="${DOMAIN_NAME_LIST}${ADDITIONAL_SUBDOMAIN}.${THISDOMAINNAME}"
   fi
+else
+  echo "Existing domain name list already set"
 fi
 
 
@@ -294,11 +318,13 @@ SAVE_CMD_DIR="/usr/local/pbase-data/admin-only"
 mkdir -p ${SAVE_CMD_DIR}
 
 if [[ -e "${SAVE_CMD_DIR}/certbot-cmd.sh" ]] ; then
-  echo "Already saved command:   ${SAVE_CMD_DIR}/certbot-cmd.sh"
+  echo "Saved command line:      ${SAVE_CMD_DIR}/certbot-cmd.sh"
 else
   echo "Saving command line:     ${SAVE_CMD_DIR}/certbot-cmd.sh"
-  echo ${CERTBOT_CMD} > ${SAVE_CMD_DIR}/certbot-cmd.sh
 fi
+
+echo ${CERTBOT_CMD} > ${SAVE_CMD_DIR}/certbot-cmd.sh
+
 
 if [[ -e "${SAVE_CMD_DIR}/domain-name-list.txt" ]] ; then
   echo "Already saved domains:   ${SAVE_CMD_DIR}/domain-name-list.txt"

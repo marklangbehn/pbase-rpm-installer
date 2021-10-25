@@ -1,6 +1,6 @@
 Name: pbase-website-content
 Version: 1.0
-Release: 1
+Release: 2
 Summary: PBase pbase-foundation.com website rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -73,8 +73,8 @@ else
 
   ## yum
   ln -s /var/www/yum-repo yum-repo
-  ln -s /var/www/yum-repo/pbase-components/1.0/RPMS/pbase-repo-1.0-0.noarch.rpm pbase-repo.rpm
-  ln -s /var/www/yum-repo/pbase-components/1.0/RPMS/pbase-repo-next-1.0-0.noarch.rpm pbase-repo-next.rpm
+  ln -s /var/www/yum-repo/pbase-components/1.0/RPMS/pbase-repo-1.0-1.noarch.rpm pbase-repo.rpm
+  ln -s /var/www/yum-repo/pbase-components/1.0/RPMS/pbase-repo-next-1.0-1.noarch.rpm pbase-repo-next.rpm
   ln -s /var/www/yum-static/ yum-static
 fi
 

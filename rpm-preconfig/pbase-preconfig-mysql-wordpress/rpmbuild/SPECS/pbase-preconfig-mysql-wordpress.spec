@@ -1,6 +1,6 @@
 Name: pbase-preconfig-mysql-wordpress
 Version: 1.0
-Release: 2
+Release: 3
 Summary: PBase MySQL preconfigure rpm, preset user and DB name for use by pbase-wordpress
 Group: System Environment/Base
 License: Apache-2.0

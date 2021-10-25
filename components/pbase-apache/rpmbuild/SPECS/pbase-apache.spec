@@ -1,6 +1,6 @@
 Name: pbase-apache
 Version: 1.0
-Release: 2
+Release: 3
 Summary: PBase Apache rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -81,16 +81,8 @@ check_linux_version() {
   fi
 }
 
-echo "PBase Apache"
-
-if [[ $1 -ne 1 ]] ; then
-  echo "Already Installed. Exiting."
-  exit 0
-fi
-
 ## config may be stored in json file with root-only permissions
 ##     in the directory: /usr/local/pbase-data/admin-only/module-config.d/
-
 
 locateConfigFile() {
   ## name of config file is passed in param $1 - for example "pbase_apache.json"
@@ -190,6 +182,14 @@ EOF
   fi
 }
 
+
+echo "PBase Apache"
+
+if [[ $1 -ne 1 ]] ; then
+  echo "Already Installed. Exiting."
+  exit 0
+fi
+
 ## look for config file "pbase_apache.json"
 PBASE_CONFIG_FILENAME="pbase_apache.json"
 
@@ -209,8 +209,15 @@ if [[ -e /root/DEFAULT_EMAIL_ADDRESS.txt ]] ; then
   read -r DEFAULT_EMAIL < /root/DEFAULT_EMAIL_ADDRESS.txt
 fi
 
+## check for default subdomain text file
+DEFAULT_SUB_DOMAIN=""
+if [[ -e /root/DEFAULT_SUB_DOMAIN.txt ]] ; then
+  read -r DEFAULT_SUB_DOMAIN < /root/DEFAULT_SUB_DOMAIN.txt
+fi
+
+
 parseConfig "SERVER_ADMIN_EMAIL" ".pbase_apache.serverAdmin" "${DEFAULT_EMAIL}"
-parseConfig "URL_SUBDOMAIN" ".pbase_apache.urlSubDomain" ""
+parseConfig "URL_SUBDOMAIN" ".pbase_apache.urlSubDomain" "${DEFAULT_SUB_DOMAIN}"
 
 echo "ADD_SELF_TO_ETC_HOSTS:   $ADD_SELF_TO_ETC_HOSTS"
 echo "ADD_SECURITY_HEADERS:    $ADD_SECURITY_HEADERS"
@@ -403,6 +410,15 @@ set /files/etc/httpd/conf/httpd.conf/Directory[arg='\"${DOCROOT}\"']/*[self::dir
 save
 EOF
 
+##
+## replace #ServerName www.example.com
+## REVISIT -- use augeas instead of sed
+##      /directive = "ServerName"
+##      /directive/arg = "${FULLDOMAINNAME}"
+
+echo "Setting in httpd.conf:   ServerName ${FULLDOMAINNAME}:80"
+sed -i "s/#ServerName www.example.com:80/ServerName ${FULLDOMAINNAME}:80/" "/etc/httpd/conf/httpd.conf"
+
 
 echo "ADD_SECURITY_HEADERS     $ADD_SECURITY_HEADERS"
 
@@ -471,6 +487,10 @@ echo "    Virtual host:        ${DOMAIN_CONF}"
 sed -i "s/virtualrecordlabel.net/${FULLDOMAINNAME}/g" "${DOMAIN_CONF}"
 
 
+sed -i "s/#ServerName www.example.com:80/ServerName ${FULLDOMAINNAME}:80/" "${DOMAIN_CONF}"
+####    #ServerName www.example.com:80
+
+
 ## depending on HAS_WWW_SUBDOMAIN set ServerAlias for www in .conf file
 if [[ "${HAS_WWW_SUBDOMAIN}" == "true" ]] ; then
   echo "HAS_WWW_SUBDOMAIN true, ServerAlias configured to handle www subdomain"
@@ -533,8 +553,5 @@ echo ""
 
 %files
 %defattr(600,root,root,700)
-/usr/local/pbase-data/pbase-apache/el6/etc-httpd-conf/httpd.conf
-/usr/local/pbase-data/pbase-apache/el7/etc-httpd-conf/httpd.conf
-/usr/local/pbase-data/pbase-apache/fedora/etc-httpd-conf/httpd.conf
 /usr/local/pbase-data/pbase-apache/etc-httpd-conf-d/virtualrecordlabel.net.conf
 /usr/local/pbase-data/pbase-apache/etc-httpd-conf-d-subdomain/virtualrecordlabel.net.conf

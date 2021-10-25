@@ -601,7 +601,8 @@ Here's how to install Mastodon:
 
 Mastodon requires Node JS 12 or higher:
 ```
-curl -sL https://rpm.nodesource.com/setup_12.x | bash -
+curl -sL https://rpm.nodesource.com/setup_14.x | bash -
+yum -y install gcc-c++ make
 yum -y install nodejs
 ```
 

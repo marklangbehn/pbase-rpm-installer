@@ -1,6 +1,6 @@
 Name: pbase-repo
 Version: 1.0
-Release: 1
+Release: 3
 Summary: PBase installer bootstrap rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -138,10 +138,12 @@ parseConfig() {
 check_linux_version() {
   AMAZON1_RELEASE=""
   AMAZON2_RELEASE=""
+  AMAZON2022_RELEASE=""
   if [[ -e "/etc/system-release" ]]; then
     SYSTEM_RELEASE="$(cat /etc/system-release)"
     AMAZON1_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux AMI')"
-    AMAZON2_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2')"
+    AMAZON2_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2 ')"
+    AMAZON2022_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2022')"
     echo "system-release:          ${SYSTEM_RELEASE}"
   fi
 
@@ -162,6 +164,10 @@ check_linux_version() {
   elif [[ "$AMAZON2_RELEASE" != "" ]]; then
     echo "AMAZON2_RELEASE:         $AMAZON2_RELEASE"
     REDHAT_RELEASE_DIGIT="7"
+    echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
+  elif [[ "$AMAZON2022_RELEASE" != "" ]]; then
+    echo "AMAZON2022_RELEASE:      $AMAZON2022_RELEASE"
+    REDHAT_RELEASE_DIGIT="9"
     echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
   fi
 }
@@ -361,12 +367,13 @@ else
 fi
 
 
-if [[ "$AMAZON1_RELEASE" != "" ]]; then
-  echo "AMAZON1_RELEASE:         $AMAZON1_RELEASE"
-elif [[ "$AMAZON2_RELEASE" != "" ]]; then
-  echo "AMAZON2_RELEASE:         $AMAZON2_RELEASE"
-fi
-
+#if [[ "$AMAZON1_RELEASE" != "" ]]; then
+#  echo "AMAZON1_RELEASE:         $AMAZON1_RELEASE"
+#elif [[ "$AMAZON2_RELEASE" != "" ]]; then
+#  echo "AMAZON2_RELEASE:         $AMAZON2_RELEASE"
+#elif [[ "$AMAZON2022_RELEASE" != "" ]]; then
+#  echo "AMAZON2022_RELEASE:      $AMAZON2022_RELEASE"
+#fi
 
 echo ""
 echo "Enabling YUM repos:      /etc/yum.repos.d/"
@@ -381,6 +388,11 @@ elif [[ "$AMAZON2_RELEASE" != "" ]]; then
   echo "AMZN2 PHP 7.2 repo:      amzn2extra-php72.repo"
   /bin/cp -f /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/amzn2/pbase-amzn2-dep.repo /etc/yum.repos.d/
   /bin/cp -f /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/amzn2/amzn2extra-php72.repo /etc/yum.repos.d/
+elif [[ "$AMAZON2022_RELEASE" != "" ]]; then
+  echo "AMZN2022 Dependency repo:pbase-amzn22022-dep.repo"
+  ##echo "AMZN2022 PHP 7.2 repo:      amzn2extra-php72.repo"
+  /bin/cp -f /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/amzn2022/pbase-amzn2022-dep.repo /etc/yum.repos.d/
+  ##/bin/cp -f /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/amzn2022/amzn2022extra-php72.repo /etc/yum.repos.d/
 elif [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]] ; then
   echo "EL6 Dependency repo:     pbase-el6-dep.repo"
   /bin/cp -f /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/el6/pbase-el6-dep.repo /etc/yum.repos.d/
@@ -390,6 +402,9 @@ elif [[ "${REDHAT_RELEASE_DIGIT}" == "7" ]] ; then
 elif [[ "${REDHAT_RELEASE_DIGIT}" == "8" ]] ; then
   echo "EL8 Dependency repo:     pbase-el8-dep.repo"
   /bin/cp -f /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/el8/pbase-el8-dep.repo /etc/yum.repos.d/
+elif [[ "${REDHAT_RELEASE_DIGIT}" == "9" ]] ; then
+  echo "EL9 Dependency repo:     pbase-el9-dep.repo"
+  /bin/cp -f /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/el9/pbase-el9-dep.repo /etc/yum.repos.d/
 elif [[ "${FEDORA_RELEASE}" != "" ]] ; then
   echo "Fedora Dependency repo:  pbase-fedora-dep.repo"
   /bin/cp -f /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/fedora/pbase-fedora-dep.repo /etc/yum.repos.d/
@@ -406,7 +421,7 @@ echo "" >> /root/.bashrc
 append_bashrc_alias lltr "ls -ltr"
 append_bashrc_alias ipaddr "ip addr | grep \"inet \""
 
-if [[ "$FEDORA_RELEASE" != ""  ||  "${REDHAT_RELEASE_DIGIT}" == "8" ]]; then
+if [[ "$FEDORA_RELEASE" != ""  ||  "${REDHAT_RELEASE_DIGIT}" == "8" ||  "${REDHAT_RELEASE_DIGIT}" == "9" ]]; then
   append_bashrc_alias tailyumlog "tail -f /var/log/dnf.log /var/log/dnf.rpm.log"
 else
   append_bashrc_alias tailyumlog "tail -f -n100 /var/log/yum.log"
@@ -454,12 +469,16 @@ echo "rpm preuninstall"
 /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/amzn2/epel.repo
 /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/amzn2/pbase-amzn2-dep.repo
 /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/amzn2/amzn2extra-php72.repo
+/usr/local/pbase-data/pbase-repo/etc-yum-repos-d/amzn2022/epel.repo
+/usr/local/pbase-data/pbase-repo/etc-yum-repos-d/amzn2022/pbase-amzn2022-dep.repo
 /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/el6/epel.repo
 /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/el7/epel.repo
 /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/el8/epel.repo
+/usr/local/pbase-data/pbase-repo/etc-yum-repos-d/el9/epel.repo
 /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/el6/pbase-el6-dep.repo
 /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/el7/pbase-el7-dep.repo
 /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/el8/pbase-el8-dep.repo
+/usr/local/pbase-data/pbase-repo/etc-yum-repos-d/el9/pbase-el9-dep.repo
 /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/fedora/pbase-fedora-dep.repo
 /usr/local/pbase-data/pbase-repo/etc-pki-rpm-gpg/RPM-GPG-KEY-EPEL-6
 /usr/local/pbase-data/pbase-repo/etc-pki-rpm-gpg/RPM-GPG-KEY-EPEL-7

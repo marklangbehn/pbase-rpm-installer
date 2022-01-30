@@ -1,6 +1,6 @@
 Name: pbase-preconfig-jellyfin
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase Jellyfin preconfigure and dependencies for pbase-jellyfin
 Group: System Environment/Base
 License: Apache-2.0
@@ -159,6 +159,22 @@ setFieldInJsonModuleConfig() {
   fi
 }
 
+commentOutFile() {
+  ## disable config file in directory $1 named $2
+  echo "Checking for:            ${1}/${2}"
+
+  if [[ -e "${1}/${2}" ]] ; then
+    DATE_SUFFIX="$(date +'%Y-%m-%d_%H-%M')"
+
+    ##echo "Backup:                  ${1}/${2}-PREV-${DATE_SUFFIX}"
+    cp -p "${1}/${2}" "${1}/${2}-PREV-${DATE_SUFFIX}"
+
+    ## comment out with a '#' in front of all lines
+    echo "Commenting out contents: ${2}"
+    sed -i 's/^\([^#].*\)/# \1/g' "${1}/${2}"
+  fi
+}
+
 echo "PBase Jellyfin pre-configuration and dependencies"
 
 if [[ $1 -ne 1 ]] ; then
@@ -274,10 +290,8 @@ fi
 
 
 if [[ "${HAS_APACHE_CONF}" != "" ]] ; then
-  ## disable unused config file: apache ssl.conf
-  if [[ -e "/etc/httpd/conf.d/ssl.conf" ]] ; then
-    mv "/etc/httpd/conf.d/ssl.conf" "/etc/httpd/conf.d/ssl.conf-DISABLED"
-  fi
+  ## Check for /etc/httpd/conf.d/ssl.conf, comment it out if it exists
+  commentOutFile "/etc/httpd/conf.d" "ssl.conf"
 fi
 
 echo "Adding repo:             /etc/yum.repos.d/pbase-third-party.repo"

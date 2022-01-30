@@ -1,6 +1,6 @@
 Name: pbase-mattermost
 Version: 1.0
-Release: 3
+Release: 4
 Summary: PBase Mattermost service rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -101,6 +101,22 @@ parseConfig() {
   eval "$1"="$PARSED_VALUE"
 }
 
+commentOutFile() {
+  ## disable config file in directory $1 named $2
+  echo "Checking for:            ${1}/${2}"
+
+  if [[ -e "${1}/${2}" ]] ; then
+    DATE_SUFFIX="$(date +'%Y-%m-%d_%H-%M')"
+
+    ##echo "Backup:                  ${1}/${2}-PREV-${DATE_SUFFIX}"
+    cp -p "${1}/${2}" "${1}/${2}-PREV-${DATE_SUFFIX}"
+
+    ## comment out with a '#' in front of all lines
+    echo "Commenting out contents: ${2}"
+    sed -i 's/^\([^#].*\)/# \1/g' "${1}/${2}"
+  fi
+}
+
 echo "PBase Mattermost service"
 
 if [[ $1 -ne 1 ]] ; then
@@ -131,6 +147,9 @@ echo "ADD_APACHE_PROXY:        $ADD_APACHE_PROXY"
 ## Apache config
 PBASE_CONFIG_FILENAME="pbase_apache.json"
 locateConfigFile "$PBASE_CONFIG_FILENAME"
+parseConfig "ENABLE_CHECK_FOR_WWW" ".pbase_apache.enableCheckForWww" "true"
+
+echo "ENABLE_CHECK_FOR_WWW:    $ENABLE_CHECK_FOR_WWW"
 
 if [[ -e "/usr/local/pbase-data/admin-only/module-config.d/pbase_apache.json" ]] ; then
   parseConfig "APACHE_SERVER_ADMIN" ".pbase_apache.serverAdmin" ""
@@ -243,10 +262,9 @@ if [[ -e "${ROOTDOMAIN_HTTP_CONF_FILE}" ]] ; then
   HAS_APACHE_ROOTDOMAIN_CONF="true"
 fi
 
-if [[ -e "/etc/httpd/conf.d/ssl.conf" ]] ; then
-  echo "Disabling unused:        /etc/httpd/conf.d/ssl.conf"
-  mv "/etc/httpd/conf.d/ssl.conf" "/etc/httpd/conf.d/ssl.conf-DISABLED"
-fi
+## Check for /etc/httpd/conf.d/ssl.conf, comment it out if it exists
+commentOutFile "/etc/httpd/conf.d" "ssl.conf"
+
 
 ## fetch previously registered domain names
 DOMAIN_NAME_LIST=""
@@ -370,7 +388,7 @@ if [[ "${DOMAIN_NAME_LIST}" == "" ]] ; then
 else
     ## use cut to grab first name from comma delimited list
     FIRSTDOMAINNREGISTERED=$(cut -f1 -d "," ${SAVE_CMD_DIR}/domain-name-list.txt)
-    echo "FIRSTDOMAINNREGISTERED:  ${FIRSTDOMAINNREGISTERED}"
+    ##echo "FIRSTDOMAINNREGISTERED:  ${FIRSTDOMAINNREGISTERED}"
 
   if [[ "${DOMAIN_NAME_LIST}" == *"${FULLDOMAINNAME}"* ]]; then
     echo "Already has ${FULLDOMAINNAME}"
@@ -389,6 +407,9 @@ echo "Saved domain names:      ${SAVE_CMD_DIR}/domain-name-list.txt"
 echo "                         ${DOMAIN_NAME_LIST_NEW}"
 echo ""
 
+DOMAIN_NAME_LIST_HAS_WWW=$(grep www ${SAVE_CMD_DIR}/domain-name-list.txt)
+##echo "Domain list has WWW:     ${DOMAIN_NAME_LIST_HAS_WWW}"
+
 echo "FULLDOMAINNAME:          $FULLDOMAINNAME"
 echo "SUBPATH_URI:             $SUBPATH_URI"
 echo "PROXY_CONF_FILE:         $PROXY_CONF_FILE"
@@ -404,12 +425,18 @@ if [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
   if [[ -e "${PREV_CONF_FILE}" ]] ; then
     echo "Disabling previous:      ${PREV_CONF_FILE}"
     mv "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf-DISABLED"
+
+    ## set aside conf file so that certbot can recreate the ...le-ssl.conf
+    if [[ -e "/etc/httpd/conf.d/${FULLDOMAINNAME}-le-ssl.conf" ]] ; then
+      echo "Disabling prev conf:     /etc/httpd/conf.d/${FULLDOMAINNAME}-le-ssl.conf"
+      mv "/etc/httpd/conf.d/${FULLDOMAINNAME}-le-ssl.conf" "/etc/httpd/conf.d/${FULLDOMAINNAME}-le-ssl.conf-DISABLED"
+    fi
   fi
 
-MATTERMOST_READY_MSG="Next Step - required open this URL to complete install"
+  MATTERMOST_READY_MSG="Next Step - required open this URL to complete install"
+  PROXY_CONF_FILE="mattermost-proxy-subdomain.conf"
 
-if [[ "$URL_SUBDOMAIN" != "" ]] && [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
-  PROXY_CONF="/etc/httpd/conf.d/mattermost-proxy-subdomain.conf"
+  PROXY_CONF="/etc/httpd/conf.d/${PROXY_CONF_FILE}"
   PROXY_CONF_FULLDOMAINNAME="/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
 
   echo "Adding ${URL_SUBDOMAIN} subdomain proxy to mattermost application"
@@ -418,12 +445,23 @@ if [[ "$URL_SUBDOMAIN" != "" ]] && [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
 
   sed -i "s/mysubdomain.mydomain.com/${FULLDOMAINNAME}/" $PROXY_CONF
   sed -i "s/hostmaster@mydomain.com/${APACHE_SERVER_ADMIN}/" $PROXY_CONF
+``
+  ## may also enable www alias
+  sed -i "s/www.example.com/www.${THISDOMAINNAME}/" "${PROXY_CONF}"
+  sed -i "s/example.com/${THISDOMAINNAME}/" "${PROXY_CONF}"
+
+  if [[ "${DOMAIN_NAME_LIST_HAS_WWW}" != "" ]] ; then
+    echo "Enabling:                ServerAlias www.${THISDOMAINNAME}"
+    sed -i "s/#ServerAlias/ServerAlias/" "${PROXY_CONF}"
+  fi
 
   echo "Replacing proxy:         ${PROXY_CONF_FULLDOMAINNAME}"
   cd /etc/httpd/conf.d/
   mv -f "${PROXY_CONF}" "${FULLDOMAINNAME}.conf"
 
   systemctl daemon-reload
+
+  echo "Restarting httpd"
   systemctl restart httpd
 
   ## LETS ENCRYPT - HTTPS CERTIFICATE
@@ -436,6 +474,7 @@ if [[ "$URL_SUBDOMAIN" != "" ]] && [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
 
   if [[ $EXECUTE_CERTBOT_CMD == "true" ]] ; then
     echo "Executing:               ${CERTBOT_CMD}"
+    echo ""
     eval "${CERTBOT_CMD}"
   else
     echo "Skipping execute:        EXECUTE_CERTBOT_CMD=false"
@@ -446,28 +485,6 @@ if [[ "$URL_SUBDOMAIN" != "" ]] && [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
   echo "                         http://${FULLDOMAINNAME}/install"
   echo "  or"
   echo "                         http://localhost/install"
-elif [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
-  echo "Adding / proxy to mattermost"
-  /bin/cp --no-clobber /usr/local/pbase-data/pbase-mattermost/root-uri/etc-httpd-confd/mattermost-proxy.conf /etc/httpd/conf.d/
-  PROXY_CONF="/etc/httpd/conf.d/mattermost-proxy.conf"
-
-  ## rename conf file to match the full domain name
-  echo "Mattermost proxy:        /etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
-  mv "${PROXY_CONF}" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
-
-  PROXY_CONF="/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
-
-  ##echo "Updating config file:    ${PROXY_CONF}"
-  sed -i "s/hostmaster@mydomain.com/${APACHE_SERVER_ADMIN}/" $PROXY_CONF
-  sed -i "s/mydomain.com/${THISDOMAINNAME}/" $PROXY_CONF
-
-  systemctl daemon-reload
-  systemctl restart httpd
-
-  echo "$MATTERMOST_READY_MSG"
-  echo "                         http://${THISDOMAINNAME}/install"
-  echo "  or"
-  echo "                         http://localhost/install"
 else
   echo "$MATTERMOST_READY_MSG"
   echo "                         http://${THISDOMAINNAME}:8065/install"
@@ -476,9 +493,8 @@ else
 fi
 
 
-  echo "Mattermost service running. Open this URL to complete install."
-  echo "                         http://${FULLDOMAINNAME}${SUBPATH_URI}/install"
-fi
+echo "Mattermost service running. Open this URL to complete install."
+echo "                         http://${FULLDOMAINNAME}${SUBPATH_URI}/install"
 
 echo ""
 

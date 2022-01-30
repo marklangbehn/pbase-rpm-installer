@@ -1,6 +1,6 @@
 Name: pbase-nextcloud
 Version: 1.0
-Release: 2
+Release: 4
 Summary: PBase NextCloud service rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -136,6 +136,22 @@ parseConfig() {
 
   ## use eval to assign that to the variable named in the first param
   eval "$1"="$PARSED_VALUE"
+}
+
+commentOutFile() {
+  ## disable config file in directory $1 named $2
+  echo "Checking for:            ${1}/${2}"
+
+  if [[ -e "${1}/${2}" ]] ; then
+    DATE_SUFFIX="$(date +'%Y-%m-%d_%H-%M')"
+
+    ##echo "Backup:                  ${1}/${2}-PREV-${DATE_SUFFIX}"
+    cp -p "${1}/${2}" "${1}/${2}-PREV-${DATE_SUFFIX}"
+
+    ## comment out with a '#' in front of all lines
+    echo "Commenting out contents: ${2}"
+    sed -i 's/^\([^#].*\)/# \1/g' "${1}/${2}"
+  fi
 }
 
 echo "PBase NextCloud installer"
@@ -275,6 +291,10 @@ echo ""
 DOMAIN_NAME_LIST_HAS_WWW=$(grep www ${SAVE_CMD_DIR}/domain-name-list.txt)
 echo "Domain list has WWW:     ${DOMAIN_NAME_LIST_HAS_WWW}"
 
+## Check for /etc/httpd/conf.d/ssl.conf, comment it out if it exists
+commentOutFile "/etc/httpd/conf.d" "ssl.conf"
+
+
 ## when DB_PSWD is populated below that means DB config has been defined
 DB_PSWD=""
 
@@ -333,6 +353,12 @@ echo "FULLDOMAINNAME:          $FULLDOMAINNAME"
 if [[ -e "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf" ]] ; then
   echo "Removing existing:       /etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
   mv "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"  "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf-DISABLED"
+
+  ## set aside conf file so that certbot can recreate the ...le-ssl.conf
+  if [[ -e "/etc/httpd/conf.d/${FULLDOMAINNAME}-le-ssl.conf" ]] ; then
+    echo "Disabling prev conf:     /etc/httpd/conf.d/${FULLDOMAINNAME}-le-ssl.conf"
+    mv "/etc/httpd/conf.d/${FULLDOMAINNAME}-le-ssl.conf" "/etc/httpd/conf.d/${FULLDOMAINNAME}-le-ssl.conf-DISABLED"
+  fi
 fi
 
 ## replace your.server.com in template conf

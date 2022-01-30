@@ -1,6 +1,6 @@
 Name: pbase-apache
 Version: 1.0
-Release: 3
+Release: 4
 Summary: PBase Apache rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -211,8 +211,14 @@ fi
 
 ## check for default subdomain text file
 DEFAULT_SUB_DOMAIN=""
+SAVE_CMD_DIR="/usr/local/pbase-data/admin-only"
+
 if [[ -e /root/DEFAULT_SUB_DOMAIN.txt ]] ; then
   read -r DEFAULT_SUB_DOMAIN < /root/DEFAULT_SUB_DOMAIN.txt
+  mv /root/DEFAULT_SUB_DOMAIN.txt ${SAVE_CMD_DIR}/DEFAULT_SUB_DOMAIN-pbase-apache.txt
+
+  ##TOD0
+  ## setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} all_subdomains pbase_apache-${DEFAULT_SUB_DOMAIN}
 fi
 
 

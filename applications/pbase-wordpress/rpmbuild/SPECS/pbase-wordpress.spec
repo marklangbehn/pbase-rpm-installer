@@ -1,6 +1,6 @@
 Name: pbase-wordpress
 Version: 1.0
-Release: 2
+Release: 4
 Summary: PBase WordPress web application rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -137,6 +137,22 @@ parseConfig() {
   eval "$1"="$PARSED_VALUE"
 }
 
+commentOutFile() {
+  ## disable config file in directory $1 named $2
+  echo "Checking for:            ${1}/${2}"
+
+  if [[ -e "${1}/${2}" ]] ; then
+    DATE_SUFFIX="$(date +'%Y-%m-%d_%H-%M')"
+
+    ##echo "Backup:                  ${1}/${2}-PREV-${DATE_SUFFIX}"
+    cp -p "${1}/${2}" "${1}/${2}-PREV-${DATE_SUFFIX}"
+
+    ## comment out with a '#' in front of all lines
+    echo "Commenting out contents: ${2}"
+    sed -i 's/^\([^#].*\)/# \1/g' "${1}/${2}"
+  fi
+}
+
 echo "PBase WordPress installer"
 
 if [[ $1 -ne 1 ]] ; then
@@ -248,10 +264,9 @@ if [[ -e "${ROOTDOMAIN_HTTP_CONF_FILE}" ]] ; then
   HAS_APACHE_ROOTDOMAIN_CONF="true"
 fi
 
-if [[ -e "/etc/httpd/conf.d/ssl.conf" ]] ; then
-  echo "Disabling unused:        /etc/httpd/conf.d/ssl.conf"
-  mv "/etc/httpd/conf.d/ssl.conf" "/etc/httpd/conf.d/ssl.conf-DISABLED"
-fi
+## Check for /etc/httpd/conf.d/ssl.conf, comment it out if it exists
+commentOutFile "/etc/httpd/conf.d" "ssl.conf"
+
 
 ## fetch previously registered domain names
 DOMAIN_NAME_LIST=""

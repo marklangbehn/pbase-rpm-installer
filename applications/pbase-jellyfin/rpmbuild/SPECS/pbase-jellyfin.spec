@@ -1,6 +1,6 @@
 Name: pbase-jellyfin
 Version: 1.0
-Release: 1
+Release: 2
 Summary: PBase Jellyfin service
 Group: System Environment/Base
 License: Apache-2.0
@@ -53,7 +53,6 @@ append_bashrc_alias() {
 ## config is stored in json file with root-only permissions
 ##     in the directory: /usr/local/pbase-data/admin-only/module-config.d/
 
-
 locateConfigFile() {
   ## name of config file is passed in param $1 - for example "pbase_jellyfin.json"
   PBASE_CONFIG_FILENAME="$1"
@@ -99,6 +98,22 @@ parseConfig() {
 
   ## use eval to assign that to the variable named in the first param
   eval "$1"="$PARSED_VALUE"
+}
+
+commentOutFile() {
+  ## disable config file in directory $1 named $2
+  echo "Checking for:            ${1}/${2}"
+
+  if [[ -e "${1}/${2}" ]] ; then
+    DATE_SUFFIX="$(date +'%Y-%m-%d_%H-%M')"
+
+    ##echo "Backup:                  ${1}/${2}-PREV-${DATE_SUFFIX}"
+    cp -p "${1}/${2}" "${1}/${2}-PREV-${DATE_SUFFIX}"
+
+    ## comment out with a '#' in front of all lines
+    echo "Commenting out contents: ${2}"
+    sed -i 's/^\([^#].*\)/# \1/g' "${1}/${2}"
+  fi
 }
 
 echo "PBase Jellyfin service"
@@ -198,9 +213,11 @@ if [[ -e "${ROOTDOMAIN_HTTP_CONF_FILE}" ]] ; then
   HAS_APACHE_ROOTDOMAIN_CONF="true"
 fi
 
+## Check for /etc/httpd/conf.d/ssl.conf, comment it out if it exists
+commentOutFile "/etc/httpd/conf.d" "ssl.conf"
+
 
 ## fetch previously registered domain names
-HAS_WWW_SUBDOMAIN="false"
 DOMAIN_NAME_LIST=""
 SAVE_CMD_DIR="/usr/local/pbase-data/admin-only"
 
@@ -259,6 +276,7 @@ else
   fi
 fi
 
+echo ""
 echo "${DOMAIN_NAME_LIST_NEW}" > ${SAVE_CMD_DIR}/domain-name-list.txt
 echo "Saved domain names:      ${SAVE_CMD_DIR}/domain-name-list.txt"
 echo "                         ${DOMAIN_NAME_LIST_NEW}"
@@ -282,6 +300,12 @@ if [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
   if [[ -e "${PREV_CONF_FILE}" ]] ; then
     echo "Disabling previous:      ${PREV_CONF_FILE}"
     mv "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf-DISABLED"
+
+    ## set aside conf file so that certbot can recreate the ...le-ssl.conf
+    if [[ -e "/etc/httpd/conf.d/${FULLDOMAINNAME}-le-ssl.conf" ]] ; then
+      echo "Disabling prev conf:     /etc/httpd/conf.d/${FULLDOMAINNAME}-le-ssl.conf"
+      mv "/etc/httpd/conf.d/${FULLDOMAINNAME}-le-ssl.conf" "/etc/httpd/conf.d/${FULLDOMAINNAME}-le-ssl.conf-DISABLED"
+    fi
   fi
 
   /bin/cp --no-clobber /usr/local/pbase-data/pbase-jellyfin/etc-httpd-confd/${PROXY_CONF_FILE} /etc/httpd/conf.d/

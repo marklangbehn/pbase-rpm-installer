@@ -632,4 +632,16 @@ yum -y install pbase-postgres
 yum -y install activpb-peertube
 ```
 
+#### GoTTY
+#### Terminal shell webapp - gotty
+The gotty service is written in Go and implements a webpage for a terminal login shell.
+```
+echo "pbase.foundation@gmail.com" > /root/DEFAULT_EMAIL_ADDRESS.txt
+echo "shell" > /root/DEFAULT_SUB_DOMAIN.txt
+echo "mark" > /root/DEFAULT_DESKTOP_USERNAME.txt
+yum -y install https://pbase-foundation.com/pbase-repo.rpm
+yum -y install pbase-preconfig-gotty
+yum -y install pbase-golang-tools
+yum -y install pbase-gotty
+```
 

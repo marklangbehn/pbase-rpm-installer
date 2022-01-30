@@ -4,6 +4,9 @@
     "minioOpts": "",
     "minioAccessKey": "minioadmin",
     "minioSecretAccessKey": "minioadmin",
-    "minioRegionName": ""
+    "minioRegionName": "",
+    "port": 9000,
+    "addApacheProxy": true,
+    "urlSubDomain": "minio"
   }
 }

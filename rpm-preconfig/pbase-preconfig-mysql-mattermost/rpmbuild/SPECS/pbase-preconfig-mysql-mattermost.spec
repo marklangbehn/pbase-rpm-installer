@@ -159,6 +159,22 @@ setFieldInJsonModuleConfig() {
   fi
 }
 
+commentOutFile() {
+  ## disable config file in directory $1 named $2
+  echo "Checking for:            ${1}/${2}"
+
+  if [[ -e "${1}/${2}" ]] ; then
+    DATE_SUFFIX="$(date +'%Y-%m-%d_%H-%M')"
+
+    ##echo "Backup:                  ${1}/${2}-PREV-${DATE_SUFFIX}"
+    cp -p "${1}/${2}" "${1}/${2}-PREV-${DATE_SUFFIX}"
+
+    ## comment out with a '#' in front of all lines
+    echo "Commenting out contents: ${2}"
+    sed -i 's/^\([^#].*\)/# \1/g' "${1}/${2}"
+  fi
+}
+
 echo "PBase MySQL create config preset user and DB name for use by pbase-mattermost"
 
 if [[ $1 -ne 1 ]] ; then
@@ -273,10 +289,8 @@ fi
 if [[ "${HAS_APACHE_CONF}" == "" ]] ; then
   echo "Found no existing Apache on this host"
 else
-  ## disable unused config file: apache ssl.conf
-  if [[ -e "/etc/httpd/conf.d/ssl.conf" ]] ; then
-    mv "/etc/httpd/conf.d/ssl.conf" "/etc/httpd/conf.d/ssl.conf-DISABLED"
-  fi
+  ## Check for /etc/httpd/conf.d/ssl.conf, comment it out if it exists
+  commentOutFile "/etc/httpd/conf.d" "ssl.conf"
 fi
 
 DB_CONFIG_FILENAME="pbase_mysql80community.json"

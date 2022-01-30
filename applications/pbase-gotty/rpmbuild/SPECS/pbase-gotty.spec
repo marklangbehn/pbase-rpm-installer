@@ -1,6 +1,6 @@
 Name: pbase-gotty
 Version: 1.0
-Release: 3
+Release: 4
 Summary: PBase GoTTY rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -101,6 +101,22 @@ parseConfig() {
   eval "$1"="$PARSED_VALUE"
 }
 
+commentOutFile() {
+  ## disable config file in directory $1 named $2
+  echo "Checking for:            ${1}/${2}"
+
+  if [[ -e "${1}/${2}" ]] ; then
+    DATE_SUFFIX="$(date +'%Y-%m-%d_%H-%M')"
+
+    ##echo "Backup:                  ${1}/${2}-PREV-${DATE_SUFFIX}"
+    cp -p "${1}/${2}" "${1}/${2}-PREV-${DATE_SUFFIX}"
+
+    ## comment out with a '#' in front of all lines
+    echo "Commenting out contents: ${2}"
+    sed -i 's/^\([^#].*\)/# \1/g' "${1}/${2}"
+  fi
+}
+
 echo "PBase GoTTY install"
 
 if [[ $1 -ne 1 ]] ; then
@@ -162,10 +178,9 @@ if [[ -e "${ROOTDOMAIN_HTTP_CONF_FILE}" ]] ; then
   HAS_APACHE_ROOTDOMAIN_CONF="true"
 fi
 
-if [[ -e "/etc/httpd/conf.d/ssl.conf" ]] ; then
-  echo "Disabling unused:        /etc/httpd/conf.d/ssl.conf"
-  mv "/etc/httpd/conf.d/ssl.conf" "/etc/httpd/conf.d/ssl.conf-DISABLED"
-fi
+## Check for /etc/httpd/conf.d/ssl.conf, comment it out if it exists
+commentOutFile "/etc/httpd/conf.d" "ssl.conf"
+
 
 ## fetch previously registered domain names
 HAS_WWW_SUBDOMAIN="false"
@@ -199,6 +214,8 @@ fi
 
 DOMAIN_NAME_LIST_NEW=""
 DOMAIN_NAME_PARAM=""
+
+echo "Found DOMAIN_NAME_LIST:  ${DOMAIN_NAME_LIST}"
 
 if [[ "${DOMAIN_NAME_LIST}" == "" ]] ; then
   echo "Starting from empty domain-name-list.txt, adding ${FULLDOMAINNAME}"
@@ -235,9 +252,9 @@ DOMAIN_NAME_LIST_HAS_WWW=$(grep www ${SAVE_CMD_DIR}/domain-name-list.txt)
 
 cd /root
 
-echo "Building code:           go get -v github.com/yudai/gotty"
+echo "Building code:           go get -v github.com/sorenisanerd/gotty"
 
-go get -v github.com/yudai/gotty
+go get -v github.com/sorenisanerd/gotty
 
 /bin/cp --no-clobber /root/go/bin/gotty /usr/local/bin
 chmod +x /usr/local/bin/gotty
@@ -259,6 +276,12 @@ if [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
   if [[ -e "${PREV_CONF_FILE}" ]] ; then
     echo "Disabling previous:      ${PREV_CONF_FILE}"
     mv "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf-DISABLED"
+
+    ## set aside conf file so that certbot can recreate the ...le-ssl.conf
+    if [[ -e "/etc/httpd/conf.d/${FULLDOMAINNAME}-le-ssl.conf" ]] ; then
+      echo "Disabling prev conf:     /etc/httpd/conf.d/${FULLDOMAINNAME}-le-ssl.conf"
+      mv "/etc/httpd/conf.d/${FULLDOMAINNAME}-le-ssl.conf" "/etc/httpd/conf.d/${FULLDOMAINNAME}-le-ssl.conf-DISABLED"
+    fi
   fi
 
   /bin/cp --no-clobber /usr/local/pbase-data/pbase-gotty/etc-httpd-confd/gotty-proxy-subdomain.conf /etc/httpd/conf.d/

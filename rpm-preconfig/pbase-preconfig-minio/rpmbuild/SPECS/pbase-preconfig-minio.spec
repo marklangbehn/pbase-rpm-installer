@@ -1,6 +1,6 @@
 Name: pbase-preconfig-minio
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase Minio config file create
 Group: System Environment/Base
 License: Apache-2.0
@@ -158,12 +158,31 @@ fi
 #echo "DEFAULT_SUB_DOMAIN:      ${DEFAULT_SUB_DOMAIN}"
 
 
+## check if subdomain declared in pbase_repo.json needs to be updated
+## handle case of new app running in a subdomain being overlaid on an existing apache running the root domain
+## this is done by adding apache proxy instead of nginx proxy
+
+PREVIOUS_SUB_DOMAIN="${DEFAULT_SUB_DOMAIN}"
+DEFAULT_SUB_DOMAIN=""
+PBASE_REPO_JSON_PATH="/usr/local/pbase-data/admin-only/module-config.d/pbase_repo.json"
+PBASE_LETS_ENCRYPT_JSON_PATH="/usr/local/pbase-data/admin-only/module-config.d/pbase_lets_encrypt.json"
+
+if [[ -e "/root/DEFAULT_SUB_DOMAIN.txt" ]] ; then
+  read -r DEFAULT_SUB_DOMAIN < /root/DEFAULT_SUB_DOMAIN.txt
+
+  if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] && [[ "${PREVIOUS_SUB_DOMAIN}" == "" ]] ; then
+    echo "Adding subdomain name:   pbase_repo.json"
+    sed -i "s/defaultSubDomain\": null/defaultSubDomain\": \"${DEFAULT_SUB_DOMAIN}\"/" ${PBASE_REPO_JSON_PATH}
+    sed -i "s/defaultSubDomain\": \"\"/defaultSubDomain\": \"${DEFAULT_SUB_DOMAIN}\"/" ${PBASE_REPO_JSON_PATH}
+  fi
+fi
+
+
 CONFIG_FILENAME="pbase_minio.json"
 
-echo "Minio storage config:        ${MODULE_CONFIG_DIR}/${CONFIG_FILENAME}"
+echo "Minio storage config:    ${MODULE_CONFIG_DIR}/${CONFIG_FILENAME}"
 
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${CONFIG_FILENAME}  ${MODULE_CONFIG_DIR}/
-
 
 
 ## use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars
@@ -174,8 +193,11 @@ echo "  minioSecretAccessKey:  $RAND_PW_USER"
 ## set webdav user to name given for defaultDesktopUsername
 setFieldInJsonModuleConfig ${DEFAULT_DESKTOP_USERNAME} pbase_minio minioAccessKey
 
-## provide random password in database config file
+## provide random password for minio user
 setFieldInJsonModuleConfig ${RAND_PW_USER} pbase_minio minioSecretAccessKey
+
+## set the subdomain name
+setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_minio urlSubDomain
 
 
 echo ""

@@ -1,6 +1,6 @@
 Name: pbase-firewall-enable-el7-dep
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase firewall enable transitive dependency - EL7 and higher
 Group: System Environment/Base
 License: Apache-2.0
@@ -33,10 +33,12 @@ fail() {
 check_linux_version() {
   AMAZON1_RELEASE=""
   AMAZON2_RELEASE=""
+  AMAZON2022_RELEASE=""
   if [[ -e "/etc/system-release" ]]; then
     SYSTEM_RELEASE="$(cat /etc/system-release)"
     AMAZON1_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux AMI')"
-    AMAZON2_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2')"
+    AMAZON2_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2 ')"
+    AMAZON2022_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2022')"
     echo "system-release:          ${SYSTEM_RELEASE}"
   fi
 
@@ -57,6 +59,10 @@ check_linux_version() {
   elif [[ "$AMAZON2_RELEASE" != "" ]]; then
     echo "AMAZON2_RELEASE:         $AMAZON2_RELEASE"
     REDHAT_RELEASE_DIGIT="7"
+    echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
+  elif [[ "$AMAZON2022_RELEASE" != "" ]]; then
+    echo "AMAZON2022_RELEASE:      $AMAZON2022_RELEASE"
+    REDHAT_RELEASE_DIGIT="9"
     echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
   fi
 }

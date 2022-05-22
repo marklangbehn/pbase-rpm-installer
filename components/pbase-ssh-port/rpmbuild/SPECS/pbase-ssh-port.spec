@@ -1,6 +1,6 @@
 Name: pbase-ssh-port
 Version: 1.0
-Release: 1
+Release: 2
 Summary: PBase SSH port rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -48,10 +48,12 @@ append_bashrc_alias() {
 check_linux_version() {
   AMAZON1_RELEASE=""
   AMAZON2_RELEASE=""
+  AMAZON2022_RELEASE=""
   if [[ -e "/etc/system-release" ]]; then
     SYSTEM_RELEASE="$(cat /etc/system-release)"
     AMAZON1_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux AMI')"
-    AMAZON2_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2')"
+    AMAZON2_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2 ')"
+    AMAZON2022_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2022')"
     echo "system-release:          ${SYSTEM_RELEASE}"
   fi
 
@@ -73,9 +75,12 @@ check_linux_version() {
     echo "AMAZON2_RELEASE:         $AMAZON2_RELEASE"
     REDHAT_RELEASE_DIGIT="7"
     echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
+  elif [[ "$AMAZON2022_RELEASE" != "" ]]; then
+    echo "AMAZON2022_RELEASE:      $AMAZON2022_RELEASE"
+    REDHAT_RELEASE_DIGIT="9"
+    echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
   fi
 }
-
 
 echo "PBase SSH port"
 

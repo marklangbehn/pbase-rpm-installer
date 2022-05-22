@@ -1,6 +1,6 @@
 Name: pbase-lets-encrypt
 Version: 1.0
-Release: 3
+Release: 5
 Summary: PBase Let's Encrypt configure
 Group: System Environment/Base
 License: Apache-2.0
@@ -108,10 +108,12 @@ parseConfig() {
 check_linux_version() {
   AMAZON1_RELEASE=""
   AMAZON2_RELEASE=""
+  AMAZON2022_RELEASE=""
   if [[ -e "/etc/system-release" ]]; then
     SYSTEM_RELEASE="$(cat /etc/system-release)"
     AMAZON1_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux AMI')"
-    AMAZON2_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2')"
+    AMAZON2_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2 ')"
+    AMAZON2022_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2022')"
     echo "system-release:          ${SYSTEM_RELEASE}"
   fi
 
@@ -133,6 +135,24 @@ check_linux_version() {
     echo "AMAZON2_RELEASE:         $AMAZON2_RELEASE"
     REDHAT_RELEASE_DIGIT="7"
     echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
+  elif [[ "$AMAZON2022_RELEASE" != "" ]]; then
+    echo "AMAZON2022_RELEASE:      $AMAZON2022_RELEASE"
+    REDHAT_RELEASE_DIGIT="9"
+    echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
+  fi
+}
+
+commentOutFile() {
+  ## disable config file in directory $1 named $2
+  echo "Checking for:            ${1}/${2}"
+
+  if [[ -e "${1}/${2}" ]] ; then
+    ##echo "Backup:                  ${1}/${2}-ORIG"
+    cp -p "${1}/${2}" "${1}/${2}-ORIG"
+
+    ## comment out with a '#' in front of all lines
+    echo "Commenting out contents: ${2}"
+    sed -i 's/^\([^#].*\)/# \1/g' "${1}/${2}"
   fi
 }
 
@@ -261,7 +281,7 @@ echo "RAND_MINUTE:             $RAND_MINUTE"
 echo "RAND_HOUR:               $RAND_HOUR"
 
 ## line to add to crontab
-if [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]] || [[ "${REDHAT_RELEASE_DIGIT}" == "8" ]]; then
+if [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]] || [[ "${REDHAT_RELEASE_DIGIT}" == "8" ]] || [[ "${REDHAT_RELEASE_DIGIT}" == "9" ]]; then
   CRONJOB_LINE="$RAND_MINUTE $RAND_HOUR * * * root certbot renew >> $CRONJOB_LOGFILE"
 else
   CRONJOB_LINE="$RAND_MINUTE $RAND_HOUR * * * root /usr/bin/certbot renew >> $CRONJOB_LOGFILE"
@@ -293,10 +313,8 @@ else
     echo "No cronjob script found: $CRONJOB_SCRIPT"
 fi
 
-
-if [[ -e "/etc/httpd/conf.d/ssl.conf" ]] ; then
-  mv "/etc/httpd/conf.d/ssl.conf" "/etc/httpd/conf.d/ssl.conf-DISABLED"
-fi
+## Check for /etc/httpd/conf.d/ssl.conf, comment it out if it exists
+commentOutFile "/etc/httpd/conf.d" "ssl.conf"
 
 # Enable httpd service at boot-time, and start httpd service
 echo "Restarting service:      httpd"

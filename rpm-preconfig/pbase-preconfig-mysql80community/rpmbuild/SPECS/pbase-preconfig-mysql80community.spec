@@ -1,6 +1,6 @@
 Name: pbase-preconfig-mysql80community
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase MySQL 8.0 repo preconfigure
 Group: System Environment/Base
 License: Apache-2.0
@@ -37,10 +37,12 @@ fail() {
 check_linux_version() {
   AMAZON1_RELEASE=""
   AMAZON2_RELEASE=""
+  AMAZON2022_RELEASE=""
   if [[ -e "/etc/system-release" ]]; then
     SYSTEM_RELEASE="$(cat /etc/system-release)"
     AMAZON1_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux AMI')"
-    AMAZON2_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2')"
+    AMAZON2_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2 ')"
+    AMAZON2022_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2022')"
     echo "system-release:          ${SYSTEM_RELEASE}"
   fi
 
@@ -62,9 +64,12 @@ check_linux_version() {
     echo "AMAZON2_RELEASE:         $AMAZON2_RELEASE"
     REDHAT_RELEASE_DIGIT="7"
     echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
+  elif [[ "$AMAZON2022_RELEASE" != "" ]]; then
+    echo "AMAZON2022_RELEASE:      $AMAZON2022_RELEASE"
+    REDHAT_RELEASE_DIGIT="9"
+    echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
   fi
 }
-
 
 echo "PBase MySQL 8.0 Community repo and default module config"
 echo ""
@@ -104,6 +109,9 @@ elif [[ "${REDHAT_RELEASE_DIGIT}" == "7" ]] ; then
 elif [[ "${REDHAT_RELEASE_DIGIT}" == "8" ]] ; then
     echo "MySQL 8.0 el8:           /etc/yum.repos.d/mysql-community.repo"
     /bin/cp -f /usr/local/pbase-data/pbase-preconfig-mysql80community/etc-yum-repos-d/el8/mysql-community.repo /etc/yum.repos.d/mysql-community.repo
+elif [[ "${REDHAT_RELEASE_DIGIT}" == "9" ]] ; then
+    echo "MySQL 8.0 el9:           /etc/yum.repos.d/mysql-community.repo"
+    /bin/cp -f /usr/local/pbase-data/pbase-preconfig-mysql80community/etc-yum-repos-d/el9/mysql-community.repo /etc/yum.repos.d/mysql-community.repo
 elif [[ "${FEDORA_RELEASE}" != "" ]] ; then
     echo "MySQL 8.0 fedora:        /etc/yum.repos.d/mysql-community.repo"
     /bin/cp -f /usr/local/pbase-data/pbase-preconfig-mysql80community/etc-yum-repos-d/fedora/mysql-community.repo /etc/yum.repos.d/mysql-community.repo
@@ -141,6 +149,7 @@ echo "rpm preuninstall"
 /usr/local/pbase-data/pbase-preconfig-mysql80community/etc-yum-repos-d/el6/mysql-community.repo
 /usr/local/pbase-data/pbase-preconfig-mysql80community/etc-yum-repos-d/el7/mysql-community.repo
 /usr/local/pbase-data/pbase-preconfig-mysql80community/etc-yum-repos-d/el8/mysql-community.repo
+/usr/local/pbase-data/pbase-preconfig-mysql80community/etc-yum-repos-d/el9/mysql-community.repo
 /usr/local/pbase-data/pbase-preconfig-mysql80community/etc-yum-repos-d/fedora/mysql-community.repo
 /usr/local/pbase-data/pbase-preconfig-mysql80community/etc-pki-rpm-gpg/RPM-GPG-KEY-mysql
 /usr/local/pbase-data/pbase-preconfig-mysql80community/module-config-samples/pbase_mysql80community.json

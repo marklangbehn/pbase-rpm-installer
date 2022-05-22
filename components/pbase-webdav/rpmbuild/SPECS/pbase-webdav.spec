@@ -1,6 +1,6 @@
 Name: pbase-webdav
 Version: 1.0
-Release: 1
+Release: 2
 Summary: PBase WebDAV Apache service
 Group: System Environment/Base
 License: Apache-2.0
@@ -33,37 +33,6 @@ rm -rf "$RPM_BUILD_ROOT"
 fail() {
     echo "ERROR: $1"
     exit 1
-}
-
-check_linux_version() {
-  AMAZON1_RELEASE=""
-  AMAZON2_RELEASE=""
-  if [[ -e "/etc/system-release" ]]; then
-    SYSTEM_RELEASE="$(cat /etc/system-release)"
-    AMAZON1_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux AMI')"
-    AMAZON2_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2')"
-    echo "system-release:          ${SYSTEM_RELEASE}"
-  fi
-
-  FEDORA_RELEASE=""
-  if [[ -e "/etc/fedora-release" ]]; then
-    FEDORA_RELEASE="$(cat /etc/fedora-release)"
-    echo "fedora_release:          ${FEDORA_RELEASE}"
-  fi
-
-  REDHAT_RELEASE_DIGIT=""
-  if [[ -e "/etc/redhat-release" ]]; then
-    REDHAT_RELEASE_DIGIT="$(cat /etc/redhat-release | grep -oE '[0-9]+' | head -n1)"
-    echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
-  elif [[ "$AMAZON1_RELEASE" != "" ]]; then
-    echo "AMAZON1_RELEASE:         $AMAZON1_RELEASE"
-    REDHAT_RELEASE_DIGIT="6"
-    echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
-  elif [[ "$AMAZON2_RELEASE" != "" ]]; then
-    echo "AMAZON2_RELEASE:         $AMAZON2_RELEASE"
-    REDHAT_RELEASE_DIGIT="7"
-    echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
-  fi
 }
 
 append_bashrc_alias() {
@@ -131,6 +100,23 @@ parseConfig() {
   ## use eval to assign that to the variable named in the first param
   eval "$1"="$PARSED_VALUE"
 }
+
+commentOutFile() {
+  ## disable config file in directory $1 named $2
+  echo "Checking for:            ${1}/${2}"
+
+  if [[ -e "${1}/${2}" ]] ; then
+    DATE_SUFFIX="$(date +'%Y-%m-%d_%H-%M')"
+
+    ##echo "Backup:                  ${1}/${2}-PREV-${DATE_SUFFIX}"
+    cp -p "${1}/${2}" "${1}/${2}-PREV-${DATE_SUFFIX}"
+
+    ## comment out with a '#' in front of all lines
+    echo "Commenting out contents: ${2}"
+    sed -i 's/^\([^#].*\)/# \1/g' "${1}/${2}"
+  fi
+}
+
 
 echo "PBase WebDAV installer"
 
@@ -202,12 +188,8 @@ if [[ -e "${ROOTDOMAIN_HTTP_CONF_FILE}" ]] ; then
   HAS_APACHE_ROOTDOMAIN_CONF="true"
 fi
 
-echo "Checking for:            /etc/httpd/conf.d/ssl.conf"
-
-if [[ -e "/etc/httpd/conf.d/ssl.conf" ]] ; then
-  echo "Disabling unused:        /etc/httpd/conf.d/ssl.conf"
-  mv "/etc/httpd/conf.d/ssl.conf" "/etc/httpd/conf.d/ssl.conf-DISABLED"
-fi
+## Checking for /etc/httpd/conf.d/ssl.conf, comment it out if it exists
+commentOutFile "/etc/httpd/conf.d" "ssl.conf"
 
 ## fetch previously registered domain names
 DOMAIN_NAME_LIST=""

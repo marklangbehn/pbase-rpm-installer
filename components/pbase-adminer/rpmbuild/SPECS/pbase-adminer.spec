@@ -1,6 +1,6 @@
 Name: pbase-adminer
 Version: 1.0
-Release: 1
+Release: 2
 Summary: PBase Adminer DB interface
 Group: System Environment/Base
 License: Apache-2.0
@@ -35,38 +35,6 @@ fail() {
     echo "ERROR: $1"
     exit 1
 }
-
-check_linux_version() {
-  AMAZON1_RELEASE=""
-  AMAZON2_RELEASE=""
-  if [[ -e "/etc/system-release" ]]; then
-    SYSTEM_RELEASE="$(cat /etc/system-release)"
-    AMAZON1_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux AMI')"
-    AMAZON2_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2')"
-    echo "system-release:          ${SYSTEM_RELEASE}"
-  fi
-
-  FEDORA_RELEASE=""
-  if [[ -e "/etc/fedora-release" ]]; then
-    FEDORA_RELEASE="$(cat /etc/fedora-release)"
-    echo "fedora_release:          ${FEDORA_RELEASE}"
-  fi
-
-  REDHAT_RELEASE_DIGIT=""
-  if [[ -e "/etc/redhat-release" ]]; then
-    REDHAT_RELEASE_DIGIT="$(cat /etc/redhat-release | grep -oE '[0-9]+' | head -n1)"
-    echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
-  elif [[ "$AMAZON1_RELEASE" != "" ]]; then
-    echo "AMAZON1_RELEASE:         $AMAZON1_RELEASE"
-    REDHAT_RELEASE_DIGIT="6"
-    echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
-  elif [[ "$AMAZON2_RELEASE" != "" ]]; then
-    echo "AMAZON2_RELEASE:         $AMAZON2_RELEASE"
-    REDHAT_RELEASE_DIGIT="7"
-    echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
-  fi
-}
-
 
 echo "PBase Adminer DB interface"
 
@@ -110,16 +78,10 @@ else
   ls -l /var/www/html/${SUBFOLDER}
 fi
 
-check_linux_version
-
 # Restart httpd service
 
-if [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]]; then
-  /sbin/service httpd restart || fail "failed to restart httpd service"
-else
-  /bin/systemctl daemon-reload
-  /bin/systemctl restart httpd || fail "failed to restart httpd service"
-fi
+/bin/systemctl daemon-reload
+/bin/systemctl restart httpd || fail "failed to restart httpd service"
 
 echo "Next step, open Adminer with this URL"
 #echo "Restart Apache:          systemctl restart httpd"

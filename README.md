@@ -37,12 +37,9 @@ This enables entire application stacks to be configured and installed with ease.
 
 #### PREREQUISITES
 Requires a Red Hat Enterprise Linux (EL) compatible operating system such as:
-- Red Hat EL 6, 7 or 8
-- CentOS 6, 7, 8 including CentOS Steam 8
-- Amazon Linux 1 or 2 AMI
-- AlmaLinux 8
-- Rocky Linux 8
-- Fedora 3x (tested on Fedora versions 31 through 34 for most RPM components)
+- Red Hat EL 7, 8 or 9 - including AlmaLinux and Rocky Linux
+- Amazon Linux 2 AMI or Amazon Linux 2022
+- Fedora 3x (tested on Fedora versions 33 through 36 for most RPM components)
 
 All `yum` install commands must be run as root user, or using sudo.
 
@@ -599,9 +596,9 @@ yum -y install obs-studio
 Here's how to install Mastodon:
 (Note: On RHEL 8 you must enable CodeReadyBuilder with:  subscription-manager repos --enable codeready-builder-for-rhel-8-x86_64-rpms)
 
-Mastodon requires Node JS 12 or higher:
+Mastodon requires Node JS 16 or higher:
 ```
-curl -sL https://rpm.nodesource.com/setup_14.x | bash -
+curl -sL https://rpm.nodesource.com/setup_16.x | bash -
 yum -y install gcc-c++ make
 yum -y install nodejs
 ```
@@ -619,7 +616,7 @@ The default install assumes your domain is registered in DNS with a 'peertube' s
 For example: peertube.mydomainname.com  
 If you want to change this edit the `activpb_peertube.json` preconfig file.
 
-Requires Node JS 12 or higher:
+Requires Node JS 14 or higher:
 ```
 curl -sL https://rpm.nodesource.com/setup_14.x | bash -
 yum -y install nodejs

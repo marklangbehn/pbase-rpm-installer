@@ -1,6 +1,6 @@
 Name: pbase-preconfig-mongodb-org
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase NodeJS repo preconfigure
 Group: System Environment/Base
 License: Apache-2.0
@@ -37,10 +37,12 @@ fail() {
 check_linux_version() {
   AMAZON1_RELEASE=""
   AMAZON2_RELEASE=""
+  AMAZON2022_RELEASE=""
   if [[ -e "/etc/system-release" ]]; then
     SYSTEM_RELEASE="$(cat /etc/system-release)"
     AMAZON1_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux AMI')"
-    AMAZON2_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2')"
+    AMAZON2_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2 ')"
+    AMAZON2022_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2022')"
     echo "system-release:          ${SYSTEM_RELEASE}"
   fi
 
@@ -62,9 +64,12 @@ check_linux_version() {
     echo "AMAZON2_RELEASE:         $AMAZON2_RELEASE"
     REDHAT_RELEASE_DIGIT="7"
     echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
+  elif [[ "$AMAZON2022_RELEASE" != "" ]]; then
+    echo "AMAZON2022_RELEASE:      $AMAZON2022_RELEASE"
+    REDHAT_RELEASE_DIGIT="9"
+    echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
   fi
 }
-
 
 echo "PBase MongoDB.org repo pre-configuration"
 echo ""
@@ -73,7 +78,7 @@ echo ""
 check_linux_version
 
 
-if [[ "$AMAZON1_RELEASE" != "" ]]  ||  [[ "$AMAZON2_RELEASE" != "" ]]  ||  [[ "$FEDORA_RELEASE" != "" ]]  ; then
+if [[ "$AMAZON1_RELEASE" != "" ]]  ||  [[ "$AMAZON2_RELEASE" != "" ]]  ||  [[ "$AMAZON2022_RELEASE" != "" ]]  ||  [[ "$FEDORA_RELEASE" != "" ]]  ; then
   if [[ -e "/etc/yum.repos.d/mongodb-org-4.4-amazon.repo" ]]  ||  [[ -e "/etc/yum.repos.d/mongodb-org-4.4.repo" ]] ; then
     echo "Existing Mongodb.org repo found, leaving unchanged"
   else
@@ -86,7 +91,7 @@ else
   elif [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]]; then
     echo "Mongodb.org for EL6:     /etc/yum.repos.d/mongodb-org-4.0.repo"
     /bin/cp -f /usr/local/pbase-data/pbase-preconfig-mongodb-org/etc-yum-repos-d/mongodb-org-4.0.repo /etc/yum.repos.d/
-  elif [[ "${REDHAT_RELEASE_DIGIT}" == "7" ]]  ||  [[ "${REDHAT_RELEASE_DIGIT}" == "8" ]]  ||  [[ "$FEDORA_RELEASE" != "" ]] ; then
+  elif [[ "${REDHAT_RELEASE_DIGIT}" == "7" ]]  ||  [[ "${REDHAT_RELEASE_DIGIT}" == "8" ]]  ||  [[ "${REDHAT_RELEASE_DIGIT}" == "9" ]]  ||  [[ "$FEDORA_RELEASE" != "" ]] ; then
     echo "Mongodb.org repo:        /etc/yum.repos.d/mongodb-org-4.4.repo"
     /bin/cp -f /usr/local/pbase-data/pbase-preconfig-mongodb-org/etc-yum-repos-d/mongodb-org-4.4.repo /etc/yum.repos.d/
   fi

@@ -363,6 +363,7 @@ if [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
     echo "                         ${CERTBOT_CMD}"
   fi
 
+  echo ""
   echo "Jellyfin service running at this URL:"
   echo "                         http://${FULLDOMAINNAME}${SUBPATH_URI}"
 else

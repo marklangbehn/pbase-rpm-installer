@@ -252,6 +252,9 @@ DOMAIN_NAME_LIST_HAS_WWW=$(grep www ${SAVE_CMD_DIR}/domain-name-list.txt)
 
 cd /root
 
+## GoTTY download from repo https://github.com/sorenisanerd/gotty
+## forked from previous repo https://github.com/yudai/gotty
+
 echo "Building code:           go get -v github.com/sorenisanerd/gotty"
 
 go get -v github.com/sorenisanerd/gotty

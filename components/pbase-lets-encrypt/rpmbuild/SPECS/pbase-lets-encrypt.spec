@@ -1,6 +1,6 @@
 Name: pbase-lets-encrypt
 Version: 1.0
-Release: 5
+Release: 6
 Summary: PBase Let's Encrypt configure
 Group: System Environment/Base
 License: Apache-2.0
@@ -9,7 +9,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-lets-encrypt
-Requires: pbase-lets-encrypt-transitive-dep, pbase-epel, jq
+Requires: pbase-lets-encrypt-transitive-dep, pbase-epel, jq, pbase-firewall-enable
 
 %description
 Configure Let's Encrypt

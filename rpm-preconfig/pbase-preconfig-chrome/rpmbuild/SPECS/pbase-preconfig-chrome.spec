@@ -1,6 +1,6 @@
 Name: pbase-preconfig-chrome
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase Google Chrome repo preconfig rpm
 Group: System Environment/Base
 License: Apache-2.0

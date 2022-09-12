@@ -1,6 +1,6 @@
 {
   "pbase_ssh_port" :  {
-    "enableRootLogin": false,
+    "enableRootLogin": true,
     "port": "29900"
   }
 }

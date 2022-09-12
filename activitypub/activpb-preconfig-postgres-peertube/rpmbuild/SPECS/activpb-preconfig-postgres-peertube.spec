@@ -1,6 +1,6 @@
 Name: activpb-preconfig-postgres-peertube
 Version: 1.0
-Release: 3
+Release: 4
 Summary: PBase Postgres preconfigure rpm, preset user and DB name for use by activpb-peertube
 Group: System Environment/Base
 License: Apache-2.0
@@ -287,6 +287,13 @@ echo "Peertube config:         ${MODULE_CONFIG_DIR}/activpb_peertube.json"
 
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_lets_encrypt.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_smtp.json  ${MODULE_CONFIG_DIR}/
+
+if [[ -e "${MODULE_CONFIG_DIR}/pbase_postgres.json" ]] ; then
+  echo "Setting aside previous preconfig file: pbase_postgres"
+  DATE_SUFFIX="$(date +'%Y-%m-%d_%H-%M')"
+  mv "${MODULE_CONFIG_DIR}/pbase_postgres.json" "${MODULE_CONFIG_DIR}/pbase_postgres-PREV-${DATE_SUFFIX}.json"
+fi
+
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_postgres.json  ${MODULE_CONFIG_DIR}/
 
 if [[ "${HAS_APACHE_CONF}" == "true" ]] ; then

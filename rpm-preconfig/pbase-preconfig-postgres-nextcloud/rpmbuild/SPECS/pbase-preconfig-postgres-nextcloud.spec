@@ -1,6 +1,6 @@
 Name: pbase-preconfig-postgres-nextcloud
 Version: 1.0
-Release: 2
+Release: 3
 Summary: PBase Postgres preconfigure rpm, preset user and DB name for use by pbase-nextcloud
 Group: System Environment/Base
 License: Apache-2.0
@@ -196,7 +196,15 @@ echo "Nextcloud config:        ${MODULE_CONFIG_DIR}/pbase_nextcloud.json"
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_apache.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_lets_encrypt.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_nextcloud.json  ${MODULE_CONFIG_DIR}/
+
+if [[ -e "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}" ]] ; then
+  echo "Setting aside previous preconfig file: ${DB_CONFIG_FILENAME}"
+  DATE_SUFFIX="$(date +'%Y-%m-%d_%H-%M')"
+  mv "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}-PREV-${DATE_SUFFIX}.json"
+fi
+
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${DB_CONFIG_FILENAME}  ${MODULE_CONFIG_DIR}/
+
 ## /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_s3storage.json  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_smtp.json  ${MODULE_CONFIG_DIR}/
 

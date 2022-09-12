@@ -1,6 +1,6 @@
 Name: pbase-gotty
 Version: 1.0
-Release: 4
+Release: 5
 Summary: PBase GoTTY rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -255,9 +255,9 @@ cd /root
 ## GoTTY download from repo https://github.com/sorenisanerd/gotty
 ## forked from previous repo https://github.com/yudai/gotty
 
-echo "Building code:           go get -v github.com/sorenisanerd/gotty"
+echo "Building code:           go install github.com/sorenisanerd/gotty@latest"
 
-go get -v github.com/sorenisanerd/gotty
+go install github.com/sorenisanerd/gotty@latest
 
 /bin/cp --no-clobber /root/go/bin/gotty /usr/local/bin
 chmod +x /usr/local/bin/gotty

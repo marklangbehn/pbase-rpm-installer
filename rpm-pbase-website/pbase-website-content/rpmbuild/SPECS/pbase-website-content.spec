@@ -1,6 +1,6 @@
 Name: pbase-website-content
 Version: 1.0
-Release: 2
+Release: 3
 Summary: PBase pbase-foundation.com website rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-website-content
-Requires: pbase-apache,git,perl,curl,wget,zip,unzip
+Requires: pbase-apache
 
 %description
 Provides pbase-foundation.com website content
@@ -67,8 +67,8 @@ cd /var/www/html/${THISDOMAINNAME}/public/
 if [[ -e /var/www/html/${THISDOMAINNAME}/public/mp3 ]] ; then
   echo "Already exists:          /var/www/html/${THISDOMAINNAME}/public/mp3"
 else
-  echo "Creating links to media: /var/www/mp3"
-  ln -s /var/www/mp3 mp3
+  #echo "Creating links to media: /var/www/mp3"
+  #ln -s /var/www/mp3 mp3
   #ln -s /var/www/wav wav
 
   ## yum
@@ -95,8 +95,6 @@ WEBSITE_URL2="http://${THISDOMAINNAME}"
 echo ""
 echo "Website URL:             ${WEBSITE_URL1}"
 echo "  if registered in DNS:  ${WEBSITE_URL2}"
-echo ""
-
 
 %files
 %defattr(-,root,root,-)

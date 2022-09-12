@@ -1,6 +1,6 @@
 Name: pbase-preconfig-mysql80community
 Version: 1.0
-Release: 1
+Release: 2
 Summary: PBase MySQL 8.0 repo preconfigure
 Group: System Environment/Base
 License: Apache-2.0
@@ -82,6 +82,13 @@ MODULE_SAMPLES_DIR="/usr/local/pbase-data/pbase-preconfig-mysql80community/modul
 DB_CONFIG_FILENAME="pbase_mysql80community.json"
 
 echo "MySQL config:            ${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}"
+
+if [[ -e "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}" ]] ; then
+  echo "Setting aside previous preconfig file: ${DB_CONFIG_FILENAME}"
+  DATE_SUFFIX="$(date +'%Y-%m-%d_%H-%M')"
+  mv "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}-PREV-${DATE_SUFFIX}.json"
+fi
+
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${DB_CONFIG_FILENAME}  ${MODULE_CONFIG_DIR}/
 
 ## use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars
@@ -122,14 +129,13 @@ fi
 
 echo ""
 echo "MySQL 8.0 community repo configured."
-
 echo "Next step - optional - change the default MySQL application-database name,"
 echo "     user and password to be created by editing"
 echo "     the sample config file. For example:"
 echo ""
 
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
-echo "  vi pbase_mysql80community.json"
+echo "  vi ${DB_CONFIG_FILENAME}""
 
 echo ""
 echo "Next step - install MySQL with:"

@@ -1,6 +1,6 @@
 Name: vrl-website-content
 Version: 1.0
-Release: 2
+Release: 3
 Summary: PBase VirtualRecordLabel.net sample website rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -92,8 +92,19 @@ THISDOMAINNAME="$(hostname -d)"
 
 ## check for default subdomain text file
 DEFAULT_SUB_DOMAIN=""
+CUSTOM_DOMAINNAME=""
+CUSTOM_WWW_DOMAINNAME=""
+
 if [[ -e /root/DEFAULT_SUB_DOMAIN.txt ]] ; then
   read -r DEFAULT_SUB_DOMAIN < /root/DEFAULT_SUB_DOMAIN.txt
+fi
+
+if [[ -e /root/CUSTOM_DOMAINNAME.txt ]] ; then
+  read -r CUSTOM_DOMAINNAME < /root/CUSTOM_DOMAINNAME.txt
+fi
+
+if [[ -e /root/CUSTOM_WWW_DOMAINNAME.txt ]] ; then
+  read -r CUSTOM_WWW_DOMAINNAME < /root/CUSTOM_WWW_DOMAINNAME.txt
 fi
 
 ## look for config file "pbase_apache.json"
@@ -107,10 +118,49 @@ parseConfig "URL_SUBDOMAIN" ".pbase_apache.urlSubDomain" "${DEFAULT_SUB_DOMAIN}"
 ## FULLDOMAINNAME is the subdomain if declared plus the domain
 FULLDOMAINNAME="${THISDOMAINNAME}"
 
+## when the hostname of the server is not same as name of website it must be overridden with CUSTOM_DOMAINNAME
+if [[ "${CUSTOM_DOMAINNAME}" != "" ]] ; then
+  THISDOMAINNAME="${CUSTOM_DOMAINNAME}"
+  echo "Using CUSTOM_DOMAINNAME: ${THISDOMAINNAME}"
+fi
+
+
 if [[ "${URL_SUBDOMAIN}" != "" ]] ; then
   FULLDOMAINNAME="${URL_SUBDOMAIN}.${THISDOMAINNAME}"
   echo "Using subdomain:         ${FULLDOMAINNAME}"
 fi
+
+if [[ "${CUSTOM_DOMAINNAME}" != "" ]] ; then
+  CUSTOM_DIR="/var/www/html/${FULLDOMAINNAME}/public"
+  echo "Custom html directory:   ${CUSTOM_DIR}"
+  mkdir -p "${CUSTOM_DIR}"
+
+  ## /usr/local/pbase-data/admin-only/domain-name-list.txt
+  ## /usr/local/pbase-data/admin-only/certbot-cmd.sh
+
+  ADD_DOMAINS_FOR_CERTBOT="${CUSTOM_DOMAINNAME}"
+
+  if [[ "${CUSTOM_WWW_DOMAINNAME}" != "" ]] ; then
+    echo "CUSTOM_WWW_DOMAINNAME:   ${CUSTOM_WWW_DOMAINNAME}"
+    ADD_DOMAINS_FOR_CERTBOT="${ADD_DOMAINS_FOR_CERTBOT},www.${CUSTOM_WWW_DOMAINNAME}"
+  fi
+
+  SAVE_CMD_DIR="/usr/local/pbase-data/admin-only"
+  if [[ -e "${SAVE_CMD_DIR}/certbot-cmd.sh" ]] ; then
+
+    read -r DOMAIN_NAME_LIST < "${SAVE_CMD_DIR}/domain-name-list.txt"
+
+    echo "${DOMAIN_NAME_LIST_NEW}" > ${SAVE_CMD_DIR}/domain-name-list.txt
+    echo "Saved domain names:      ${SAVE_CMD_DIR}/domain-name-list.txt"
+    echo "                         ${DOMAIN_NAME_LIST_NEW}"
+  fi
+
+  if [[ -e "${SAVE_CMD_DIR}/domain-name-list.txt" ]] ; then
+      read -r DOMAIN_NAME_LIST < "${SAVE_CMD_DIR}/domain-name-list.txt"
+  fi
+
+fi
+
 
 QT="'"
 URL_SUBDOMAIN_QUOTED="${QT}${QT}"

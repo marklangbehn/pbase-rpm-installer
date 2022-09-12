@@ -1,6 +1,6 @@
 Name: pbase-preconfig-mysql
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase MySQL repo preconfigure
 Group: System Environment/Base
 License: Apache-2.0
@@ -43,7 +43,14 @@ MODULE_SAMPLES_DIR="/usr/local/pbase-data/pbase-preconfig-mysql/module-config-sa
 DB_CONFIG_FILENAME="pbase_mysql.json"
 
 echo "MySQL config:            ${MODULE_CONFIG_DIR}/pbase_mysql.json"
-/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_mysql.json  ${MODULE_CONFIG_DIR}/
+
+if [[ -e "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}" ]] ; then
+  echo "Setting aside previous preconfig file: ${DB_CONFIG_FILENAME}"
+  DATE_SUFFIX="$(date +'%Y-%m-%d_%H-%M')"
+  mv "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}-PREV-${DATE_SUFFIX}.json"
+fi
+
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${DB_CONFIG_FILENAME}  ${MODULE_CONFIG_DIR}/
 
 ## use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars
 RAND_PW_USER="u$(date +%s | sha256sum | base64 | head -c 8)"
@@ -64,7 +71,7 @@ echo "     the sample config file. For example:"
 echo ""
 
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
-echo "  vi pbase_mysql.json"
+echo "  vi ${DB_CONFIG_FILENAME}""
 
 echo ""
 echo "Next step - install MySQL with:"

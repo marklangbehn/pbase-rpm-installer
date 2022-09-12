@@ -1,7 +1,7 @@
 Name: pbase-preconfig-postgres
 Version: 1.0
 Release: 1
-Summary: PBase PostgreSQL for EL8 repo preconfigure rpm
+Summary: PBase PostgreSQL for EL8 and higher repo preconfigure
 Group: System Environment/Base
 License: Apache-2.0
 URL: https://pbase-foundation.com
@@ -14,6 +14,7 @@ Requires: jq
 
 %description
 Configure yum repo for PostgreSQL
+
 %prep
 %setup -q
 
@@ -134,7 +135,15 @@ check_linux_version
 
 MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
 MODULE_SAMPLES_DIR="/usr/local/pbase-data/pbase-preconfig-postgres/module-config-samples"
+DB_CONFIG_FILENAME="pbase_postgres.json"
 
+echo "Postgres config:         ${MODULE_CONFIG_DIR}/pbase_postgres.json"
+
+if [[ -e "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}" ]] ; then
+  echo "Setting aside previous preconfig file: ${DB_CONFIG_FILENAME}"
+  DATE_SUFFIX="$(date +'%Y-%m-%d_%H-%M')"
+  mv "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}-PREV-${DATE_SUFFIX}.json"
+fi
 PBASE_DEFAULTS_FILENAME="pbase_repo.json"
 
 ## look for config file like "pbase_repo.json"
@@ -144,10 +153,6 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 
 ## fetch config values from JSON file
 parseConfig "DEFAULT_EMAIL_ADDRESS" ".pbase_repo.defaultEmailAddress" ""
-
-DB_CONFIG_FILENAME="pbase_postgres.json"
-
-echo "Postgres config:         ${MODULE_CONFIG_DIR}/pbase_postgres.json"
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_postgres.json  ${MODULE_CONFIG_DIR}/
 
 ## use a hash of the date as a random-ish string. use head to grab first 8 chars, and next 8 chars

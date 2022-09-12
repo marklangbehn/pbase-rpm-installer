@@ -1,6 +1,6 @@
 Name: pbase-preconfig-mysql-wordpress
 Version: 1.0
-Release: 3
+Release: 4
 Summary: PBase MySQL preconfigure rpm, preset user and DB name for use by pbase-wordpress
 Group: System Environment/Base
 License: Apache-2.0
@@ -196,10 +196,17 @@ SMTP_CONFIG_FILENAME="pbase_smtp.json"
 WORDPRESS_CONFIG_FILENAME="pbase_wordpress.json"
 
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${APACHE_CONFIG_FILENAME}  ${MODULE_CONFIG_DIR}/
-/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${DB_CONFIG_FILENAME}  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${LETSENCRYPT_CONFIG_FILENAME}  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${SMTP_CONFIG_FILENAME}  ${MODULE_CONFIG_DIR}/
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${WORDPRESS_CONFIG_FILENAME}  ${MODULE_CONFIG_DIR}/
+
+if [[ -e "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}" ]] ; then
+  echo "Setting aside previous preconfig file: ${DB_CONFIG_FILENAME}"
+  DATE_SUFFIX="$(date +'%Y-%m-%d_%H-%M')"
+  mv "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}-PREV-${DATE_SUFFIX}.json"
+fi
+
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${DB_CONFIG_FILENAME}  ${MODULE_CONFIG_DIR}/
 
 echo "Let's Encrypt defaults:  ${MODULE_CONFIG_DIR}/pbase_lets_encrypt.json"
 

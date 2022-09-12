@@ -1,6 +1,6 @@
 Name: pbase-preconfig-mysql-mattermost
 Version: 1.0
-Release: 3
+Release: 4
 Summary: PBase MySQL preconfigure rpm, preset user and DB name for use by pbase-mattermost
 Group: System Environment/Base
 License: Apache-2.0
@@ -304,10 +304,22 @@ mkdir -p ${MODULE_CONFIG_DIR}
 if [[ "${REDHAT_RELEASE_DIGIT}" == "7" ]]; then
   DB_CONFIG_FILENAME="pbase_mysql80community.json"
   echo "MySQL 8.0 config:        ${MODULE_CONFIG_DIR}/pbase_mysql80community.json"
+
+  if [[ -e "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}" ]] ; then
+    echo "Setting aside previous preconfig file: ${DB_CONFIG_FILENAME}"
+    DATE_SUFFIX="$(date +'%Y-%m-%d_%H-%M')"
+    mv "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}-PREV-${DATE_SUFFIX}.json"
+  fi
   /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_mysql80community.json  ${MODULE_CONFIG_DIR}/pbase_mysql80community.json
 else
   DB_CONFIG_FILENAME="pbase_mysql.json"
   echo "MySQL config:            ${MODULE_CONFIG_DIR}/pbase_mysql.json"
+
+  if [[ -e "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}" ]] ; then
+    echo "Setting aside previous preconfig file: ${DB_CONFIG_FILENAME}"
+    DATE_SUFFIX="$(date +'%Y-%m-%d_%H-%M')"
+    mv "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}" "${MODULE_CONFIG_DIR}/${DB_CONFIG_FILENAME}-PREV-${DATE_SUFFIX}.json"
+  fi
   /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_mysql.json  ${MODULE_CONFIG_DIR}/pbase_mysql.json
 fi
 

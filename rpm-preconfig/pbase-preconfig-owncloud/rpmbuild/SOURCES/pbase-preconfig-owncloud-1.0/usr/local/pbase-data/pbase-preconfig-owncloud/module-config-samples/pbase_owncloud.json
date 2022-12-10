@@ -1,0 +1,12 @@
+{
+  "pbase_owncloud" :  {
+    "autoOcisInit": true,
+    "enableAutoRenew": true,
+    "executeCertbotCmd": true,
+    "downloadUrl": "https://download.owncloud.com/ocis/ocis/stable/2.0.0/ocis-2.0.0-linux-amd64",
+    "urlSubDomain": "owncloud",
+    "emailAddress": "yoursysadmin@yourrealmail.com",
+    "ocisUsername": "ocis",
+    "adminPassword": ""
+  }
+}

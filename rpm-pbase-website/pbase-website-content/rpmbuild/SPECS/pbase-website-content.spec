@@ -1,6 +1,6 @@
 Name: pbase-website-content
 Version: 1.0
-Release: 3
+Release: 4
 Summary: PBase pbase-foundation.com website rpm
 Group: System Environment/Base
 License: Apache-2.0

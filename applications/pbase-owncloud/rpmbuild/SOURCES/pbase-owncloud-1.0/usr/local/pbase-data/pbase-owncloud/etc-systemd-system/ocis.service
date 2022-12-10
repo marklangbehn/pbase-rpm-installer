@@ -1,0 +1,13 @@
+[Unit]
+Description=OCIS server
+
+[Service]
+Type=simple
+User=ocis
+Group=ocis
+EnvironmentFile=/etc/ocis/ocis.env
+ExecStart=/usr/local/bin/ocis server
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

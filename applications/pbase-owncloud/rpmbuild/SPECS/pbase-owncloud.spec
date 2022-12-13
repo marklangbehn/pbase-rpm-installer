@@ -239,9 +239,15 @@ DOMAIN_NAME_LIST_HAS_WWW=$(grep www ${SAVE_CMD_DIR}/domain-name-list.txt)
 
 echo "Downloading from:        ${DOWNLOAD_URL}"
 wget -q -O /usr/local/bin/ocis ${DOWNLOAD_URL}
-chmod +x /usr/local/bin/ocis
+
+## make sure file got downloaded
+if [[ ! -e "/usr/local/bin/ocis" ]] ; then
+  echo "Could not download ownCloud OCIS from URL: ${DOWNLOAD_URL}"
+  exit 1
+fi
 
 echo "ownCloud OCIS binary:"
+chmod +x /usr/local/bin/ocis
 ls -lh /usr/local/bin/ocis
 echo ""
 
@@ -292,29 +298,29 @@ fi
 
 echo "Creating HTTPS certificate symlinks"
 
-## let ocis user see the files under /etc/letsencrypt
+## add symlinks to let ocis user access the certificate files under /etc/letsencrypt
 if [[ -d /etc/letsencrypt ]] ; then
   chmod a+rx /etc/letsencrypt/archive/
   chmod a+rx /etc/letsencrypt/live/
   chmod a+r /etc/letsencrypt/live/${FULLDOMAINNAME}/*.pem
+  
+  cd /home/ocis
+  ln -s /etc/letsencrypt/live/${FULLDOMAINNAME}/privkey.pem /home/ocis/privkey.pem
+  ln -s /etc/letsencrypt/live/${FULLDOMAINNAME}/cert.pem /home/ocis/cert.pem
+  
+  ls -la /home/ocis/*.pem
+  echo ""
 fi
 
-cd /home/ocis
 
-ln -s /etc/letsencrypt/live/${FULLDOMAINNAME}/privkey.pem /home/ocis/privkey.pem
-ln -s /etc/letsencrypt/live/${FULLDOMAINNAME}/cert.pem /home/ocis/cert.pem
-
-ls -la /home/ocis/*.pem
-echo ""
-
-
-## AUTORENEW
+## start auto renew timer
 if [[ $ENABLE_AUTORENEW == "true" ]]; then
   if [[ -e "/usr/lib/systemd/system/certbot-renew.timer" ]] ; then
     echo "Enabling auto renew:     /usr/lib/systemd/system/certbot-renew.timer"
-    systemctl enable certbot-renew.timer
-    systemctl start certbot-renew.timer
-    systemctl status certbot-renew.timer
+    
+    /bin/systemctl enable certbot-renew.timer
+    /bin/systemctl start certbot-renew.timer
+    /bin/systemctl status certbot-renew.timer
   else
     ## when systemd timer does not exist use cron instead 
     echo "Adding cron jobs:        /etc/crontab"
@@ -325,6 +331,7 @@ if [[ $ENABLE_AUTORENEW == "true" ]]; then
     ## run tasks at random minute - under 0:50, random hour before 11pm
     RAND_MINUTE="$((2 + RANDOM % 50))"
     RAND_HOUR="$((2 + RANDOM % 23))"
+    
     CRONJOB_LINE1="${RAND_MINUTE} ${RAND_HOUR} * * * root /usr/bin/certbot renew --deploy-hook '/bin/systemctl restart ocis' >> $CRONJOB_LOGFILE"
     echo ""  >>  /etc/crontab
     echo "## Added by pbase-owncloud RPM ##"  >>  /etc/crontab

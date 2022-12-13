@@ -243,10 +243,25 @@ if [[ -e "/root/OWNCLOUD_ADMIN_PASSWORD.txt" ]] ; then
   fi
 fi
 
-#if [[ "${DEFAULT_DESKTOP_USERNAME}" != "" ]] && [[ "${DEFAULT_DESKTOP_USERNAME}" != null ]] ; then
-#  echo "ocisUsername:       ${DEFAULT_DESKTOP_USERNAME}"
-#  setFieldInJsonModuleConfig ${DEFAULT_DESKTOP_USERNAME} pbase_owncloud ocisUsername
-#fi
+
+## determine latest version number
+## read stable version list web page into string, ordered so latest version is last row
+PAGE_CONTENT=$(wget https://download.owncloud.com/ocis/ocis/stable/?sort=time -q -O -)
+
+## split web page content into lines by href, use xargs to trim lines, split apart last href line to get version number
+LATEST_VERSION=$(echo $PAGE_CONTENT  |  sed 's/</\n</g'  |  grep 'href'  |  xargs echo -n  |  tail -n1  |  sed 's/ /\n/g'  |  tail -n1)
+echo "LATEST_VERSION:  ${LATEST_VERSION}"
+
+if [[ "${LATEST_VERSION}" != "" ]] ; then
+  ## build url
+  DOWNLOAD_URL="https://download.owncloud.com/ocis/ocis/stable/${LATEST_VERSION}/ocis-${LATEST_VERSION}-linux-amd64"
+  echo "DOWNLOAD_URL:    ${DOWNLOAD_URL}"
+  setFieldInJsonModuleConfig ${DOWNLOAD_URL} pbase_owncloud downloadUrl
+else
+  echo "Cannot determine latest ownCloud OCIS version on page: https://download.owncloud.com/ocis/ocis/stable/"
+  exit 1
+fi
+
 
 echo "Next step - optional - review or change the ownCloud OCIS user/password"
 echo "  and other default configuration by editing the pbase_owncloud.json file."

@@ -644,7 +644,8 @@ yum -y install pbase-gotty
 
 
 #### ownCloud OCIS
-The ownCloud OCIS file-sync and share platform is a high performance successor to ownCloud written in Go.
+The ownCloud OCIS file-sync and share platform is a high performance successor to ownCloud written in Go.  
+(Be sure to substitute your own secret for the OWNCLOUD_ADMIN_PASSWORD, and your email for DEFAULT_EMAIL_ADDRESS.)
 ```
 echo "pbase.foundation@gmail.com" > /root/DEFAULT_EMAIL_ADDRESS.txt
 echo "owncloud" > /root/DEFAULT_SUB_DOMAIN.txt

@@ -1,6 +1,6 @@
 Name: pbase-preconfig-jellyfin
 Version: 1.0
-Release: 1
+Release: 2
 Summary: PBase Jellyfin preconfigure and dependencies for pbase-jellyfin
 Group: System Environment/Base
 License: Apache-2.0
@@ -124,6 +124,48 @@ setFieldInJsonModuleConfig() {
     /bin/rm -f "/tmp/${CONFIG_FILE_NAME}"
   else
     echo "Pre-config not present:  ${TEMPLATE_JSON_FILE}"
+  fi
+}
+
+check_linux_version() {
+  AMAZON1_RELEASE=""
+  AMAZON2_RELEASE=""
+  AMAZON20XX_RELEASE=""
+  if [[ -e "/etc/system-release" ]]; then
+    SYSTEM_RELEASE="$(cat /etc/system-release)"
+    AMAZON1_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux AMI')"
+    AMAZON2_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2 ')"
+    AMAZON20XX_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 20')"
+    echo "system-release:          ${SYSTEM_RELEASE}"
+  fi
+
+  FEDORA_RELEASE=""
+  if [[ -e "/etc/fedora-release" ]]; then
+    FEDORA_RELEASE="$(cat /etc/fedora-release)"
+    echo "fedora_release:          ${FEDORA_RELEASE}"
+  fi
+
+  QT="'"
+  AMAZON1_RELEASE_QUOTED=${QT}${AMAZON1_RELEASE}${QT}
+  AMAZON2_RELEASE_QUOTED=${QT}${AMAZON2_RELEASE}${QT}
+  AMAZON20XX_RELEASE_QUOTED=${QT}${AMAZON20XX_RELEASE}${QT}
+
+  REDHAT_RELEASE_DIGIT=""
+  if [[ -e "/etc/redhat-release" ]]; then
+    REDHAT_RELEASE_DIGIT="$(cat /etc/redhat-release | grep -oE '[0-9]+' | head -n1)"
+    echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
+  elif [[ "$AMAZON1_RELEASE" != "" ]]; then
+    echo "AMAZON1_RELEASE:         $AMAZON1_RELEASE_QUOTED"
+    REDHAT_RELEASE_DIGIT="6"
+    echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
+  elif [[ "$AMAZON2_RELEASE" != "" ]]; then
+    echo "AMAZON2_RELEASE:         $AMAZON2_RELEASE_QUOTED"
+    REDHAT_RELEASE_DIGIT="7"
+    echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
+  elif [[ "$AMAZON20XX_RELEASE" != "" ]]; then
+    echo "AMAZON20XX_RELEASE:      $AMAZON20XX_RELEASE_QUOTED"
+    REDHAT_RELEASE_DIGIT="9"
+    echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
   fi
 }
 
@@ -262,8 +304,17 @@ if [[ "${HAS_APACHE_CONF}" != "" ]] ; then
   commentOutFile "/etc/httpd/conf.d" "ssl.conf"
 fi
 
-echo "Adding repo:             /etc/yum.repos.d/pbase-third-party.repo"
-/bin/cp -f /usr/local/pbase-data/pbase-preconfig-jellyfin/etc/yum.repos.d/pbase-third-party.repo /etc/yum.repos.d/
+## check which version of Linux is installed
+check_linux_version
+
+## choose repo with Jellyfin RPMs for e7/e8 or fedora
+if [[ "$REDHAT_RELEASE_DIGIT" == "7" ]] || [[ "$REDHAT_RELEASE_DIGIT" == "8" ]]; then
+  echo "Adding repo:             /etc/yum.repos.d/pbase-third-party-el8.repo"
+  /bin/cp -f /usr/local/pbase-data/pbase-preconfig-jellyfin/etc/yum.repos.d/pbase-third-party-el8.repo /etc/yum.repos.d/
+else
+  echo "Adding repo:             /etc/yum.repos.d/pbase-third-party-fedora.repo"
+  /bin/cp -f /usr/local/pbase-data/pbase-preconfig-jellyfin/etc/yum.repos.d/pbase-third-party-fedora.repo /etc/yum.repos.d/
+fi
 
 echo "Jellyfin config:         ${MODULE_CONFIG_DIR}/pbase_jellyfin.json"
 /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${JELLYFIN_JSON_FILENAME}  ${MODULE_CONFIG_DIR}/pbase_jellyfin.json
@@ -307,6 +358,9 @@ echo "  vi pbase_jellyfin.json"
 echo "  vi pbase_lets_encrypt.json"
 echo ""
 
+echo "Next step - only if there is a conflicting firewalld dependency, temporarily remove with:"
+echo "  rpm -e --nodeps firewalld"
+
 echo "Next step - install Jellyfin application with:"
 echo "  yum -y install pbase-jellyfin"
 echo ""
@@ -315,7 +369,7 @@ echo ""
 echo "rpm preuninstall"
 
 ## remove the repo files that were added by script
-/bin/rm -f /etc/yum.repos.d/pbase-third-party
+/bin/rm -f /etc/yum.repos.d/pbase-third-party*.repo
 
 %files
 %defattr(600,root,root,700)
@@ -323,4 +377,6 @@ echo "rpm preuninstall"
 /usr/local/pbase-data/pbase-preconfig-jellyfin/module-config-samples/pbase_jellyfin.json
 /usr/local/pbase-data/pbase-preconfig-jellyfin/module-config-samples/pbase_jellyfin_apacheproxy.json
 /usr/local/pbase-data/pbase-preconfig-jellyfin/module-config-samples/pbase_lets_encrypt.json
-/usr/local/pbase-data/pbase-preconfig-jellyfin/etc/yum.repos.d/pbase-third-party.repo
+/usr/local/pbase-data/pbase-preconfig-jellyfin/etc/yum.repos.d/pbase-third-party-el8.repo
+/usr/local/pbase-data/pbase-preconfig-jellyfin/etc/yum.repos.d/pbase-third-party-fedora.repo
+/usr/local/pbase-data/pbase-preconfig-jellyfin/module-config-samples/pbase_firewall_enable.json

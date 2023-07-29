@@ -1,6 +1,6 @@
 Name: pbase-preconfig-mattermost
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase Mattermost config file create
 Group: System Environment/Base
 License: Apache-2.0
@@ -9,7 +9,7 @@ Source0: pbase-preconfig-mattermost-1.0.tar.gz
 BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
-Provides: pbase-preconfig-mattermost
+Provides: pbase-preconfig-mattermost, pbase-preconfig-firewall-enable
 
 %description
 Configure PBase Mattermost config file

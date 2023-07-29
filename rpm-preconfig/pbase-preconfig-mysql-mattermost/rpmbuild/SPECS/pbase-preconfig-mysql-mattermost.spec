@@ -1,6 +1,6 @@
 Name: pbase-preconfig-mysql-mattermost
 Version: 1.0
-Release: 4
+Release: 5
 Summary: PBase MySQL preconfigure rpm, preset user and DB name for use by pbase-mattermost
 Group: System Environment/Base
 License: Apache-2.0
@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-preconfig-mysql-mattermost
-Requires: pbase-epel, jq
+Requires: pbase-epel, jq, pbase-preconfig-firewall-enable
 
 %description
 Configure MySQL preset user and DB name for use by pbase-mattermost
@@ -92,12 +92,12 @@ parseConfig() {
 check_linux_version() {
   AMAZON1_RELEASE=""
   AMAZON2_RELEASE=""
-  AMAZON2022_RELEASE=""
+  AMAZON20XX_RELEASE=""
   if [[ -e "/etc/system-release" ]]; then
     SYSTEM_RELEASE="$(cat /etc/system-release)"
     AMAZON1_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux AMI')"
     AMAZON2_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2 ')"
-    AMAZON2022_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2022')"
+    AMAZON20XX_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 20')"
     echo "system-release:          ${SYSTEM_RELEASE}"
   fi
 
@@ -119,8 +119,8 @@ check_linux_version() {
     echo "AMAZON2_RELEASE:         $AMAZON2_RELEASE"
     REDHAT_RELEASE_DIGIT="7"
     echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
-  elif [[ "$AMAZON2022_RELEASE" != "" ]]; then
-    echo "AMAZON2022_RELEASE:      $AMAZON2022_RELEASE"
+  elif [[ "$AMAZON20XX_RELEASE" != "" ]]; then
+    echo "AMAZON20XX_RELEASE:      $AMAZON20XX_RELEASE"
     REDHAT_RELEASE_DIGIT="9"
     echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
   fi

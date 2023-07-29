@@ -1,6 +1,6 @@
 Name: activpb-mastodon
 Version: 1.0
-Release: 2
+Release: 4
 Summary: PBase Mastodon service rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -109,16 +109,16 @@ if [[ -e "/home/mastodon/live/.env.production" ]]; then
   exit 0
 fi
 
-## check if node 12 or higher installed
+## check if node 16 or higher installed
 VERS_INSTALLED="$(node --version)"
-VERS_REQUIRED="v12.0.0"
+VERS_REQUIRED="v16.0.0"
 
 if [ "$(printf '%s\n' "$VERS_REQUIRED" "$VERS_INSTALLED" | sort -V | head -n1)" = "$VERS_REQUIRED" ]; then
   echo "Node JS version:         ${VERS_INSTALLED}"
   echo ""
 else
   echo "Less than ${VERS_REQUIRED}"
-  echo "Node JS version 12 or higher required, found: ${VERS_INSTALLED}"
+  echo "Node JS version 16 or higher required, found: ${VERS_INSTALLED}"
   echo "Exiting."
   exit 0
 fi
@@ -548,7 +548,7 @@ echo "Mastodon configuration:  /home/mastodon/live/.env.production"
 EXTERNALURL="https://${FULLDOMAINNAME}"
 echo ""
 echo "Next Step - required - open your Mastodon instance now at the URL below"
-echo "                       and click 'Sign Up' to create your administrator account"
+echo "                       and click 'Create Account' to create your administrator account"
 echo ""
 
 echo "Mastodon Ready:            $EXTERNALURL"

@@ -1,6 +1,6 @@
 Name: pbase-epel-el9-dep
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase EPEL repo transitive dependencies for EL9/CentOS Stream 9
 Group: System Environment/Base
 License: Apache-2.0
@@ -59,6 +59,10 @@ elif [[ -e "/etc/yum.repos.d/Rocky-PowerTools.repo" ]] ; then
 elif [[ -e "/etc/yum.repos.d/almalinux-powertools.repo" ]] ; then
   echo "Enabling PowerTools:     /etc/yum.repos.d/almalinux-powertools.repo"
   /bin/sed -i "s/enabled=0/enabled=1/" /etc/yum.repos.d/almalinux-powertools.repo
+
+elif [[ -e "/etc/yum.repos.d/almalinux-crb.repo" ]] ; then
+  echo "Enabling CRB:            /etc/yum.repos.d/almalinux-crb.repo"
+  /bin/sed -i "s/enabled=0/enabled=1/" /etc/yum.repos.d/almalinux-crb.repo
 
 else
  echo "Next step optional, enable CodeReady Builder with"

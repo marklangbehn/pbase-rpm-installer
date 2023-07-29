@@ -1,6 +1,6 @@
 Name: pbase-preconfig-firewall-enable
 Version: 1.0
-Release: 0
+Release: 1
 Summary: PBase firewall port pre-config file create
 Group: System Environment/Base
 License: Apache-2.0
@@ -48,6 +48,8 @@ echo "Firewall config:         ${MODULE_CONFIG_DIR}/${CONFIG_FILENAME}"
 
 echo "Next step - recommended - review the firewall"
 echo "  default ports by editing the pbase_firewall_enable.json file."
+echo "  Enable more ports with the additionalPorts json field in this file."
+echo "   additionalPorts: [ 28800, 29900 ]  "
 echo "  For example:"
 echo ""
 echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"

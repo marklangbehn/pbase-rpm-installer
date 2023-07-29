@@ -1,6 +1,6 @@
 Name: pbase-mattermost
 Version: 1.0
-Release: 4
+Release: 5
 Summary: PBase Mattermost service rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-mattermost
-Requires: pbase-apache, wget, tar, jq, certbot, certbot-apache
+Requires: pbase-apache, wget, tar, jq, certbot, certbot-apache, pbase-firewall-enable
 
 %description
 PBase Mattermost service
@@ -276,7 +276,7 @@ echo "Existing domain names:   ${SAVE_CMD_DIR}/domain-name-list.txt"
 echo "Found domain-name-list:  ${DOMAIN_NAME_LIST}"
 
 echo "Downloading Mattermost server binary from releases.mattermost.com"
-VERSION="$(curl -s https://api.github.com/repos/mattermost/mattermost-server/releases/latest | grep tag_name | cut -d '"' -f 4 | sed s/^v//)"
+VERSION="$(curl -s https://api.github.com/repositories/37448451/releases/latest | grep tag_name | cut -d '"' -f 4 | sed s/^v//)"
 echo "Latest version:          $VERSION"
 
 ## for example: https://releases.mattermost.com/5.27.0/mattermost-5.27.0-linux-amd64.tar.gz

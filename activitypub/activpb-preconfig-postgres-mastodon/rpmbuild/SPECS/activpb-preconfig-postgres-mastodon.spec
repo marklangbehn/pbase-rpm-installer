@@ -1,6 +1,6 @@
 Name: activpb-preconfig-postgres-mastodon
 Version: 1.0
-Release: 4
+Release: 5
 Summary: PBase Postgres preconfigure rpm, preset user and DB name for use by pbase-mastodon
 Group: System Environment/Base
 License: Apache-2.0
@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: activpb-preconfig-postgres-mastodon
-Requires: pbase-preconfig-yarn, pbase-epel, jq
+Requires: pbase-preconfig-yarn, pbase-epel, jq, pbase-preconfig-firewall-enable
 
 %description
 Configure Postgres preset user and DB name for use by pbase-mastodon
@@ -285,6 +285,7 @@ echo "  cd /usr/local/pbase-data/admin-only/module-config.d/"
 echo "  vi pbase_lets_encrypt.json"
 echo "  vi pbase_postgres.json"
 echo "  vi pbase_smtp.json"
+echo "  vi pbase_firewall_enable.json"
 echo "  vi activpb_mastodon.json"
 echo ""
 

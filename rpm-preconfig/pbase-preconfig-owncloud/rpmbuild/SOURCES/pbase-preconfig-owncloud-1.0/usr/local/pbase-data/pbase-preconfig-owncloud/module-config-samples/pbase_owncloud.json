@@ -1,7 +1,9 @@
 {
   "pbase_owncloud" :  {
     "urlSubDomain": "owncloud",
-    "downloadUrl": "https://download.owncloud.com/ocis/ocis/daily/ocis-testing-linux-amd64",
+    "downloadUrl": "https://download.owncloud.com/ocis/ocis/stable/2.0.0/ocis-2.0.0-linux-amd64",
+    "customDownloadUrl": "https://download.owncloud.com/ocis/ocis/daily/ocis-testing-linux-amd64",
+    "useCustomDownloadUrl": false,
     "autoOcisInit": true,
     "enableAutoRenew": true,
     "executeCertbotCmd": true,

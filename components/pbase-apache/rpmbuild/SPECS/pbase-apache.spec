@@ -1,6 +1,6 @@
 Name: pbase-apache
 Version: 1.0
-Release: 5
+Release: 6
 Summary: PBase Apache rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-apache
-Requires: httpd, apr, apr-util, mod_proxy_html, jq, pbase-epel
+Requires: httpd, apr, apr-util, mod_proxy_html, jq, pbase-epel, pbase-preconfig-apache
 
 %description
 Configures and starts basic Apache httpd service and stub index page
@@ -53,12 +53,12 @@ append_bashrc_alias() {
 check_linux_version() {
   AMAZON1_RELEASE=""
   AMAZON2_RELEASE=""
-  AMAZON2022_RELEASE=""
+  AMAZON20XX_RELEASE=""
   if [[ -e "/etc/system-release" ]]; then
     SYSTEM_RELEASE="$(cat /etc/system-release)"
     AMAZON1_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux AMI')"
     AMAZON2_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2 ')"
-    AMAZON2022_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2022')"
+    AMAZON20XX_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 20')"
     echo "system-release:          ${SYSTEM_RELEASE}"
   fi
 
@@ -68,20 +68,25 @@ check_linux_version() {
     echo "fedora_release:          ${FEDORA_RELEASE}"
   fi
 
+  QT="'"
+  AMAZON1_RELEASE_QUOTED=${QT}${AMAZON1_RELEASE}${QT}
+  AMAZON2_RELEASE_QUOTED=${QT}${AMAZON2_RELEASE}${QT}
+  AMAZON20XX_RELEASE_QUOTED=${QT}${AMAZON20XX_RELEASE}${QT}
+
   REDHAT_RELEASE_DIGIT=""
   if [[ -e "/etc/redhat-release" ]]; then
     REDHAT_RELEASE_DIGIT="$(cat /etc/redhat-release | grep -oE '[0-9]+' | head -n1)"
     echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
   elif [[ "$AMAZON1_RELEASE" != "" ]]; then
-    echo "AMAZON1_RELEASE:         $AMAZON1_RELEASE"
+    echo "AMAZON1_RELEASE:         $AMAZON1_RELEASE_QUOTED"
     REDHAT_RELEASE_DIGIT="6"
     echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
   elif [[ "$AMAZON2_RELEASE" != "" ]]; then
-    echo "AMAZON2_RELEASE:         $AMAZON2_RELEASE"
+    echo "AMAZON2_RELEASE:         $AMAZON2_RELEASE_QUOTED"
     REDHAT_RELEASE_DIGIT="7"
     echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
-  elif [[ "$AMAZON2022_RELEASE" != "" ]]; then
-    echo "AMAZON2022_RELEASE:      $AMAZON2022_RELEASE"
+  elif [[ "$AMAZON20XX_RELEASE" != "" ]]; then
+    echo "AMAZON20XX_RELEASE:      $AMAZON20XX_RELEASE_QUOTED"
     REDHAT_RELEASE_DIGIT="9"
     echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
   fi

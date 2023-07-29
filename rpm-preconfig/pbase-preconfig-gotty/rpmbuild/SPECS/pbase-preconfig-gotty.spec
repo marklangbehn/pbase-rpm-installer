@@ -1,6 +1,6 @@
 Name: pbase-preconfig-gotty
 Version: 1.0
-Release: 2
+Release: 3
 Summary: PBase GoTTY config file create
 Group: System Environment/Base
 License: Apache-2.0
@@ -208,14 +208,14 @@ HAS_APACHE_SUBDOMAIN_CONF=""
 FULLDOMAINNAME="${THISDOMAINNAME}"
 
 ## check for case subdomain proxy to be added
-JELLYFIN_JSON_FILENAME="pbase_gotty.json"
+OWNCLOUD_JSON_FILENAME="pbase_gotty.json"
 ROOTDOMAIN_HTTP_CONF_FILE=""
 SUBDOMAIN_HTTP_CONF_FILE=""
 
 
 if [[ -e "/etc/httpd/conf.d/${THISDOMAINNAME}.conf" ]] ; then
   echo "Found existing Apache on this host, will configure Apache proxy"
-  JELLYFIN_JSON_FILENAME="pbase_gotty_apacheproxy.json"
+  OWNCLOUD_JSON_FILENAME="pbase_gotty_apacheproxy.json"
   ROOTDOMAIN_HTTP_CONF_FILE="/etc/httpd/conf.d/${THISDOMAINNAME}.conf"
   HAS_APACHE_ROOTDOMAIN_CONF="true"
   HAS_APACHE_CONF="true"
@@ -228,7 +228,7 @@ if [[ "${SUBDOMAIN_NAME}" == "" ]] ; then
   ## replace existing root domain conf
   if [[ -e "/etc/httpd/conf.d/${THISDOMAINNAME}.conf" ]] ; then
     echo "Found existing Apache root domain .conf file"
-    JELLYFIN_JSON_FILENAME="pbase_gotty_apacheproxy.json"
+    OWNCLOUD_JSON_FILENAME="pbase_gotty_apacheproxy.json"
     SUBDOMAIN_HTTP_CONF_FILE="/etc/httpd/conf.d/${THISDOMAINNAME}.conf"
     HAS_APACHE_SUBDOMAIN_CONF=""
     HAS_APACHE_CONF="true"
@@ -242,7 +242,7 @@ else
   if [[ -e "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf" ]] ; then
     echo "Found existing Apache subdomain .conf file"
     ## mv "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf" "/etc/httpd/conf.d/${FULLDOMAINNAME}.conf-DISABLED"
-    JELLYFIN_JSON_FILENAME="pbase_gotty_apacheproxy.json"
+    OWNCLOUD_JSON_FILENAME="pbase_gotty_apacheproxy.json"
     SUBDOMAIN_HTTP_CONF_FILE="/etc/httpd/conf.d/${FULLDOMAINNAME}.conf"
     HAS_APACHE_SUBDOMAIN_CONF="true"
     HAS_APACHE_CONF="true"
@@ -255,7 +255,7 @@ if [[ "${HAS_APACHE_CONF}" != "" ]] ; then
   commentOutFile "/etc/httpd/conf.d" "ssl.conf"
 fi
 
-/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${JELLYFIN_JSON_FILENAME}  ${MODULE_CONFIG_DIR}/pbase_gotty.json
+/bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/${OWNCLOUD_JSON_FILENAME}  ${MODULE_CONFIG_DIR}/pbase_gotty.json
 if [[ "${HAS_APACHE_CONF}" == "true" ]] ; then
   /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_apache.json  ${MODULE_CONFIG_DIR}/
 fi

@@ -5,7 +5,7 @@
     "restrictHttpMethods": true,
     "useSitesEnabledConf": false,
     "enableIndexPhp": false,
-    "enableCheckForWww": true,
+    "enableCheckForWww": false,
     "urlSubDomain": "",
     "serverAdmin": "yoursysadmin@yourrealmail.com"
   }

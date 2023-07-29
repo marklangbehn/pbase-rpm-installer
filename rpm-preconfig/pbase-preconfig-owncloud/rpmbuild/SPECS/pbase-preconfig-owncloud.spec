@@ -1,7 +1,7 @@
 Name: pbase-preconfig-owncloud
 Version: 1.0
-Release: 0
-Summary: PBase ownCloud OCIS config file create
+Release: 1
+Summary: PBase ownCloud oCIS config file create
 Group: System Environment/Base
 License: Apache-2.0
 URL: https://pbase-foundation.com
@@ -13,7 +13,7 @@ Provides: pbase-preconfig-owncloud
 Requires: pbase-epel, jq
 
 %description
-Configure ownCloud OCIS config file
+Configure ownCloud oCIS config file
 
 %prep
 %setup -q
@@ -144,7 +144,7 @@ commentOutFile() {
   fi
 }
 
-echo "PBase ownCloud OCIS pre-configuration and dependencies"
+echo "PBase ownCloud oCIS pre-configuration and dependencies"
 
 if [[ $1 -ne 1 ]] ; then
   echo "Already Installed. Exiting."
@@ -238,7 +238,7 @@ if [[ -e "/root/OWNCLOUD_ADMIN_PASSWORD.txt" ]] ; then
   read -r OWNCLOUD_ADMIN_PASSWORD < /root/OWNCLOUD_ADMIN_PASSWORD.txt
 
   if [[ "${OWNCLOUD_ADMIN_PASSWORD}" != "" ]] ; then
-    echo "Setting OCIS password:   pbase_owncloud.json"
+    echo "Setting oCIS password:   pbase_owncloud.json"
     setFieldInJsonModuleConfig ${OWNCLOUD_ADMIN_PASSWORD} pbase_owncloud adminPassword
   fi
 fi
@@ -258,12 +258,12 @@ if [[ "${LATEST_VERSION}" != "" ]] ; then
   echo "DOWNLOAD_URL:    ${DOWNLOAD_URL}"
   setFieldInJsonModuleConfig ${DOWNLOAD_URL} pbase_owncloud downloadUrl
 else
-  echo "Cannot determine latest ownCloud OCIS version on page: https://download.owncloud.com/ocis/ocis/stable/"
+  echo "Cannot determine latest ownCloud oCIS version on page: https://download.owncloud.com/ocis/ocis/stable/"
   exit 1
 fi
 
 
-echo "Next step - optional - review or change the ownCloud OCIS user/password"
+echo "Next step - optional - review or change the ownCloud oCIS user/password"
 echo "  and other default configuration by editing the pbase_owncloud.json file."
 echo "  For example:"
 echo ""

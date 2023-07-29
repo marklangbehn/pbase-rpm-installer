@@ -1,6 +1,6 @@
 Name: pbase-jellyfin
 Version: 1.0
-Release: 2
+Release: 3
 Summary: PBase Jellyfin service
 Group: System Environment/Base
 License: Apache-2.0
@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-jellyfin
-Requires: pbase-apache, jellyfin-server, jellyfin-web, wget, jq, ffmpeg, ffmpeg-devel, SDL2, certbot, certbot-apache
+Requires: pbase-apache, jellyfin-server, jellyfin-web, wget, jq, ffmpeg, ffmpeg-devel, SDL2, certbot, certbot-apache, pbase-firewall-enable
 
 %description
 PBase Jellyfin service

@@ -1,7 +1,7 @@
 Name: pbase-owncloud
 Version: 1.0
-Release: 0
-Summary: PBase ownCloud OCIS rpm
+Release: 1
+Summary: PBase ownCloud oCIS rpm
 Group: System Environment/Base
 License: Apache-2.0
 URL: https://pbase-foundation.com
@@ -13,7 +13,7 @@ Provides: pbase-owncloud
 Requires: pbase-lets-encrypt-transitive-dep, jq, certbot, pbase-firewall-enable
 
 %description
-PBase ownCloud OCIS service
+PBase ownCloud oCIS service
 
 %prep
 %setup -q
@@ -117,7 +117,7 @@ commentOutFile() {
   fi
 }
 
-echo "PBase ownCloud OCIS install"
+echo "PBase ownCloud oCIS install"
 
 if [[ $1 -ne 1 ]] ; then
   echo "Already Installed. Exiting."
@@ -138,10 +138,11 @@ echo ""
 echo "Hostname:                $THISHOSTNAME"
 echo "Domainname:              $THISDOMAINNAME"
 
-## ownCloud OCIS download from repo
+## ownCloud oCIS download from repo
 DOWNLOAD_URL="https://download.owncloud.com/ocis/ocis/stable/2.0.0/ocis-2.0.0-linux-amd64"
+USE_DOWNLOAD_URL=false
 
-## ownCloud OCIS config
+## ownCloud oCIS config
 ## look for config file "pbase_owncloud.json"
 PBASE_CONFIG_FILENAME="pbase_owncloud.json"
 
@@ -152,6 +153,8 @@ parseConfig "AUTO_OCIS_INIT" ".pbase_owncloud.autoOcisInit" "true"
 parseConfig "ENABLE_AUTORENEW" ".pbase_owncloud.enableAutoRenew" "true"
 parseConfig "EXECUTE_CERTBOT_CMD" ".pbase_owncloud.executeCertbotCmd" "true"
 parseConfig "DOWNLOAD_URL" ".pbase_owncloud.downloadUrl" "https://download.owncloud.com/ocis/ocis/stable/2.0.0/ocis-2.0.0-linux-amd64"
+parseConfig "CUSTOM_DOWNLOAD_URL" ".pbase_owncloud.customDownloadUrl" "https://download.owncloud.com/ocis/ocis/daily/ocis-testing-linux-amd64"
+parseConfig "USE_CUSTOM_DOWNLOAD_URL" ".pbase_owncloud.useCustomDownloadUrl" "false"
 
 parseConfig "URL_SUBDOMAIN" ".pbase_owncloud.urlSubDomain" "owncloud"
 parseConfig "EMAIL_ADDR" ".pbase_owncloud.emailAddress" "yoursysadmin@yourrealmail.com"
@@ -237,16 +240,21 @@ echo ""
 DOMAIN_NAME_LIST_HAS_WWW=$(grep www ${SAVE_CMD_DIR}/domain-name-list.txt)
 ##echo "Domain list has WWW:     ${DOMAIN_NAME_LIST_HAS_WWW}"
 
+if [[ "${USE_CUSTOM_DOWNLOAD_URL}" == "true" ]] ; then
+  echo "Using customDownloadUrl: ${CUSTOM_DOWNLOAD_URL}"
+  DOWNLOAD_URL="${CUSTOM_DOWNLOAD_URL}"
+fi
+
 echo "Downloading from:        ${DOWNLOAD_URL}"
 wget -q -O /usr/local/bin/ocis ${DOWNLOAD_URL}
 
 ## make sure file got downloaded
 if [[ ! -e "/usr/local/bin/ocis" ]] ; then
-  echo "Could not download ownCloud OCIS from URL: ${DOWNLOAD_URL}"
+  echo "Could not download ownCloud oCIS from URL: ${DOWNLOAD_URL}"
   exit 1
 fi
 
-echo "ownCloud OCIS binary:"
+echo "ownCloud oCIS binary:"
 chmod +x /usr/local/bin/ocis
 ls -lh /usr/local/bin/ocis
 echo ""
@@ -270,7 +278,7 @@ echo "Creating group and user: ocis"
 adduser \
    --system \
    --shell /bin/bash \
-   --comment 'OCIS user' \
+   --comment 'oCIS user' \
    --user-group \
    --home /home/ocis -m \
    ocis
@@ -302,11 +310,13 @@ echo "Creating HTTPS certificate symlinks"
 if [[ -d /etc/letsencrypt ]] ; then
   chmod a+rx /etc/letsencrypt/archive/
   chmod a+rx /etc/letsencrypt/live/
-  chmod a+r /etc/letsencrypt/live/${FULLDOMAINNAME}/*.pem
+  
+  ## allow read of privkey1.pem from ocis 
+  chmod a+r /etc/letsencrypt/archive/${FULLDOMAINNAME}/*.pem
   
   cd /home/ocis
-  ln -s /etc/letsencrypt/live/${FULLDOMAINNAME}/privkey.pem /home/ocis/privkey.pem
-  ln -s /etc/letsencrypt/live/${FULLDOMAINNAME}/cert.pem /home/ocis/cert.pem
+  ln -s "/etc/letsencrypt/live/${FULLDOMAINNAME}/privkey.pem" /home/ocis/privkey.pem
+  ln -s "/etc/letsencrypt/live/${FULLDOMAINNAME}/cert.pem" /home/ocis/cert.pem
   
   ls -la /home/ocis/*.pem
   echo ""
@@ -382,7 +392,7 @@ else
 fi
 
 EXTERNALURL="https://$FULLDOMAINNAME"
-echo "ownCloud OCIS installed:         $EXTERNALURL"
+echo "ownCloud oCIS installed:         $EXTERNALURL"
 echo ""
 
 %files

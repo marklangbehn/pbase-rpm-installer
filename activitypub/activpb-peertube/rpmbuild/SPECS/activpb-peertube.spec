@@ -1,6 +1,6 @@
 Name: activpb-peertube
 Version: 1.0
-Release: 4
+Release: 5
 Summary: PBase Peertube service rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: activpb-peertube
-Requires: nginx, postgresql, openssl, gcc-c++, make, wget, redis, git, ffmpeg, nodejs, unzip, yarn, certbot, certbot-apache, jq, python3-pip
+Requires: nginx, postgresql, openssl, gcc-c++, make, wget, redis, git, ffmpeg, nodejs, unzip, yarn, certbot, certbot-apache, jq, python3-pip, pbase-firewall-enable
 
 %description
 PBase Peertube ActivityPub service
@@ -421,9 +421,12 @@ echo ""
 DOMAIN_NAME_LIST_HAS_WWW=$(grep www ${SAVE_CMD_DIR}/domain-name-list.txt)
 ##echo "Domain list has WWW:     ${DOMAIN_NAME_LIST_HAS_WWW}"
 
+SECRETS_PEERTUBE_VALUE="$(openssl rand -hex 32)"
+
 echo "Updating config in production.yaml"
 
 /usr/local/bin/yq w -i /var/www/peertube/config/production.yaml webserver.hostname "${FULLDOMAINNAME}"
+/usr/local/bin/yq w -i /var/www/peertube/config/production.yaml secrets.peertube "${SECRETS_PEERTUBE_VALUE}"
 /usr/local/bin/yq w -i /var/www/peertube/config/production.yaml listen.port "${HTTP_PORT}"
 
 /usr/local/bin/yq w -i /var/www/peertube/config/production.yaml database.username "${CONFIG_DB_USER}"

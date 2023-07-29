@@ -1,6 +1,6 @@
 Name: pbase-preconfig-postgres-mattermost
 Version: 1.0
-Release: 3
+Release: 4
 Summary: PBase Postgres preconfigure rpm, preset user and DB name for use by pbase-mattermost
 Group: System Environment/Base
 License: Apache-2.0
@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-preconfig-postgres-mattermost
-Requires: pbase-epel, jq
+Requires: pbase-epel, jq, pbase-preconfig-firewall-enable
 
 %description
 Configure Postgres preset user and DB name for use by pbase-mattermost

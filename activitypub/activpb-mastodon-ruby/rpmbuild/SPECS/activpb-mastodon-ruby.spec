@@ -1,6 +1,6 @@
 Name: activpb-mastodon-ruby
 Version: 1.0
-Release: 2
+Release: 3
 Summary: PBase Mastodon Ruby and Dependencies rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: activpb-mastodon-ruby
-Requires: redis, yarn, protobuf-devel, redhat-rpm-config, nodejs, nginx, tar, jq, curl, git, gpg, gcc, git-core, zlib, zlib-devel, gcc-c++, patch, readline, readline-devel, libffi-devel, openssl-devel, make, autoconf, automake, libtool, bison, curl, sqlite-devel, libxml2-devel, libxslt-devel, gdbm-devel, ncurses-devel, glibc-headers, libidn, libidn-devel, glibc-devel, libicu-devel, protobuf, bzip2, ImageMagick, certbot
+Requires: redis, yarn, redhat-rpm-config, nodejs, nginx, tar, jq, curl, git, gpg, git-core, zlib, zlib-devel, gcc, gcc-c++, patch, readline, readline-devel, libffi-devel, openssl-devel, jemalloc-devel, postgresql-devel, make, pkgconfig, autoconf, automake, libtool, bison, curl, sqlite-devel, libxml2-devel, libxslt-devel, libyaml-devel, gdbm-devel, ncurses-devel, glibc-headers, libidn, libidn-devel, glibc-devel, libicu-devel, libpq-devel, protobuf, protobuf-devel, protobuf-compiler, bzip2, ImageMagick, certbot, python3-certbot-nginx, pbase-firewall-enable, perl, perl-FindBin, pbase-firewall-enable
 
 %description
 PBase Mastodon service
@@ -121,19 +121,29 @@ chmod +x /home/mastodon
 echo "Pull code for rbenv"
 su - mastodon -c "cd /home/mastodon/  &&  git clone https://github.com/rbenv/rbenv.git /home/mastodon/.rbenv"
 
+echo "Executing:               git config --global --add safe.directory /home/mastodon/live"
+
+## do as mastodon user
+su - mastodon -c "git config --global --add safe.directory /home/mastodon/live"
+
+## do as root user
+git config --global --add safe.directory /home/mastodon/live
+
 echo "Execute configure and make"
 su - mastodon -c "cd /home/mastodon/.rbenv && src/configure && make -C src"
 
-echo "Add rbenv lines .bashrc"
+echo "Configuring shell to load rbenv"
+echo 'eval "$(~/.rbenv/bin/rbenv init - bash)"' >> /home/mastodon/.bash_profile
+chown mastodon:mastodon /home/mastodon/.bash_profile
 
-cat /home/mastodon/.bashrc /usr/local/pbase-data/activpb-mastodon-ruby/ruby-bashrc.sh  >  /home/mastodon/.bashrc-rbenv
-/bin/cp -f /home/mastodon/.bashrc-rbenv /home/mastodon/.bashrc
-chown mastodon:mastodon /home/mastodon/.bashrc
-
-source /home/mastodon/.bashrc
+#echo "Add rbenv lines .bashrc"
+#cat /home/mastodon/.bashrc /usr/local/pbase-data/activpb-mastodon-ruby/ruby-bashrc.sh  >  /home/mastodon/.bashrc-rbenv
+#/bin/cp -f /home/mastodon/.bashrc-rbenv /home/mastodon/.bashrc
+#chown mastodon:mastodon /home/mastodon/.bashrc
+#source /home/mastodon/.bashrc
 
 echo "Pull code for rbenv/plugins"
-su - mastodon -c "source /home/mastodon/.bashrc  &&  git clone https://github.com/rbenv/ruby-build.git /home/mastodon/.rbenv/plugins/ruby-build"
+su - mastodon -c "source /home/mastodon/.bash_profile  &&  git clone https://github.com/rbenv/ruby-build.git /home/mastodon/.rbenv/plugins/ruby-build"
 
 
 ## PULL SOURCE CODE
@@ -162,7 +172,7 @@ if [[ "${VERSION}" != "HEAD" ]] && [[ "${VERSION}" != "head" ]] ; then
 fi
 
 ## use the version number stored in text file
-RUBY_VERSION="2.7.2"
+RUBY_VERSION="3.2.2"
 RUBY_VERSION_FILE="/home/mastodon/live/.ruby-version"
 if [[ -e "${RUBY_VERSION_FILE}" ]] ; then
   echo "Found:                   ${RUBY_VERSION_FILE}"

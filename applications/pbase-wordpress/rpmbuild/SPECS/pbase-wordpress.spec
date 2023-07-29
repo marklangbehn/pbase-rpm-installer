@@ -1,6 +1,6 @@
 Name: pbase-wordpress
 Version: 1.0
-Release: 5
+Release: 6
 Summary: PBase WordPress web application rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-wordpress
-Requires: pbase-phpmysql-transitive-dep, httpd-tools, wget
+Requires: pbase-phpmysql-transitive-dep, httpd-tools, wget, dos2unix
 
 ## pbase-phpmysql-transitive-dep - has requires for:
 ## php,php-cli,php-json,php-gd,php-mbstring,php-pdo,php-xml,php-pecl-zip,httpd-tools,wget
@@ -43,12 +43,12 @@ fail() {
 check_linux_version() {
   AMAZON1_RELEASE=""
   AMAZON2_RELEASE=""
-  AMAZON2022_RELEASE=""
+  AMAZON20XX_RELEASE=""
   if [[ -e "/etc/system-release" ]]; then
     SYSTEM_RELEASE="$(cat /etc/system-release)"
     AMAZON1_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux AMI')"
     AMAZON2_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2 ')"
-    AMAZON2022_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2022')"
+    AMAZON20XX_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 20')"
     echo "system-release:          ${SYSTEM_RELEASE}"
   fi
 
@@ -70,8 +70,8 @@ check_linux_version() {
     echo "AMAZON2_RELEASE:         $AMAZON2_RELEASE"
     REDHAT_RELEASE_DIGIT="7"
     echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
-  elif [[ "$AMAZON2022_RELEASE" != "" ]]; then
-    echo "AMAZON2022_RELEASE:      $AMAZON2022_RELEASE"
+  elif [[ "$AMAZON20XX_RELEASE" != "" ]]; then
+    echo "AMAZON20XX_RELEASE:      $AMAZON20XX_RELEASE"
     REDHAT_RELEASE_DIGIT="9"
     echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
   fi
@@ -379,7 +379,7 @@ ls -lh
 if [[ $WORDPRESS_URI_BASE == "" ]] ; then
   echo "URI Base is empty, Wordpress will be website root"
   if [[ -d "${WWW_ROOT}" ]] ; then
-    mv "${WWW_ROOT}" ${WWW_ROOT}-$(date +"%Y-%m-%d_%H-%M-%S")
+    mv "${WWW_ROOT}" ${WWW_ROOT}-$(date +'%Y-%m-%d_%H-%M')
   fi
 
   echo "Creating Wordpress home: ${WWW_ROOT}"
@@ -512,6 +512,29 @@ else
 
   /bin/systemctl enable php-fpm
   /bin/systemctl restart php-fpm
+fi
+
+## one an all in one stack ensure that database is started before Apache
+## use prgrep to check if MySQL or MariaDB process is running
+## if true, specify it is to be started before Apache
+
+HAS_MARIADB=$(pgrep mariadb)
+HAS_MYSQLD=$(pgrep mysqld)
+
+HTTPD_SERVICE_FILENAME="/usr/lib/systemd/system/httpd.service"
+
+if [[ -e "$HTTPD_SERVICE_FILENAME" ]]; then
+  if [[ $HAS_MARIADB != "" ]] ; then
+    echo "HAS_MARIADB:  $HAS_MARIADB"
+    echo "Setting After mariadb:   $HTTPD_SERVICE_FILENAME"
+    sed -i -e "s/^After=/After=mariadb.service /"  $HTTPD_SERVICE_FILENAME
+    systemctl daemon-reload
+  elif [[ $HAS_MYSQLD != "" ]] ; then
+    echo "HAS_MYSQLD:  $HAS_MYSQLD"
+    echo "Setting After mysqld:    $HTTPD_SERVICE_FILENAME"
+    sed -i -e "s/^After=/After=mysqld.service /"  $HTTPD_SERVICE_FILENAME
+    systemctl daemon-reload
+  fi
 fi
 
 echo "Restarting httpd"

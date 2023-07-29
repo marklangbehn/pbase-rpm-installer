@@ -1,6 +1,6 @@
 Name: pbase-lets-encrypt
 Version: 1.0
-Release: 6
+Release: 7
 Summary: PBase Let's Encrypt configure
 Group: System Environment/Base
 License: Apache-2.0
@@ -53,6 +53,8 @@ if [[ $1 -ne 1 ]] ; then
   exit 0
 fi
 
+PBASE_CONFIG_BASE="/usr/local/pbase-data/admin-only"
+
 ## config may be stored in json file with root-only permissions
 ##     /usr/local/pbase-data/admin-only/module-config.d/pbase_lets_encrypt.json
 
@@ -61,7 +63,7 @@ locateConfigFile() {
   ## name of config file is passed in param $1 - for example "pbase_lets_encrypt.json"
   PBASE_CONFIG_FILENAME="$1"
 
-  PBASE_CONFIG_BASE="/usr/local/pbase-data/admin-only"
+  ##PBASE_CONFIG_BASE="/usr/local/pbase-data/admin-only"
   PBASE_ALL_IN_ONE_CONFIG_FILENAME="pbase_module_config.json"
   PBASE_CONFIG_DIR="${PBASE_CONFIG_BASE}/module-config.d"
 
@@ -108,12 +110,12 @@ parseConfig() {
 check_linux_version() {
   AMAZON1_RELEASE=""
   AMAZON2_RELEASE=""
-  AMAZON2022_RELEASE=""
+  AMAZON20XX_RELEASE=""
   if [[ -e "/etc/system-release" ]]; then
     SYSTEM_RELEASE="$(cat /etc/system-release)"
     AMAZON1_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux AMI')"
     AMAZON2_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2 ')"
-    AMAZON2022_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2022')"
+    AMAZON20XX_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 20')"
     echo "system-release:          ${SYSTEM_RELEASE}"
   fi
 
@@ -135,8 +137,8 @@ check_linux_version() {
     echo "AMAZON2_RELEASE:         $AMAZON2_RELEASE"
     REDHAT_RELEASE_DIGIT="7"
     echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
-  elif [[ "$AMAZON2022_RELEASE" != "" ]]; then
-    echo "AMAZON2022_RELEASE:      $AMAZON2022_RELEASE"
+  elif [[ "$AMAZON20XX_RELEASE" != "" ]]; then
+    echo "AMAZON20XX_RELEASE:      $AMAZON20XX_RELEASE"
     REDHAT_RELEASE_DIGIT="9"
     echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
   fi
@@ -147,8 +149,10 @@ commentOutFile() {
   echo "Checking for:            ${1}/${2}"
 
   if [[ -e "${1}/${2}" ]] ; then
-    ##echo "Backup:                  ${1}/${2}-ORIG"
-    cp -p "${1}/${2}" "${1}/${2}-ORIG"
+    DATE_SUFFIX="$(date +'%Y-%m-%d_%H-%M')"
+
+    ##echo "Backup:                  ${1}/${2}-PREV-${DATE_SUFFIX}"
+    cp -p "${1}/${2}" "${1}/${2}-PREV-${DATE_SUFFIX}"
 
     ## comment out with a '#' in front of all lines
     echo "Commenting out contents: ${2}"
@@ -156,8 +160,74 @@ commentOutFile() {
   fi
 }
 
+
+startCertbotRenewalCronjob() {
+  CONFIG_ENABLE_AUTORENEW_PARAM=$1
+  
+  CERTBOT_RENEWAL_TIMER="/usr/lib/systemd/system/certbot-renew.timer"
+  if [[ -e "${CERTBOT_RENEWAL_TIMER}" ]] ; then
+    ## no need to add cronjob if systemd timer is installed
+    echo "Existing renewal timer:  ${CERTBOT_RENEWAL_TIMER}"
+    cat "${CERTBOT_RENEWAL_TIMER}"
+    echo ""
+    return
+  fi
+
+  ## Add CRON job to run monitorItemImport.pl
+  PREEXISTING_CRONJOB=`grep certbot /etc/crontab`
+
+  CERTBOT_EXECUTABLE="/usr/bin/certbot"
+  CRONJOB_LOGFILE="/var/log/letsencrypt-sslrenew.log"
+
+  RAND_MINUTE="$((2 + RANDOM % 57))"
+  RAND_HOUR="$((2 + RANDOM % 23))"
+
+  echo "Enable autorenew:        $CONFIG_ENABLE_AUTORENEW_PARAM"
+  echo "RAND_MINUTE:             $RAND_MINUTE"
+  echo "RAND_HOUR:               $RAND_HOUR"
+
+  ## line to add to crontab
+  CRONJOB_LINE="$RAND_MINUTE $RAND_HOUR * * * root /usr/bin/certbot renew >> $CRONJOB_LOGFILE"
+
+  if [[ ${CONFIG_ENABLE_AUTORENEW_PARAM} == "false" ]] ; then
+    ## comment out the line if autorenew flag is false
+    CRONJOB_LINE="## ${CRONJOB_LINE}"
+  fi
+
+  if [[ -e "$CERTBOT_EXECUTABLE" ]]; then
+    if [[ "$PREEXISTING_CRONJOB" == "" ]]; then
+      echo "Adding certbot renew:    /etc/crontab"
+      echo "                         $CRONJOB_LINE"
+      echo "Renewal output saved to: $CRONJOB_LOGFILE"
+      echo ""
+      ## add renewal cron job
+      echo ""                                                 >>  /etc/crontab
+      echo "## Added by pbase-lets-encrypt RPM ##"            >>  /etc/crontab
+      echo ""                                                 >>  /etc/crontab
+      echo "$CRONJOB_LINE"                                    >>  /etc/crontab
+      touch "$CRONJOB_LOGFILE"
+
+      append_bashrc_alias taillecronjoblog "tail -f $CRONJOB_LOGFILE"
+      append_bashrc_alias editcrontab "vi /etc/crontab"
+
+    else
+      echo "Existing Let's Encrypt:  /etc/crontab"
+      echo "$PREEXISTING_CRONJOB"
+    fi
+  else
+    echo "No certbot found:        $CERTBOT_EXECUTABLE"
+  fi
+}
+
+
 THISHOSTNAME="$(hostname)"
 THISDOMAINNAME="$(hostname -d)"
+
+echo "Checking if LE already installed"
+if [[ -d "/etc/letsencrypt/live/" ]] ; then
+  echo "ls -l /etc/letsencrypt/live/"
+  ls -l /etc/letsencrypt/live/
+fi
 
 check_linux_version
 
@@ -192,15 +262,8 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 parseConfig "ENABLE_CHECK_FOR_WWW" ".pbase_apache.enableCheckForWww" "true"
 
 echo "CONFIG_ENABLE_AUTORENEW: $CONFIG_ENABLE_AUTORENEW"
-echo "ENABLE_CHECK_FOR_WWW:    $ENABLE_CHECK_FOR_WWW"
 echo "EXECUTE_CERTBOT_CMD:     $EXECUTE_CERTBOT_CMD"
 echo "EMAIL_ADDR:              $EMAIL_ADDR"
-echo "URL_SUBDOMAIN:           $URL_SUBDOMAIN"
-echo "ADDITIONAL_SUBDOMAIN:    $ADDITIONAL_SUBDOMAIN"
-
-echo ""
-echo "Hostname:                $THISHOSTNAME"
-echo "Domainname:              $THISDOMAINNAME"
 
 
 ## determine which domain(s) to register
@@ -209,174 +272,170 @@ WWWDOMAINNAME="www.${THISDOMAINNAME}"
 HAS_WWW_SUBDOMAIN="false"
 DOMAIN_NAME_LIST=""
 
-## save the command line and domain names used
-SAVE_CMD_DIR="/usr/local/pbase-data/admin-only"
 
-if [[ -f "${SAVE_CMD_DIR}/domain-name-list.txt" ]]; then
-  read -r DOMAIN_NAME_LIST < "${SAVE_CMD_DIR}/domain-name-list.txt"
-  echo "found DOMAIN_NAME_LIST:  ${DOMAIN_NAME_LIST}"
-fi
+rebuildFullDomainNameList() {
+  PBASE_CONFIG_BASE_PARAM=$1
+  THISHOSTNAME_PARAM=$2
+  URL_SUBDOMAIN_PARAM=$3
+  THISDOMAINNAME_PARAM=$4
+  ENABLE_CHECK_FOR_WWW_PARAM=$5
+  ADDITIONAL_SUBDOMAIN_PARAM=$6  
+  
+  WWWDOMAINNAME="www.${THISDOMAINNAME_PARAM}"
+  
+  echo "PBase Config base:       $PBASE_CONFIG_BASE_PARAM"
+  echo "Hostname:                $THISHOSTNAME_PARAM"
+  echo "Subdomain:               $URL_SUBDOMAIN_PARAM"
+  echo "Domainname:              $THISDOMAINNAME_PARAM"
+  echo ""
+  echo "ENABLE_CHECK_FOR_WWW:    $ENABLE_CHECK_FOR_WWW_PARAM"
+  echo "ADDITIONAL_SUBDOMAIN:    $ADDITIONAL_SUBDOMAIN_PARAM"
+  DOMAIN_NAME_LIST="$THISDOMAINNAME_PARAM"
+  
+  ## save the command line and domain names used
 
-echo "Checking if LE already installed"
-if [[ -d "/etc/letsencrypt/live/" ]] ; then
-  echo "ls -l /etc/letsencrypt/live/"
-  ls -l /etc/letsencrypt/live/
-fi
-
-## check if a subdomain has already been added to the DOMAIN_NAME_LIST
-
-if [[ "${URL_SUBDOMAIN}" != "" ]] && [[ "${DOMAIN_NAME_LIST}" != *"${URL_SUBDOMAIN}.${THISDOMAINNAME}"* ]] ; then
-  ## when doing subdomain only like myapp.example.com (not registering root domain)
-  FULLDOMAINNAME="${URL_SUBDOMAIN}.${THISDOMAINNAME}"
-  DOMAIN_NAME_LIST="${FULLDOMAINNAME}"
-  echo "Exclusive subdomain:     ${FULLDOMAINNAME}"
-elif [[ "${DOMAIN_NAME_LIST}" != *"${URL_SUBDOMAIN}.${THISDOMAINNAME}"* ]] ; then
-  ## when doing root domain, check if www is also ping-able
-  if [[ $ENABLE_CHECK_FOR_WWW == "true" ]] ; then
-    ping -c 1 "${WWWDOMAINNAME}" &> /dev/null
-
-    if [[ "$?" == 0 ]] ; then
-      echo "host responded:          ${WWWDOMAINNAME}"
-      HAS_WWW_SUBDOMAIN="true"
-    else
-      echo "no response:             ${WWWDOMAINNAME}"
-    fi
+  if [[ -f "${PBASE_CONFIG_BASE_PARAM}/domain-name-list.txt" ]]; then
+    read -r DOMAIN_NAME_LIST < "${PBASE_CONFIG_BASE_PARAM}/domain-name-list.txt"
+    echo "found DOMAIN_NAME_LIST:  ${DOMAIN_NAME_LIST}"
   fi
 
-  ## start with root domain first on list
-  DOMAIN_NAME_LIST="${THISDOMAINNAME}"
+  ## check if a subdomain has already been added to the DOMAIN_NAME_LIST
 
-  ## may add www subdomain to list
-  if [[ "${HAS_WWW_SUBDOMAIN}" == "true" ]] ; then
-    if [[ "${DOMAIN_NAME_LIST}" != "" ]] ; then
-      ## add comma to end of list
-      DOMAIN_NAME_LIST="${DOMAIN_NAME_LIST},"
+  if [[ "${URL_SUBDOMAIN_PARAM}" != "" ]] && [[ "${DOMAIN_NAME_LIST}" != *"${URL_SUBDOMAIN_PARAM}.${THISDOMAINNAME_PARAM}"* ]] ; then
+    ## when doing subdomain only like myapp.example.com (not registering root domain)
+    FULLDOMAINNAME="${URL_SUBDOMAIN_PARAM}.${THISDOMAINNAME_PARAM}"
+    DOMAIN_NAME_LIST="${FULLDOMAINNAME}"
+    echo "Exclusive subdomain:     ${FULLDOMAINNAME}"
+  elif [[ "${DOMAIN_NAME_LIST}" != *"${URL_SUBDOMAIN_PARAM}.${THISDOMAINNAME_PARAM}"* ]] ; then
+    ## when doing root domain, check if www is also ping-able
+    if [[ $ENABLE_CHECK_FOR_WWW_PARAM == "true" ]] ; then
+      ping -c 1 "${WWWDOMAINNAME}" &> /dev/null
+
+      if [[ "$?" == 0 ]] ; then
+        echo "host responded:          ${WWWDOMAINNAME}"
+        HAS_WWW_SUBDOMAIN="true"
+      else
+        echo "no response:             ${WWWDOMAINNAME}"
+      fi
     fi
-    DOMAIN_NAME_LIST="${DOMAIN_NAME_LIST}www.${THISDOMAINNAME}"
+
+    ## start with root domain first on list
+    DOMAIN_NAME_LIST="${THISDOMAINNAME_PARAM}"
+
+    ## may add www subdomain to list
+    if [[ "${HAS_WWW_SUBDOMAIN}" == "true" ]] ; then
+      if [[ "${DOMAIN_NAME_LIST}" != "" ]] ; then
+        ## add comma to end of list
+        DOMAIN_NAME_LIST="${DOMAIN_NAME_LIST},"
+      fi
+      DOMAIN_NAME_LIST="${DOMAIN_NAME_LIST}www.${THISDOMAINNAME_PARAM}"
+    fi
+
+    ## may add additional subdomain to list
+    if [[ "${ADDITIONAL_SUBDOMAIN_PARAM}" != "" ]] ; then
+      if [[ "${DOMAIN_NAME_LIST}" != "" ]] ; then
+        ## add comma to end of list
+        DOMAIN_NAME_LIST="${DOMAIN_NAME_LIST},"
+      fi
+      DOMAIN_NAME_LIST="${DOMAIN_NAME_LIST}${ADDITIONAL_SUBDOMAIN_PARAM}.${THISDOMAINNAME_PARAM}"
+   fi
+  else
+    echo "Existing domain name list already set"
   fi
 
-  ## may add additional subdomain to list
-  if [[ "${ADDITIONAL_SUBDOMAIN}" != "" ]] ; then
-    if [[ "${DOMAIN_NAME_LIST}" != "" ]] ; then
-      ## add comma to end of list
-      DOMAIN_NAME_LIST="${DOMAIN_NAME_LIST},"
-    fi
-    DOMAIN_NAME_LIST="${DOMAIN_NAME_LIST}${ADDITIONAL_SUBDOMAIN}.${THISDOMAINNAME}"
+  ## save updated list
+  if [[ -e "${PBASE_CONFIG_BASE_PARAM}/domain-name-list.txt" ]] ; then
+    echo "Already saved domains:   ${PBASE_CONFIG_BASE_PARAM}/domain-name-list.txt"
+  else
+    echo "Saving domain name list: ${PBASE_CONFIG_BASE_PARAM}/domain-name-list.txt"
+    echo "Domain name list:        ${DOMAIN_NAME_LIST}"
+    echo "${DOMAIN_NAME_LIST}" > ${PBASE_CONFIG_BASE_PARAM}/domain-name-list.txt
   fi
-else
-  echo "Existing domain name list already set"
-fi
 
+  ## show the domains to be registered
+  echo "                         $(cat ${PBASE_CONFIG_BASE_PARAM}/domain-name-list.txt)"
+  echo ""
+}
 
-## Add CRON job to run monitorItemImport.pl
-PREEXISTING_CRONJOB=`grep certbot /etc/crontab`
+saveCertbotCommand() {
+  CERTBOT_CMD_PARAM=$1
+  PBASE_CONFIG_BASE_PARAM=$2
+  
+  ## check if dest dir needs to be created
+  if [[ ! -d "${PBASE_CONFIG_BASE_PARAM}" ]] ; then
+    mkdir -p ${PBASE_CONFIG_BASE_PARAM}
+  fi
+  
+  if [[ -e "${PBASE_CONFIG_BASE_PARAM}/certbot-cmd.sh" ]] ; then
+    echo "Saved command line:      ${PBASE_CONFIG_BASE_PARAM}/certbot-cmd.sh"
+  else
+    echo "Saving command line:     ${PBASE_CONFIG_BASE_PARAM}/certbot-cmd.sh"
+  fi
 
-CRONJOB_SCRIPT="/usr/bin/certbot"
-CRONJOB_LOGFILE="/var/log/letsencrypt-sslrenew.log"
+  echo "${CERTBOT_CMD_PARAM}" > ${PBASE_CONFIG_BASE_PARAM}/certbot-cmd.sh
+}
 
-RAND_MINUTE="$((2 + RANDOM % 57))"
-RAND_HOUR="$((2 + RANDOM % 23))"
+enableAndRestartHttpdService() {
+  REDHAT_RELEASE_DIGIT_PARAM=$1
 
-echo "RAND_MINUTE:             $RAND_MINUTE"
-echo "RAND_HOUR:               $RAND_HOUR"
+  # Enable httpd service at boot-time, and start httpd service
+  echo "Restarting service:      httpd"
 
-## line to add to crontab
-if [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]] || [[ "${REDHAT_RELEASE_DIGIT}" == "8" ]] || [[ "${REDHAT_RELEASE_DIGIT}" == "9" ]]; then
-  CRONJOB_LINE="$RAND_MINUTE $RAND_HOUR * * * root certbot renew >> $CRONJOB_LOGFILE"
-else
-  CRONJOB_LINE="$RAND_MINUTE $RAND_HOUR * * * root /usr/bin/certbot renew >> $CRONJOB_LOGFILE"
-fi
+  if [[ "${REDHAT_RELEASE_DIGIT_PARAM}" == "6" ]]; then
+    /sbin/chkconfig httpd --level 345 on || fail "chkconfig failed to enable httpd service"
+    /sbin/service httpd restart || fail "failed to restart httpd service"
+  else
+    /bin/systemctl daemon-reload
+    /bin/systemctl enable httpd.service || fail "systemctl failed to enable httpd service"
+    /bin/systemctl restart httpd || fail "failed to restart httpd service"
+  fi
+}
 
-if [[ ${CONFIG_ENABLE_AUTORENEW} == "false" ]] ; then
-  ## comment out the line if autorenew flag is false
-  CRONJOB_LINE="## ${CRONJOB_LINE}"
-fi
-
-if [[ -e "$CRONJOB_SCRIPT" ]]; then
-  if [[ "$PREEXISTING_CRONJOB" == "" ]]; then
-    echo "Adding certbot renew:    /etc/crontab"
-    echo "                         $CRONJOB_LINE"
-    echo "Renewal output saved to: $CRONJOB_LOGFILE"
+executeCertbotCommand() {
+  CERTBOT_CMD_LINE_PARAM=$1
+  EXECUTE_CERTBOT_CMD_PARAM=$2
+  REDHAT_RELEASE_DIGIT_PARAM=$3
+  if [[ ${EXECUTE_CERTBOT_CMD_PARAM} == "true" ]] ; then
+    echo "Invoke certbot:          $CERTBOT_CMD_LINE_PARAM"
     echo ""
 
-    ## add renewal cron job
-    echo ""                                                 >>  /etc/crontab
-    echo "## Added by pbase-lets-encrypt RPM ##"            >>  /etc/crontab
-    echo ""                                                 >>  /etc/crontab
-    echo "$CRONJOB_LINE"                                    >>  /etc/crontab
+    ## call Let's Encrypt to get SSL cert, will add file in /etc/httpd/conf...
+    eval $CERTBOT_CMD_LINE_PARAM
 
-    touch "$CRONJOB_LOGFILE"
+    if [[ "${REDHAT_RELEASE_DIGIT_PARAM}" == "6" ]]; then
+      /sbin/service httpd restart || fail "failed to restart httpd service"
+    else
+      /bin/systemctl restart httpd || fail "failed to restart httpd service"
+    fi
   else
-    echo "Existing Let's Encrypt:  /etc/crontab"
+    echo "Not invoking certbot:    $CERTBOT_CMD_LINE_PARAM"
   fi
-else
-    echo "No cronjob script found: $CRONJOB_SCRIPT"
-fi
+}
+
+
+## build comma separated list of domain names to be passed as certbot param
+rebuildFullDomainNameList "${PBASE_CONFIG_BASE}" "${THISHOSTNAME}" "${URL_SUBDOMAIN}" "${THISDOMAINNAME}" "${ENABLE_CHECK_FOR_WWW}" "${ADDITIONAL_SUBDOMAIN}"
+
+## when systemd timer already exists leave it as is
+startCertbotRenewalCronjob "${CONFIG_ENABLE_AUTORENEW}"
 
 ## Check for /etc/httpd/conf.d/ssl.conf, comment it out if it exists
 commentOutFile "/etc/httpd/conf.d" "ssl.conf"
 
-# Enable httpd service at boot-time, and start httpd service
-echo "Restarting service:      httpd"
-
-
-if [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]]; then
-  /sbin/chkconfig httpd --level 345 on || fail "chkconfig failed to enable httpd service"
-  /sbin/service httpd restart || fail "failed to restart httpd service"
-else
-  /bin/systemctl daemon-reload
-  /bin/systemctl enable httpd.service || fail "systemctl failed to enable httpd service"
-  /bin/systemctl restart httpd || fail "failed to restart httpd service"
-fi
+## start apache with systemctl daemon-reload, enable, restart
+enableAndRestartHttpdService "${REDHAT_RELEASE_DIGIT}"
 
 CERTBOT_CMD="certbot --apache --agree-tos --email ${EMAIL_ADDR} -n -d ${DOMAIN_NAME_LIST}"
 
-## save the command line and domain names used
-SAVE_CMD_DIR="/usr/local/pbase-data/admin-only"
-mkdir -p ${SAVE_CMD_DIR}
+## store the command line in certbot-cmd.sh
+saveCertbotCommand "${CERTBOT_CMD}" "${PBASE_CONFIG_BASE}"
 
-if [[ -e "${SAVE_CMD_DIR}/certbot-cmd.sh" ]] ; then
-  echo "Saved command line:      ${SAVE_CMD_DIR}/certbot-cmd.sh"
-else
-  echo "Saving command line:     ${SAVE_CMD_DIR}/certbot-cmd.sh"
-fi
+## use script 'eval' to execute the created command line and restart httpd
+executeCertbotCommand "${CERTBOT_CMD}" "${EXECUTE_CERTBOT_CMD}" "${REDHAT_RELEASE_DIGIT}"
 
-echo ${CERTBOT_CMD} > ${SAVE_CMD_DIR}/certbot-cmd.sh
-
-
-if [[ -e "${SAVE_CMD_DIR}/domain-name-list.txt" ]] ; then
-  echo "Already saved domains:   ${SAVE_CMD_DIR}/domain-name-list.txt"
-else
-  echo "Saving domain name list: ${SAVE_CMD_DIR}/domain-name-list.txt"
-  echo "Domain name list:        ${DOMAIN_NAME_LIST}"
-  echo "${DOMAIN_NAME_LIST}" > ${SAVE_CMD_DIR}/domain-name-list.txt
-fi
-
-## show the domains to be registered
-echo "                         $(cat ${SAVE_CMD_DIR}/domain-name-list.txt)"
-echo ""
-
-if [[ $EXECUTE_CERTBOT_CMD == "true" ]] ; then
-  echo "Invoke certbot:          $CERTBOT_CMD"
-  echo ""
-
-  ## call Let's Encrypt to get SSL cert, will add file in /etc/httpd/conf...
-  eval $CERTBOT_CMD
-
-  if [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]]; then
-    /sbin/service httpd restart || fail "failed to restart httpd service"
-  else
-    /bin/systemctl restart httpd || fail "failed to restart httpd service"
-  fi
-else
-  echo "Not invoking certbot:    $CERTBOT_CMD"
-fi
 
 echo ""
 echo "Apache config files:     /etc/httpd/conf.d/"
 ls -l /etc/httpd/conf.d/*.conf
-
-append_bashrc_alias taillecronjoblog "tail -f $CRONJOB_LOGFILE"
-append_bashrc_alias editcrontab "vi /etc/crontab"
 
 %files

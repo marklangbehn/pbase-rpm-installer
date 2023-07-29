@@ -1,6 +1,6 @@
 Name: activpb-preconfig-postgres-peertube
 Version: 1.0
-Release: 4
+Release: 5
 Summary: PBase Postgres preconfigure rpm, preset user and DB name for use by activpb-peertube
 Group: System Environment/Base
 License: Apache-2.0
@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: activpb-preconfig-postgres-peertube
-Requires: pbase-preconfig-yarn, pbase-epel, jq, pbase-rpmfusion
+Requires: pbase-preconfig-yarn, pbase-epel, jq, pbase-rpmfusion, pbase-preconfig-firewall-enable
 
 %description
 Configure Postgres preset user and DB name for use by activpb-peertube
@@ -375,6 +375,11 @@ echo "  vi activpb_peertube.json"
 echo "  vi pbase_lets_encrypt.json"
 echo "  vi pbase_postgres.json"
 echo "  vi pbase_smtp.json"
+echo "  vi pbase_firewall_enable.json"
+
+echo ""
+echo "    Note: the firewalld service will be enabled."
+echo "          Be sure to add any custom ports your server needs to 'pbase_firewall_enable.json'"
 echo ""
 
 echo "Next step - install Postgres and Peertube application with:"

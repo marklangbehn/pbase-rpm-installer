@@ -1,6 +1,6 @@
 Name: pbase-preconfig-apache
 Version: 1.0
-Release: 1
+Release: 2
 Summary: PBase Apache httpd config file create
 Group: System Environment/Base
 License: Apache-2.0
@@ -28,7 +28,6 @@ rm -rf "$RPM_BUILD_ROOT"
 %pre
 
 %post
-echo "rpm postinstall $1"
 
 fail() {
     echo "ERROR: $1"
@@ -107,6 +106,11 @@ setFieldInJsonModuleConfig() {
 
   CONFIG_FILE_NAME="${MODULE}.json"
   TEMPLATE_JSON_FILE="${SOURCE_DIR}/${CONFIG_FILE_NAME}"
+  if [[ ! -e "${TEMPLATE_JSON_FILE}" ]] ; then
+    echo "Bypassing set field in: ${MODULE}"
+    return 1
+  fi
+  
   /bin/cp -f "${TEMPLATE_JSON_FILE}" "/tmp/${CONFIG_FILE_NAME}"
 
   ## set a value in the json file
@@ -124,6 +128,7 @@ MODULE_CONFIG_DIR="/usr/local/pbase-data/admin-only/module-config.d"
 MODULE_SAMPLES_DIR="/usr/local/pbase-data/pbase-preconfig-apache/module-config-samples"
 
 PBASE_DEFAULTS_FILENAME="pbase_repo.json"
+PBASE_REPO_JSON_PATH="${MODULE_CONFIG_DIR}/${PBASE_DEFAULTS_FILENAME}"
 
 ## look for config file like "pbase_repo.json"
 PBASE_CONFIG_FILENAME="$PBASE_DEFAULTS_FILENAME"
@@ -134,32 +139,48 @@ locateConfigFile "$PBASE_CONFIG_FILENAME"
 parseConfig "DEFAULT_EMAIL_ADDRESS" ".pbase_repo.defaultEmailAddress" ""
 parseConfig "DEFAULT_SUB_DOMAIN" ".pbase_repo.defaultSubDomain" ""
 
+
+## when subdomain text file exists, change 'null' literal to an empty string
+## needed to do subdomain substitution later
+
+if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] || [[ $DEFAULT_EMAIL_ADDRESS != "" ]]; then
+  echo "Copying preconfig:       pbase_apache.json"
+  /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_apache.json  ${MODULE_CONFIG_DIR}/
+fi
+
 ## when DEFAULT_SUB_DOMAIN.txt file is not present
 if [[ $DEFAULT_SUB_DOMAIN == null ]] ; then
   echo "No DEFAULT_SUB_DOMAIN override file found, using '' for defaultSubDomain"
   DEFAULT_SUB_DOMAIN=""
 fi
 
+if [[ -e /root/DEFAULT_SUB_DOMAIN.txt ]] ; then
+  read -r DEFAULT_SUB_DOMAIN < /root/DEFAULT_SUB_DOMAIN.txt
+  sed -i "s/defaultSubDomain\": null/defaultSubDomain\": \"\"/" ${PBASE_REPO_JSON_PATH}
+  ##echo "DEFAULT_SUB_DOMAIN:    ${DEFAULT_SUB_DOMAIN}"
+  setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_repo urlSubDomain
+fi
+
+QT="'"
+DEFAULT_SUB_DOMAIN_QUOTED=${QT}${DEFAULT_SUB_DOMAIN}${QT}
+echo "DEFAULT_SUB_DOMAIN:      ${DEFAULT_SUB_DOMAIN_QUOTED}"
+
+if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] ; then
+  echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN_QUOTED}"
+  setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_apache urlSubDomain
+  setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_lets_encrypt urlSubDomain
+else
+  echo "Setting empty urlSubDomain, Apache will be root level of domain"
+  setFieldInJsonModuleConfig "" pbase_apache urlSubDomain
+  setFieldInJsonModuleConfig "" pbase_lets_encrypt urlSubDomain
+fi
 
 
 ## when email is defined in pbase_repo.json use that to provide the Apache httpd.conf email address
 if [[ $DEFAULT_EMAIL_ADDRESS != "" ]]; then
   echo "Setting 'defaultEmailAddress' in pbase_apache.json"
   echo "                         ${DEFAULT_EMAIL_ADDRESS}"
-  /bin/cp --no-clobber ${MODULE_SAMPLES_DIR}/pbase_apache.json  ${MODULE_CONFIG_DIR}/
   sed -i "s/yoursysadmin@yourrealmail.com/${DEFAULT_EMAIL_ADDRESS}/" "${MODULE_CONFIG_DIR}/pbase_apache.json"
-
-  QT="'"
-  DEFAULT_SUB_DOMAIN_QUOTED=${QT}${DEFAULT_SUB_DOMAIN}${QT}
-  ##echo "DEFAULT_SUB_DOMAIN:      ${DEFAULT_SUB_DOMAIN_QUOTED}"
-
-  if [[ "${DEFAULT_SUB_DOMAIN}" != "" ]] ; then
-    echo "urlSubDomain:            ${DEFAULT_SUB_DOMAIN_QUOTED}"
-    setFieldInJsonModuleConfig ${DEFAULT_SUB_DOMAIN} pbase_apache urlSubDomain
-  else
-    echo "Setting empty urlSubDomain, Apache will be root level of domain"
-    setFieldInJsonModuleConfig "" pbase_apache urlSubDomain
-  fi
 
   echo ""
   echo "Next step - optional - review the Apache server default config by"

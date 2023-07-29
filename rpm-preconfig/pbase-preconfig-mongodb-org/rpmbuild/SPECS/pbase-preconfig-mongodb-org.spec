@@ -37,12 +37,12 @@ fail() {
 check_linux_version() {
   AMAZON1_RELEASE=""
   AMAZON2_RELEASE=""
-  AMAZON2022_RELEASE=""
+  AMAZON20XX_RELEASE=""
   if [[ -e "/etc/system-release" ]]; then
     SYSTEM_RELEASE="$(cat /etc/system-release)"
     AMAZON1_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux AMI')"
     AMAZON2_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2 ')"
-    AMAZON2022_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2022')"
+    AMAZON20XX_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 20')"
     echo "system-release:          ${SYSTEM_RELEASE}"
   fi
 
@@ -64,8 +64,8 @@ check_linux_version() {
     echo "AMAZON2_RELEASE:         $AMAZON2_RELEASE"
     REDHAT_RELEASE_DIGIT="7"
     echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
-  elif [[ "$AMAZON2022_RELEASE" != "" ]]; then
-    echo "AMAZON2022_RELEASE:      $AMAZON2022_RELEASE"
+  elif [[ "$AMAZON20XX_RELEASE" != "" ]]; then
+    echo "AMAZON20XX_RELEASE:      $AMAZON20XX_RELEASE"
     REDHAT_RELEASE_DIGIT="9"
     echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
   fi
@@ -78,7 +78,7 @@ echo ""
 check_linux_version
 
 
-if [[ "$AMAZON1_RELEASE" != "" ]]  ||  [[ "$AMAZON2_RELEASE" != "" ]]  ||  [[ "$AMAZON2022_RELEASE" != "" ]]  ||  [[ "$FEDORA_RELEASE" != "" ]]  ; then
+if [[ "$AMAZON1_RELEASE" != "" ]]  ||  [[ "$AMAZON2_RELEASE" != "" ]]  ||  [[ "$AMAZON20XX_RELEASE" != "" ]]  ||  [[ "$FEDORA_RELEASE" != "" ]]  ; then
   if [[ -e "/etc/yum.repos.d/mongodb-org-4.4-amazon.repo" ]]  ||  [[ -e "/etc/yum.repos.d/mongodb-org-4.4.repo" ]] ; then
     echo "Existing Mongodb.org repo found, leaving unchanged"
   else

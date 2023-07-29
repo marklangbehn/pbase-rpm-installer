@@ -1,0 +1,5 @@
+[pbase-third-party-el8]
+name=PBase third-party RPM components for EL8 
+baseurl=https://pbase-foundation.com/yum-repo/pbase-third-party-el8/1.0/
+enabled=1
+gpgcheck=0

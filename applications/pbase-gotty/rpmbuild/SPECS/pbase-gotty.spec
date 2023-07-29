@@ -50,7 +50,9 @@ append_bashrc_alias() {
   fi
 }
 
-## config is stored in json file with root-only permissions
+PBASE_CONFIG_BASE="/usr/local/pbase-data/admin-only"
+
+## config may be stored in json file with root-only permissions
 ##     in the directory: /usr/local/pbase-data/admin-only/module-config.d/
 
 
@@ -58,7 +60,7 @@ locateConfigFile() {
   ## name of config file is passed in param $1 - for example "pbase_gotty.json"
   PBASE_CONFIG_FILENAME="$1"
 
-  PBASE_CONFIG_BASE="/usr/local/pbase-data/admin-only"
+  ##PBASE_CONFIG_BASE="/usr/local/pbase-data/admin-only"
   PBASE_ALL_IN_ONE_CONFIG_FILENAME="pbase_module_config.json"
   PBASE_CONFIG_DIR="${PBASE_CONFIG_BASE}/module-config.d"
 
@@ -124,15 +126,15 @@ if [[ $1 -ne 1 ]] ; then
   exit 0
 fi
 
+
+THISHOSTNAME="$(hostname)"
+THISDOMAINNAME="$(hostname -d)"
+
 ## check if already installed
 if [[ -e "/usr/local/bin/gotty" ]]; then
   echo "/usr/local/bin/gotty already exists - exiting"
   exit 0
 fi
-
-
-THISHOSTNAME="$(hostname)"
-THISDOMAINNAME="$(hostname -d)"
 
 echo ""
 echo "Hostname:                $THISHOSTNAME"

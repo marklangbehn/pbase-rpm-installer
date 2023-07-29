@@ -1,6 +1,6 @@
 Name: pbase-repo
 Version: 1.0
-Release: 3
+Release: 4
 Summary: PBase installer bootstrap rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -138,12 +138,12 @@ parseConfig() {
 check_linux_version() {
   AMAZON1_RELEASE=""
   AMAZON2_RELEASE=""
-  AMAZON2022_RELEASE=""
+  AMAZON20XX_RELEASE=""
   if [[ -e "/etc/system-release" ]]; then
     SYSTEM_RELEASE="$(cat /etc/system-release)"
     AMAZON1_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux AMI')"
     AMAZON2_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2 ')"
-    AMAZON2022_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 2022')"
+    AMAZON20XX_RELEASE="$(cat /etc/system-release | grep 'Amazon Linux release 20')"
     echo "system-release:          ${SYSTEM_RELEASE}"
   fi
 
@@ -165,8 +165,8 @@ check_linux_version() {
     echo "AMAZON2_RELEASE:         $AMAZON2_RELEASE"
     REDHAT_RELEASE_DIGIT="7"
     echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
-  elif [[ "$AMAZON2022_RELEASE" != "" ]]; then
-    echo "AMAZON2022_RELEASE:      $AMAZON2022_RELEASE"
+  elif [[ "$AMAZON20XX_RELEASE" != "" ]]; then
+    echo "AMAZON20XX_RELEASE:      $AMAZON20XX_RELEASE"
     REDHAT_RELEASE_DIGIT="9"
     echo "REDHAT_RELEASE_DIGIT:    ${REDHAT_RELEASE_DIGIT}"
   fi
@@ -371,8 +371,8 @@ fi
 #  echo "AMAZON1_RELEASE:         $AMAZON1_RELEASE"
 #elif [[ "$AMAZON2_RELEASE" != "" ]]; then
 #  echo "AMAZON2_RELEASE:         $AMAZON2_RELEASE"
-#elif [[ "$AMAZON2022_RELEASE" != "" ]]; then
-#  echo "AMAZON2022_RELEASE:      $AMAZON2022_RELEASE"
+#elif [[ "$AMAZON20XX_RELEASE" != "" ]]; then
+#  echo "AMAZON20XX_RELEASE:      $AMAZON20XX_RELEASE"
 #fi
 
 echo ""
@@ -388,8 +388,8 @@ elif [[ "$AMAZON2_RELEASE" != "" ]]; then
   echo "AMZN2 PHP 7.2 repo:      amzn2extra-php72.repo"
   /bin/cp -f /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/amzn2/pbase-amzn2-dep.repo /etc/yum.repos.d/
   /bin/cp -f /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/amzn2/amzn2extra-php72.repo /etc/yum.repos.d/
-elif [[ "$AMAZON2022_RELEASE" != "" ]]; then
-  echo "AMZN2022 Dependency repo:pbase-amzn22022-dep.repo"
+elif [[ "$AMAZON20XX_RELEASE" != "" ]]; then
+  echo "AMZN20XX Dependency repo:pbase-amzn2022-dep.repo"
   ##echo "AMZN2022 PHP 7.2 repo:      amzn2extra-php72.repo"
   /bin/cp -f /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/amzn2022/pbase-amzn2022-dep.repo /etc/yum.repos.d/
   ##/bin/cp -f /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/amzn2022/amzn2022extra-php72.repo /etc/yum.repos.d/

@@ -1,6 +1,6 @@
 Name: pbase-postgres
 Version: 1.0
-Release: 2
+Release: 3
 Summary: PBase Postgres server rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -202,10 +202,18 @@ if [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]]; then
   echo "Calling:                 service postgresql initdb"
   /sbin/service postgresql initdb
 else
-  echo "Calling:                 postgresql-setup initdb"
-  /usr/bin/postgresql-setup initdb
+  echo "Calling:                 postgresql-setup --initdb --unit postgresql"
+  /usr/bin/postgresql-setup --initdb --unit postgresql
+
+  if [[ ! -d "/dir1/" ]] ; then
+    echo "Creating:                /run/postgresql"
+    mkdir -p /run/postgresql
+    chown -R postgres:postgres /run/postgresql
+  fi
 fi
 
+echo "Calling:                 systemctl daemon-reload"
+/bin/systemctl daemon-reload
 
 ## configure pg_hba.conf
 ## make backup copy of file
@@ -331,7 +339,7 @@ if [[ "${REDHAT_RELEASE_DIGIT}" == "6" ]]; then
   /sbin/service postgresql start || fail "failed to start postgresql service"
 else
   /bin/systemctl daemon-reload
-  /bin/systemctl enable postgresql.service || fail "systemctl failed to enable postgresql service"
+  /bin/systemctl enable --now postgresql.service || fail "systemctl failed to enable postgresql service"
   /bin/systemctl start postgresql || fail "failed to restart postgresql service"
 fi
 

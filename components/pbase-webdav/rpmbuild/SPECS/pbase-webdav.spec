@@ -1,6 +1,6 @@
 Name: pbase-webdav
 Version: 1.0
-Release: 2
+Release: 3
 Summary: PBase WebDAV Apache service
 Group: System Environment/Base
 License: Apache-2.0
@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-webdav
-Requires: pbase-apache, pbase-epel, pbase-preconfig-webdav, certbot, certbot-apache
+Requires: pbase-apache, pbase-epel, pbase-preconfig-webdav, pbase-lets-encrypt-transitive-dep
 
 %description
 PBase WebDAV service
@@ -125,7 +125,6 @@ if [[ $1 -ne 1 ]] ; then
   exit 0
 fi
 
-check_linux_version
 echo ""
 echo "Default PBase module configuration directory:"
 echo "                         /usr/local/pbase-data/admin-only/module-config.d/"

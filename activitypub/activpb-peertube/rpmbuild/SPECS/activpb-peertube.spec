@@ -1,6 +1,6 @@
 Name: activpb-peertube
 Version: 1.0
-Release: 5
+Release: 6
 Summary: PBase Peertube service rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: activpb-peertube
-Requires: nginx, postgresql, openssl, gcc-c++, make, wget, redis, git, ffmpeg, nodejs, unzip, yarn, certbot, certbot-apache, jq, python3-pip, pbase-firewall-enable
+Requires: pbase-lets-encrypt-transitive-dep, nginx, postgresql, openssl, gcc-c++, make, wget, redis, git, ffmpeg, nodejs, unzip, yarn, jq, python3-pip, pbase-firewall-enable
 
 %description
 PBase Peertube ActivityPub service

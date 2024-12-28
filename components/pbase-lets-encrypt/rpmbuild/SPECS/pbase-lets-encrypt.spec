@@ -173,7 +173,7 @@ startCertbotRenewalCronjob() {
     return
   fi
 
-  ## Add CRON job to run monitorItemImport.pl
+  ## Add CRON job to run renew
   PREEXISTING_CRONJOB=`grep certbot /etc/crontab`
 
   CERTBOT_EXECUTABLE="/usr/bin/certbot"

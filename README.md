@@ -37,9 +37,9 @@ This enables entire application stacks to be configured and installed with ease.
 
 #### PREREQUISITES
 Requires a Red Hat Enterprise Linux (EL) compatible operating system such as:
-- Red Hat EL 7, 8 or 9 - including AlmaLinux and Rocky Linux
+- Red Hat EL 7, 8, 9 or 10 - including AlmaLinux and Rocky Linux
 - Amazon Linux 2 AMI or Amazon Linux 2022
-- Fedora 3x (tested on Fedora versions 33 through 36 for most RPM components)
+- Fedora 4x (tested on Fedora versions 40 and 41 for most RPM components)
 
 All `yum` install commands must be run as root user, or using sudo.
 

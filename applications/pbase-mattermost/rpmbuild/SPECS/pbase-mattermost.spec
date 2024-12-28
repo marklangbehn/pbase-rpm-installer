@@ -1,6 +1,6 @@
 Name: pbase-mattermost
 Version: 1.0
-Release: 5
+Release: 6
 Summary: PBase Mattermost service rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-mattermost
-Requires: pbase-apache, wget, tar, jq, certbot, certbot-apache, pbase-firewall-enable
+Requires: pbase-lets-encrypt-transitive-dep, pbase-apache, wget, tar, jq, pbase-firewall-enable
 
 %description
 PBase Mattermost service
@@ -447,13 +447,13 @@ if [[ "$ADD_APACHE_PROXY" == "true" ]] ; then
   sed -i "s/hostmaster@mydomain.com/${APACHE_SERVER_ADMIN}/" $PROXY_CONF
 ``
   ## may also enable www alias
-  sed -i "s/www.example.com/www.${THISDOMAINNAME}/" "${PROXY_CONF}"
-  sed -i "s/example.com/${THISDOMAINNAME}/" "${PROXY_CONF}"
+  #sed -i "s/www.example.com/www.${THISDOMAINNAME}/" "${PROXY_CONF}"
+  #sed -i "s/example.com/${THISDOMAINNAME}/" "${PROXY_CONF}"
 
-  if [[ "${DOMAIN_NAME_LIST_HAS_WWW}" != "" ]] ; then
-    echo "Enabling:                ServerAlias www.${THISDOMAINNAME}"
-    sed -i "s/#ServerAlias/ServerAlias/" "${PROXY_CONF}"
-  fi
+  #if [[ "${DOMAIN_NAME_LIST_HAS_WWW}" != "" ]] ; then
+  #  echo "Enabling:                ServerAlias www.${THISDOMAINNAME}"
+  #  sed -i "s/#ServerAlias/ServerAlias/" "${PROXY_CONF}"
+  #fi
 
   echo "Replacing proxy:         ${PROXY_CONF_FULLDOMAINNAME}"
   cd /etc/httpd/conf.d/

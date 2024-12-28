@@ -1,6 +1,6 @@
 Name: pbase-owncloud
 Version: 1.0
-Release: 1
+Release: 2
 Summary: PBase ownCloud oCIS rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-owncloud
-Requires: pbase-lets-encrypt-transitive-dep, jq, certbot, pbase-firewall-enable
+Requires: pbase-lets-encrypt-transitive-dep, jq, pbase-firewall-enable
 
 %description
 PBase ownCloud oCIS service

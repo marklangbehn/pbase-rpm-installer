@@ -1,6 +1,6 @@
 Name: pbase-repo
 Version: 1.0
-Release: 4
+Release: 5
 Summary: PBase installer bootstrap rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -405,13 +405,16 @@ elif [[ "${REDHAT_RELEASE_DIGIT}" == "8" ]] ; then
 elif [[ "${REDHAT_RELEASE_DIGIT}" == "9" ]] ; then
   echo "EL9 Dependency repo:     pbase-el9-dep.repo"
   /bin/cp -f /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/el9/pbase-el9-dep.repo /etc/yum.repos.d/
+elif [[ "${REDHAT_RELEASE_DIGIT}" == "10" ]] ; then
+  echo "EL10 Dependency repo:    pbase-el10-dep.repo"
+  /bin/cp -f /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/el10/pbase-el10-dep.repo /etc/yum.repos.d/
 elif [[ "${FEDORA_RELEASE}" != "" ]] ; then
   echo "Fedora Dependency repo:  pbase-fedora-dep.repo"
   /bin/cp -f /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/fedora/pbase-fedora-dep.repo /etc/yum.repos.d/
 else
-  ## assume EL7 otherwise
-  echo "EL7 Dependency repo:     pbase-el7-dep.repo"
-  /bin/cp -f /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/el7/pbase-el7-dep.repo /etc/yum.repos.d/
+  ## assume EL10 otherwise
+  echo "EL10 Dependency repo:    pbase-el10-dep.repo"
+  /bin/cp -f /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/el10/pbase-el10-dep.repo /etc/yum.repos.d/
 fi
 
 echo ""
@@ -421,7 +424,7 @@ echo "" >> /root/.bashrc
 append_bashrc_alias lltr "ls -ltr"
 append_bashrc_alias ipaddr "ip addr | grep \"inet \""
 
-if [[ "$FEDORA_RELEASE" != ""  ||  "${REDHAT_RELEASE_DIGIT}" == "8" ||  "${REDHAT_RELEASE_DIGIT}" == "9" ]]; then
+if [[ "$FEDORA_RELEASE" != ""  ||  "${REDHAT_RELEASE_DIGIT}" == "8"  ||  "${REDHAT_RELEASE_DIGIT}" == "9"  ||  "${REDHAT_RELEASE_DIGIT}" == "10" ]]; then
   append_bashrc_alias tailyumlog "tail -f /var/log/dnf.log /var/log/dnf.rpm.log"
 else
   append_bashrc_alias tailyumlog "tail -f -n100 /var/log/yum.log"
@@ -475,10 +478,12 @@ echo "rpm preuninstall"
 /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/el7/epel.repo
 /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/el8/epel.repo
 /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/el9/epel.repo
+/usr/local/pbase-data/pbase-repo/etc-yum-repos-d/el10/epel.repo
 /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/el6/pbase-el6-dep.repo
 /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/el7/pbase-el7-dep.repo
 /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/el8/pbase-el8-dep.repo
 /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/el9/pbase-el9-dep.repo
+/usr/local/pbase-data/pbase-repo/etc-yum-repos-d/el10/pbase-el10-dep.repo
 /usr/local/pbase-data/pbase-repo/etc-yum-repos-d/fedora/pbase-fedora-dep.repo
 /usr/local/pbase-data/pbase-repo/etc-pki-rpm-gpg/RPM-GPG-KEY-EPEL-6
 /usr/local/pbase-data/pbase-repo/etc-pki-rpm-gpg/RPM-GPG-KEY-EPEL-7

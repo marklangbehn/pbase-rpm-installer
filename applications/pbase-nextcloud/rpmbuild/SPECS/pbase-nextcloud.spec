@@ -1,6 +1,6 @@
 Name: pbase-nextcloud
 Version: 1.0
-Release: 5
+Release: 6
 Summary: PBase NextCloud service rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-nextcloud
-Requires: pbase-phpmysql-transitive-dep, pbase-apache, unzip, wget, pbase-epel, ImageMagick, ImageMagick-devel, php-devel, php-pear, gcc, make, , certbot, certbot-apache
+Requires: pbase-lets-encrypt-transitive-dep, pbase-phpmysql-transitive-dep, pbase-apache, unzip, wget, pbase-epel, ImageMagick, ImageMagick-devel, php-devel, php-pear, gcc, make
 
 ## pbase-phpmysql-transitive-dep - has requires for:
 ## php,php-cli,php-json,php-gd,php-mbstring,php-pdo,php-xml,php-pecl-zip,httpd-tools,wget

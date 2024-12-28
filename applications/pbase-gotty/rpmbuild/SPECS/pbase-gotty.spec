@@ -1,6 +1,6 @@
 Name: pbase-gotty
 Version: 1.0
-Release: 5
+Release: 6
 Summary: PBase GoTTY rpm
 Group: System Environment/Base
 License: Apache-2.0
@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 Provides: pbase-gotty
-Requires: pbase-lets-encrypt-transitive-dep, git, jq, certbot, certbot-apache
+Requires: pbase-lets-encrypt-transitive-dep, git, jq, pbase-firewall-enable
 
 %description
 PBase GoTTY service
@@ -159,7 +159,6 @@ parseConfig "AUTH_PASSWORD" ".pbase_gotty.basicAuthPassword" "shomeddata"
 echo "ENABLE_AUTORENEW:        $ENABLE_AUTORENEW"
 echo "EXECUTE_CERTBOT_CMD:     $EXECUTE_CERTBOT_CMD"
 echo "EMAIL_ADDR:              $EMAIL_ADDR"
-echo "ADDITIONAL_SUBDOMAIN:    $ADDITIONAL_SUBDOMAIN"
 
 ## make sure certbot is installed
 HAS_CERTBOT_INSTALLED="$(which certbot)"
@@ -217,7 +216,7 @@ fi
 DOMAIN_NAME_LIST_NEW=""
 DOMAIN_NAME_PARAM=""
 
-echo "Found DOMAIN_NAME_LIST:  ${DOMAIN_NAME_LIST}"
+##echo "Found DOMAIN_NAME_LIST:  ${DOMAIN_NAME_LIST}"
 
 if [[ "${DOMAIN_NAME_LIST}" == "" ]] ; then
   echo "Starting from empty domain-name-list.txt, adding ${FULLDOMAINNAME}"
